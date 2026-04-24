@@ -1,36 +1,72 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Media Timeline
 
-## Getting Started
+Eine mobile-first Web-App fuer eine interaktive Medien-Timeline mit geschuetztem Admin-Dashboard.
+Die App unterstuetzt Bilder, YouTube-/Vimeo-/MP4-Videos und PDF-Dokumente.
 
-First, run the development server:
+## Features
+
+- Oeffentliche horizontale Swipe-Timeline fuer Smartphone, Tablet und Desktop
+- Bild-Lightbox, Video-Overlay und PDF-Buttons
+- Zeitstrahl-Regler fuer schnelles Springen zwischen Jahren
+- Admin-Login ueber Supabase Auth
+- Admin-Formular zum Erstellen, Bearbeiten und Loeschen von Events
+- Uploads fuer Bilder und PDFs ueber Supabase Storage
+- Rechtsseiten fuer Impressum, Datenschutz und Cookiehinweise
+- Demo-Daten, solange Supabase noch nicht konfiguriert ist
+
+## Tech Stack
+
+- Next.js App Router
+- TypeScript
+- Tailwind CSS
+- Supabase Auth, Database und Storage
+- Framer Motion
+- Lucide Icons
+
+## Schnellstart
 
 ```bash
+npm install
+cp .env.example .env.local
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Die lokale App laeuft danach unter `http://localhost:3000`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Ohne Supabase-Konfiguration zeigt die Startseite Demo-Daten. Fuer echte Inhalte:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. Supabase-Projekt erstellen.
+2. `supabase/schema.sql` im Supabase SQL Editor ausfuehren.
+3. Admin-User in Supabase Auth anlegen.
+4. `.env.local` mit Supabase URL, Anon Key und `NEXT_PUBLIC_SITE_URL` fuellen.
+5. `/admin` oeffnen und Inhalte verwalten.
 
-## Learn More
+Mehr Details stehen in `docs/SUPABASE_SETUP.md`.
 
-To learn more about Next.js, take a look at the following resources:
+## Deployment
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Fuer den Betrieb auf einem Debian-13-LXC gibt es eine eigene Anleitung mit Node.js, systemd und
+Reverse-Proxy-Beispiel: `docs/DEBIAN_LXC_DEPLOYMENT.md`.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Datenmodell
 
-## Deploy on Vercel
+Die Tabelle `timeline_events` enthaelt:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- `event_date`
+- `title`
+- `description`
+- `image_url`
+- `video_url`
+- `pdf_url`
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Lizenz
+
+Dieses Projekt ist zur freien nicht-kommerziellen Nutzung gedacht und steht unter der
+PolyForm Noncommercial License 1.0.0. Kommerzielle Nutzung ist nur mit separater Erlaubnis
+gestattet.
+
+## Status
+
+`npm run lint`, `npm run typecheck` und `npm run build` sollten vor Releases erfolgreich laufen.
+Falls `npm audit` eine moderate Next.js/PostCSS-Warnung meldet, pruefe zuerst, ob ein aktuelles
+Next.js-Patchrelease verfuegbar ist. Kein automatisches Downgrade auf alte Next-Versionen ausfuehren.
