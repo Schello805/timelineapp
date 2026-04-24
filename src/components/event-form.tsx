@@ -1,10 +1,8 @@
 "use client";
 
-import { useActionState, useRef, useState } from "react";
+import { useActionState } from "react";
 import { UploadCloud } from "lucide-react";
 import { upsertTimelineEvent } from "@/app/actions";
-import { isSupabaseConfigured } from "@/lib/env";
-import { createClient } from "@/lib/supabase/browser";
 import type { TimelineEvent } from "@/lib/types";
 
 type State = { ok: boolean; message: string } | null;
@@ -14,29 +12,6 @@ export function EventForm({ event }: { event?: TimelineEvent }) {
     async (_previousState, formData) => upsertTimelineEvent(formData),
     null,
   );
-  const [uploading, setUploading] = useState(false);
-  const imageRef = useRef<HTMLInputElement>(null);
-  const pdfRef = useRef<HTMLInputElement>(null);
-
-  async function uploadFile(input: HTMLInputElement | null, field: "image_url" | "pdf_url") {
-    const file = input?.files?.[0];
-    if (!file || !isSupabaseConfigured) return;
-
-    setUploading(true);
-    try {
-      const supabase = createClient();
-      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "-");
-      const path = `${field}/${crypto.randomUUID()}-${safeName}`;
-      const { error } = await supabase.storage.from("timeline-media").upload(path, file);
-      if (error) throw error;
-
-      const { data } = supabase.storage.from("timeline-media").getPublicUrl(path);
-      const target = document.querySelector<HTMLInputElement>(`input[name="${field}"]`);
-      if (target) target.value = data.publicUrl;
-    } finally {
-      setUploading(false);
-    }
-  }
 
   return (
     <form action={formAction} className="grid gap-5 rounded-lg border border-stone-200 bg-white p-5 shadow-sm">
@@ -44,7 +19,7 @@ export function EventForm({ event }: { event?: TimelineEvent }) {
 
       <div className="grid gap-2">
         <label className="text-sm font-semibold text-stone-800" htmlFor="event_date">
-          Datum oder Jahr
+          Datum
         </label>
         <input
           id="event_date"
@@ -85,12 +60,10 @@ export function EventForm({ event }: { event?: TimelineEvent }) {
 
       <UrlUploadField
         name="image_url"
-        label="Bild-URL"
+        fileName="image_file"
+        label="Bild"
         defaultValue={event?.image_url ?? ""}
-        inputRef={imageRef}
         accept="image/*"
-        disabled={!isSupabaseConfigured || uploading}
-        onUpload={() => uploadFile(imageRef.current, "image_url")}
       />
 
       <div className="grid gap-2">
@@ -108,12 +81,10 @@ export function EventForm({ event }: { event?: TimelineEvent }) {
 
       <UrlUploadField
         name="pdf_url"
-        label="PDF-URL"
+        fileName="pdf_file"
+        label="PDF"
         defaultValue={event?.pdf_url ?? ""}
-        inputRef={pdfRef}
         accept="application/pdf"
-        disabled={!isSupabaseConfigured || uploading}
-        onUpload={() => uploadFile(pdfRef.current, "pdf_url")}
       />
 
       {state?.message ? (
@@ -124,7 +95,7 @@ export function EventForm({ event }: { event?: TimelineEvent }) {
 
       <button
         className="h-12 rounded-md bg-stone-950 px-5 text-sm font-semibold text-white hover:bg-stone-800 disabled:opacity-60"
-        disabled={pending || uploading}
+        disabled={pending}
       >
         {pending ? "Speichert..." : event ? "Ereignis aktualisieren" : "Ereignis erstellen"}
       </button>
@@ -134,40 +105,35 @@ export function EventForm({ event }: { event?: TimelineEvent }) {
 
 function UrlUploadField({
   name,
+  fileName,
   label,
   defaultValue,
-  inputRef,
   accept,
-  disabled,
-  onUpload,
 }: {
   name: string;
+  fileName: string;
   label: string;
   defaultValue: string;
-  inputRef: React.RefObject<HTMLInputElement | null>;
   accept: string;
-  disabled: boolean;
-  onUpload: () => void;
 }) {
   return (
     <div className="grid gap-2">
       <label className="text-sm font-semibold text-stone-800" htmlFor={name}>
         {label}
       </label>
-      <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
-        <input
-          id={name}
-          name={name}
-          type="url"
-          defaultValue={defaultValue}
-          className="h-11 rounded-md border border-stone-300 px-3 outline-none focus:border-teal-700"
-        />
-        <label className="inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-md border border-stone-300 px-4 text-sm font-semibold text-stone-800 hover:bg-stone-50">
-          <UploadCloud className="h-4 w-4" />
-          Upload
-          <input ref={inputRef} type="file" accept={accept} className="sr-only" onChange={onUpload} disabled={disabled} />
-        </label>
-      </div>
+      <input
+        id={name}
+        name={name}
+        type="url"
+        placeholder="Optional: bestehende URL eintragen"
+        defaultValue={defaultValue}
+        className="h-11 rounded-md border border-stone-300 px-3 outline-none focus:border-teal-700"
+      />
+      <label className="inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-md border border-stone-300 px-4 text-sm font-semibold text-stone-800 hover:bg-stone-50">
+        <UploadCloud className="h-4 w-4" />
+        Datei lokal hochladen
+        <input name={fileName} type="file" accept={accept} className="sr-only" />
+      </label>
     </div>
   );
 }

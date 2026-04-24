@@ -3,8 +3,14 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { isSupabaseConfigured } from "@/lib/env";
-import { createClient } from "@/lib/supabase/server";
+import {
+  clearAdminSession,
+  createAdminSession,
+  credentialsMatch,
+  isAdminAuthenticated,
+} from "@/lib/auth";
+import { deleteEvent, upsertEvent } from "@/lib/db";
+import { saveUpload } from "@/lib/uploads";
 
 const eventSchema = z.object({
   id: z.string().optional(),
@@ -16,37 +22,43 @@ const eventSchema = z.object({
   pdf_url: z.string().url().optional().or(z.literal("")),
 });
 
-function cleanOptionalUrl(value: FormDataEntryValue | null) {
+function cleanOptionalText(value: FormDataEntryValue | null) {
   const text = String(value ?? "").trim();
   return text.length ? text : null;
 }
 
 async function requireAdmin() {
-  if (!isSupabaseConfigured) {
-    throw new Error("Supabase ist noch nicht konfiguriert.");
-  }
-
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
+  if (!(await isAdminAuthenticated())) {
     redirect("/admin/login");
   }
+}
 
-  return supabase;
+export async function signIn(_previousState: { ok: boolean; message: string } | null, formData: FormData) {
+  const email = String(formData.get("email") ?? "");
+  const password = String(formData.get("password") ?? "");
+
+  if (!credentialsMatch(email, password)) {
+    return { ok: false, message: "E-Mail oder Passwort ist falsch." };
+  }
+
+  await createAdminSession();
+  redirect("/admin");
 }
 
 export async function upsertTimelineEvent(formData: FormData) {
+  await requireAdmin();
+
+  const uploadedImage = await saveUpload(formData.get("image_file") as File | null, "images");
+  const uploadedPdf = await saveUpload(formData.get("pdf_file") as File | null, "pdfs");
+
   const parsed = eventSchema.safeParse({
-    id: cleanOptionalUrl(formData.get("id")) ?? undefined,
+    id: cleanOptionalText(formData.get("id")) ?? undefined,
     event_date: String(formData.get("event_date") ?? ""),
     title: String(formData.get("title") ?? ""),
     description: String(formData.get("description") ?? ""),
-    image_url: cleanOptionalUrl(formData.get("image_url")) ?? "",
-    video_url: cleanOptionalUrl(formData.get("video_url")) ?? "",
-    pdf_url: cleanOptionalUrl(formData.get("pdf_url")) ?? "",
+    image_url: uploadedImage ?? cleanOptionalText(formData.get("image_url")) ?? "",
+    video_url: cleanOptionalText(formData.get("video_url")) ?? "",
+    pdf_url: uploadedPdf ?? cleanOptionalText(formData.get("pdf_url")) ?? "",
   });
 
   if (!parsed.success) {
@@ -56,25 +68,15 @@ export async function upsertTimelineEvent(formData: FormData) {
     };
   }
 
-  const supabase = await requireAdmin();
-  const payload = {
+  upsertEvent({
+    id: parsed.data.id,
     event_date: parsed.data.event_date,
     title: parsed.data.title,
     description: parsed.data.description,
     image_url: parsed.data.image_url || null,
     video_url: parsed.data.video_url || null,
     pdf_url: parsed.data.pdf_url || null,
-  };
-
-  const query = parsed.data.id
-    ? supabase.from("timeline_events").update(payload).eq("id", parsed.data.id)
-    : supabase.from("timeline_events").insert(payload);
-
-  const { error } = await query;
-
-  if (error) {
-    return { ok: false, message: error.message };
-  }
+  });
 
   revalidatePath("/");
   revalidatePath("/admin");
@@ -82,27 +84,19 @@ export async function upsertTimelineEvent(formData: FormData) {
 }
 
 export async function deleteTimelineEvent(formData: FormData) {
+  await requireAdmin();
+
   const id = String(formData.get("id") ?? "");
   if (!id) {
     throw new Error("Keine Ereignis-ID gefunden.");
   }
 
-  const supabase = await requireAdmin();
-  const { error } = await supabase.from("timeline_events").delete().eq("id", id);
-
-  if (error) {
-    throw new Error(error.message);
-  }
-
+  deleteEvent(id);
   revalidatePath("/");
   revalidatePath("/admin");
 }
 
 export async function signOut() {
-  if (isSupabaseConfigured) {
-    const supabase = await createClient();
-    await supabase.auth.signOut();
-  }
-
+  await clearAdminSession();
   redirect("/admin/login");
 }

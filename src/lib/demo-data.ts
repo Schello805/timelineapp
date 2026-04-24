@@ -6,7 +6,7 @@ export const demoEvents: TimelineEvent[] = [
     event_date: "1989-11-09",
     title: "Ein Wendepunkt",
     description:
-      "Ein Beispielereignis mit Bild, Text und dokumentarischem Charakter. Sobald Supabase verbunden ist, erscheinen hier deine eigenen Inhalte.",
+      "Ein Beispielereignis mit Bild, Text und dokumentarischem Charakter. Sobald du lokale Inhalte anlegst, erscheinen hier deine eigenen Ereignisse.",
     image_url:
       "https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=1200&q=80",
     video_url: null,

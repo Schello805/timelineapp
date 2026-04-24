@@ -2,18 +2,18 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { signOut } from "@/app/actions";
 import { AppLogo } from "@/components/app-logo";
-import { isSupabaseConfigured } from "@/lib/env";
-import { createClient } from "@/lib/supabase/server";
+import { isAdminAuthenticated, isAdminConfigured } from "@/lib/auth";
 
 export default async function ProtectedAdminLayout({ children }: { children: React.ReactNode }) {
-  if (!isSupabaseConfigured) {
+  if (!isAdminConfigured()) {
     return (
       <main className="mx-auto w-full max-w-3xl px-5 py-12">
         <div className="rounded-lg border border-amber-200 bg-amber-50 p-6 text-amber-950">
-          <h1 className="text-2xl font-semibold">Supabase fehlt noch</h1>
+          <h1 className="text-2xl font-semibold">Admin-Zugang fehlt noch</h1>
           <p className="mt-3 leading-7">
-            Lege eine <code>.env.local</code> anhand von <code>.env.example</code> an und fuehre das
-            SQL aus <code>supabase/schema.sql</code> aus. Danach ist der Admin-Bereich aktiv.
+            Lege eine <code>.env.local</code> anhand von <code>.env.example</code> an und setze
+            <code> ADMIN_EMAIL</code>, <code> ADMIN_PASSWORD</code> und <code> ADMIN_SESSION_SECRET</code>.
+            Danach ist der lokale Admin-Bereich aktiv.
           </p>
           <Link
             className="mt-5 inline-flex h-11 items-center rounded-md bg-amber-950 px-4 text-sm font-semibold text-white"
@@ -26,12 +26,7 @@ export default async function ProtectedAdminLayout({ children }: { children: Rea
     );
   }
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
+  if (!(await isAdminAuthenticated())) {
     redirect("/admin/login");
   }
 

@@ -1,46 +1,58 @@
 # Deployment auf Debian 13 LXC
 
-Diese Anleitung beschreibt einen einfachen Betrieb auf einem Debian-13-LXC, zum Beispiel hinter
-Nginx oder einem vorhandenen Reverse Proxy.
+Diese Anleitung beschreibt den Betrieb auf einem Debian-13-LXC mit lokaler SQLite-Datenbank.
+Es wird kein Supabase oder externer Datenbankdienst benoetigt.
 
 ## Voraussetzungen
 
 - Debian 13 Container mit Netzwerkzugriff
 - Node.js 22 LTS oder neuer
 - npm
-- Supabase-Projekt mit ausgefuehrtem `supabase/schema.sql`
-- Domain oder interne Reverse-Proxy-Route
+- Domain `timeline.bechhofen-hilft.de`
+- Nginx oder ein vorhandener Reverse Proxy
 
 ## System vorbereiten
 
 ```bash
 sudo apt update
-sudo apt install -y curl ca-certificates git
+sudo apt install -y curl ca-certificates git nginx build-essential python3
 curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
 sudo apt install -y nodejs
 node --version
 npm --version
 ```
 
+`build-essential` und `python3` sind fuer native Node-Pakete wie SQLite wichtig.
+
 ## App installieren
 
 ```bash
 sudo mkdir -p /opt/media-timeline
 sudo chown "$USER":"$USER" /opt/media-timeline
-git clone <DEIN_GITHUB_REPO> /opt/media-timeline
+git clone https://github.com/Schello805/timelineapp /opt/media-timeline
 cd /opt/media-timeline
 npm ci
 cp .env.example .env.local
 nano .env.local
-npm run build
 ```
 
-In `.env.local` muessen mindestens diese Werte gesetzt sein:
+## .env.local fuer deine Domain
+
+Setze diese Werte:
 
 ```bash
-NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
-NEXT_PUBLIC_SITE_URL=https://timeline.example.com
+NEXT_PUBLIC_SITE_URL=https://timeline.bechhofen-hilft.de
+ADMIN_EMAIL=deine-admin-mail@example.com
+ADMIN_PASSWORD=ein-sehr-sicheres-passwort
+ADMIN_SESSION_SECRET=ein-langer-zufaelliger-geheimer-wert
+TIMELINE_DATABASE_PATH=./data/timeline.sqlite
+```
+
+Danach:
+
+```bash
+mkdir -p data public/uploads
+npm run build
 ```
 
 ## systemd Service
@@ -84,12 +96,16 @@ sudo systemctl status media-timeline
 
 ## Nginx Reverse Proxy
 
-Beispiel fuer eine Domain:
+```bash
+sudo nano /etc/nginx/sites-available/media-timeline
+```
+
+Inhalt:
 
 ```nginx
 server {
   listen 80;
-  server_name timeline.example.com;
+  server_name timeline.bechhofen-hilft.de;
 
   location / {
     proxy_pass http://127.0.0.1:3000;
@@ -104,7 +120,15 @@ server {
 }
 ```
 
-TLS sollte anschliessend ueber den Reverse Proxy oder Certbot aktiviert werden.
+Aktivieren:
+
+```bash
+sudo ln -s /etc/nginx/sites-available/media-timeline /etc/nginx/sites-enabled/
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+TLS anschliessend mit Certbot oder deinem vorhandenen Reverse Proxy aktivieren.
 
 ## Updates
 
@@ -116,9 +140,20 @@ sudo -u www-data npm run build
 sudo systemctl restart media-timeline
 ```
 
+## Backup
+
+Wichtig sind diese lokalen Daten:
+
+```bash
+/opt/media-timeline/data/timeline.sqlite
+/opt/media-timeline/public/uploads
+```
+
+Diese Dateien/Ordner regelmaessig sichern.
+
 ## Hinweise
 
 - Keine `.env.local` ins GitHub-Repository committen.
 - Der Admin-Bereich liegt unter `/admin`.
-- Supabase Auth verwaltet den Admin-Login.
+- Die Datenbank wird automatisch als SQLite-Datei erstellt.
 - Fuer produktive Nutzung Rechtsdokumente final ausfuellen und pruefen lassen.

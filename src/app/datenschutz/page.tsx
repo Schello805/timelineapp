@@ -23,11 +23,12 @@ export default function DatenschutzPage() {
         Abrufs, Browserinformationen und angeforderte Seiten. Diese Daten sind erforderlich, um die
         Website sicher und stabil auszuliefern.
       </p>
-      <h2 className="text-xl font-semibold text-stone-950">Supabase</h2>
+      <h2 className="text-xl font-semibold text-stone-950">Lokale Speicherung</h2>
       <p>
-        Die App nutzt Supabase fuer Authentifizierung, Datenbank und Dateiablage, sobald die
-        entsprechenden Zugangsdaten konfiguriert sind. Im Admin-Bereich werden technisch notwendige
-        Session-Daten verarbeitet, damit angemeldete Administratoren erkannt werden koennen.
+        Die App speichert Timeline-Inhalte lokal in einer SQLite-Datenbank auf dem Server. Hochgeladene
+        Bilder und PDF-Dateien werden lokal im Upload-Verzeichnis der Anwendung abgelegt. Im
+        Admin-Bereich wird ein technisch notwendiges Session-Cookie verwendet, damit angemeldete
+        Administratoren erkannt werden koennen.
       </p>
       <h2 className="text-xl font-semibold text-stone-950">Eingebundene Medien</h2>
       <p>

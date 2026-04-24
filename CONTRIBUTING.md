@@ -20,5 +20,5 @@ npm run build
 
 - Mobile-first UI.
 - Wiederverwendbare Komponenten in `src/components`.
-- Supabase-Zugriff ueber `src/lib/supabase`.
+- Datenzugriff ueber `src/lib/db.ts`.
 - Keine Secrets committen.

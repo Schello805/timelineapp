@@ -1,25 +1,24 @@
 # Media Timeline
 
 Eine mobile-first Web-App fuer eine interaktive Medien-Timeline mit geschuetztem Admin-Dashboard.
-Die App unterstuetzt Bilder, YouTube-/Vimeo-/MP4-Videos und PDF-Dokumente.
+Die App speichert Inhalte lokal in SQLite und braucht keinen externen Backend-Dienst.
 
 ## Features
 
-- Oeffentliche horizontale Swipe-Timeline fuer Smartphone, Tablet und Desktop
+- Zoombare oeffentliche Timeline mit Jahres-, Monats- und Ereignisansicht
 - Bild-Lightbox, Video-Overlay und PDF-Buttons
-- Zeitstrahl-Regler fuer schnelles Springen zwischen Jahren
-- Admin-Login ueber Supabase Auth
+- Admin-Login ueber lokale Zugangsdaten aus `.env.local`
 - Admin-Formular zum Erstellen, Bearbeiten und Loeschen von Events
-- Uploads fuer Bilder und PDFs ueber Supabase Storage
+- Lokale Uploads fuer Bilder und PDFs
 - Rechtsseiten fuer Impressum, Datenschutz und Cookiehinweise
-- Demo-Daten, solange Supabase noch nicht konfiguriert ist
+- Demo-Daten, solange lokal noch keine Ereignisse angelegt wurden
 
 ## Tech Stack
 
 - Next.js App Router
 - TypeScript
 - Tailwind CSS
-- Supabase Auth, Database und Storage
+- SQLite ueber `better-sqlite3`
 - Framer Motion
 - Lucide Icons
 
@@ -33,15 +32,15 @@ npm run dev
 
 Die lokale App laeuft danach unter `http://localhost:3000`.
 
-Ohne Supabase-Konfiguration zeigt die Startseite Demo-Daten. Fuer echte Inhalte:
+In `.env.local` werden Admin-Zugang, Site URL und lokale Speicherpfade gesetzt:
 
-1. Supabase-Projekt erstellen.
-2. `supabase/schema.sql` im Supabase SQL Editor ausfuehren.
-3. Admin-User in Supabase Auth anlegen.
-4. `.env.local` mit Supabase URL, Anon Key und `NEXT_PUBLIC_SITE_URL` fuellen.
-5. `/admin` oeffnen und Inhalte verwalten.
-
-Mehr Details stehen in `docs/SUPABASE_SETUP.md`.
+```bash
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
+ADMIN_EMAIL=admin@example.com
+ADMIN_PASSWORD=change-this-password
+ADMIN_SESSION_SECRET=change-this-long-random-secret
+TIMELINE_DATABASE_PATH=./data/timeline.sqlite
+```
 
 ## Deployment
 
@@ -50,7 +49,7 @@ Reverse-Proxy-Beispiel: `docs/DEBIAN_LXC_DEPLOYMENT.md`.
 
 ## Datenmodell
 
-Die Tabelle `timeline_events` enthaelt:
+Die lokale SQLite-Tabelle `timeline_events` enthaelt:
 
 - `event_date`
 - `title`
@@ -58,6 +57,8 @@ Die Tabelle `timeline_events` enthaelt:
 - `image_url`
 - `video_url`
 - `pdf_url`
+
+Die Datenbank wird beim ersten Start automatisch erstellt.
 
 ## Lizenz
 
