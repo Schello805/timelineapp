@@ -42,10 +42,16 @@ Setze diese Werte:
 
 ```bash
 NEXT_PUBLIC_SITE_URL=https://timeline.bechhofen-hilft.de
-ADMIN_EMAIL=deine-admin-mail@example.com
+ADMIN_EMAIL=Info@schellenberger.biz
 ADMIN_PASSWORD=ein-sehr-sicheres-passwort
 ADMIN_SESSION_SECRET=ein-langer-zufaelliger-geheimer-wert
 TIMELINE_DATABASE_PATH=./data/timeline.sqlite
+```
+
+Einen guten Wert fuer `ADMIN_SESSION_SECRET` kannst du so erzeugen:
+
+```bash
+openssl rand -hex 32
 ```
 
 Danach:

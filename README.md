@@ -42,6 +42,9 @@ ADMIN_SESSION_SECRET=change-this-long-random-secret
 TIMELINE_DATABASE_PATH=./data/timeline.sqlite
 ```
 
+Fuer produktive Installationen sollte `ADMIN_SESSION_SECRET` mit `openssl rand -hex 32`
+erzeugt werden.
+
 ## Deployment
 
 Fuer den Betrieb auf einem Debian-13-LXC gibt es eine eigene Anleitung mit Node.js, systemd und
