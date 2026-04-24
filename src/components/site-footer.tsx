@@ -10,6 +10,9 @@ export function SiteFooter() {
           <p>Frei nutzbar fuer nicht-kommerzielle Projekte.</p>
         </div>
         <nav className="flex flex-wrap gap-x-5 gap-y-2" aria-label="Rechtsdokumente">
+          <Link className="font-semibold text-stone-800 hover:text-stone-950" href="/admin">
+            Admin
+          </Link>
           <Link className="hover:text-stone-950" href="/impressum">
             Impressum
           </Link>
