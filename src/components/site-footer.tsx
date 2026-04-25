@@ -30,13 +30,13 @@ export function SiteFooter() {
           <Link className="font-semibold text-stone-800 hover:text-stone-950" href="/admin">
             Admin
           </Link>
-          <Link className="hover:text-stone-950" href="/impressum">
+          <Link className="hover:text-stone-950" href="/impressum" target="_blank" rel="noopener noreferrer">
             Impressum
           </Link>
-          <Link className="hover:text-stone-950" href="/datenschutz">
+          <Link className="hover:text-stone-950" href="/datenschutz" target="_blank" rel="noopener noreferrer">
             Datenschutz
           </Link>
-          <Link className="hover:text-stone-950" href="/cookies">
+          <Link className="hover:text-stone-950" href="/cookies" target="_blank" rel="noopener noreferrer">
             Cookiehinweise
           </Link>
         </nav>

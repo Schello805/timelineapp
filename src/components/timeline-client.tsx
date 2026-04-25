@@ -11,6 +11,13 @@ import { formatEventDate, getYear } from "@/lib/timeline-format";
 type MediaFilter = "all" | "image" | "video" | "pdf";
 type SortOrder = "asc" | "desc";
 type TimelineZoom = "compact" | "normal" | "detail";
+type TimelineGroup = {
+  id: string;
+  year: string;
+  month?: string;
+  monthLabel?: string;
+  events: TimelineEvent[];
+};
 
 const zoomLevels: Array<{ id: TimelineZoom; label: string; descriptionLength: number }> = [
   { id: "compact", label: "Kompakt", descriptionLength: 110 },
@@ -54,6 +61,7 @@ export function TimelineClient({ events, ownerName }: { events: TimelineEvent[];
     const direction = sortOrder === "asc" ? 1 : -1;
     return [...filteredEvents].sort((a, b) => (getTime(a.event_date) - getTime(b.event_date)) * direction);
   }, [filteredEvents, sortOrder]);
+  const timelineGroups = useMemo(() => buildTimelineGroups(sortedEvents, timelineZoom), [sortedEvents, timelineZoom]);
   const yearNavigation = useMemo(() => buildYearNavigation(sortedEvents.length ? sortedEvents : allEvents), [
     allEvents,
     sortedEvents,
@@ -144,7 +152,6 @@ export function TimelineClient({ events, ownerName }: { events: TimelineEvent[];
           <div className="mx-auto flex w-full max-w-7xl flex-col gap-2 px-4 py-2 sm:px-5 sm:py-3">
             <header className="flex items-center justify-between gap-3">
               <AppLogo compact label={`Timeline für ${ownerName}`} />
-              <span className="text-sm font-semibold text-stone-600">{sortedEvents.length} Ereignisse</span>
             </header>
 
             <div className="grid gap-2 rounded-lg border border-stone-200 bg-white p-2 shadow-sm xl:grid-cols-[1fr_auto_auto]">
@@ -179,8 +186,8 @@ export function TimelineClient({ events, ownerName }: { events: TimelineEvent[];
               </div>
               <div className="flex rounded-md border border-stone-300 bg-stone-50 p-1">
                 {[
-                  ["asc", "Alt nach neu"],
-                  ["desc", "Neu nach alt"],
+                  ["asc", "Älteste zuerst"],
+                  ["desc", "Neueste zuerst"],
                 ].map(([id, label]) => (
                   <button
                     key={id}
@@ -265,7 +272,7 @@ export function TimelineClient({ events, ownerName }: { events: TimelineEvent[];
             </div>
           ) : (
             <VerticalTimeline
-              events={sortedEvents}
+              groups={timelineGroups}
               zoom={timelineZoom}
               onImage={setSelectedImage}
               onVideo={setSelectedVideo}
@@ -323,38 +330,126 @@ export function TimelineClient({ events, ownerName }: { events: TimelineEvent[];
 }
 
 function VerticalTimeline({
-  events,
+  groups,
   zoom,
   onImage,
   onVideo,
 }: {
-  events: TimelineEvent[];
+  groups: TimelineGroup[];
   zoom: TimelineZoom;
   onImage: (event: TimelineEvent) => void;
   onVideo: (event: TimelineEvent) => void;
 }) {
-  const gapClass = zoom === "compact" ? "gap-4" : zoom === "detail" ? "gap-8" : "gap-6";
+  const gapClass = zoom === "compact" ? "gap-3" : zoom === "detail" ? "gap-8" : "gap-5";
 
   return (
-    <div className={`relative grid pl-6 sm:pl-8 ${gapClass}`}>
-      <div className="absolute bottom-0 left-[0.7rem] top-0 w-px bg-gradient-to-b from-blue-700 via-teal-600 to-orange-500 sm:left-[0.95rem]" />
-
-      {events.map((event, index) => (
-        <TimelineItem key={event.id} event={event} index={index} zoom={zoom} onImage={onImage} onVideo={onVideo} />
+    <div className={`relative grid ${gapClass}`}>
+      {groups.map((group, index) => (
+        <TimelineGroupBlock
+          key={group.id}
+          group={group}
+          index={index}
+          zoom={zoom}
+          onImage={onImage}
+          onVideo={onVideo}
+        />
       ))}
     </div>
   );
 }
 
-function TimelineItem({
-  event,
+function TimelineGroupBlock({
+  group,
   index,
   zoom,
   onImage,
   onVideo,
 }: {
-  event: TimelineEvent;
+  group: TimelineGroup;
   index: number;
+  zoom: TimelineZoom;
+  onImage: (event: TimelineEvent) => void;
+  onVideo: (event: TimelineEvent) => void;
+}) {
+  return (
+    <motion.section
+      className="grid grid-cols-[4.6rem_1.5rem_minmax(0,1fr)] gap-3 sm:grid-cols-[6rem_1.75rem_minmax(0,1fr)] sm:gap-4"
+      initial={{ opacity: 0, y: 12 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-40px" }}
+      transition={{ delay: Math.min(index * 0.03, 0.18) }}
+    >
+      <div className="pt-1 text-right">
+        <p className="text-base font-semibold leading-tight text-stone-950 sm:text-lg">{group.year}</p>
+        {group.monthLabel ? (
+          <p className="mt-1 text-xs font-semibold uppercase tracking-[0.12em] text-teal-700 sm:text-sm">
+            {group.monthLabel}
+          </p>
+        ) : null}
+      </div>
+
+      <div className="relative flex justify-center">
+        <div className="absolute bottom-[-1rem] top-0 w-px bg-gradient-to-b from-blue-700 via-teal-600 to-orange-500" />
+        <span className="relative mt-1 flex h-6 w-6 items-center justify-center rounded-full bg-teal-700 text-white ring-4 ring-[#f6f3ee]">
+          {zoom === "compact" ? group.events.length : group.events.some((event) => event.video_url) ? (
+            <Video className="h-3.5 w-3.5" />
+          ) : group.events.some((event) => event.pdf_url) ? (
+            <FileText className="h-3.5 w-3.5" />
+          ) : (
+            <Search className="h-3.5 w-3.5" />
+          )}
+        </span>
+      </div>
+
+      {zoom === "compact" ? (
+        <YearSummary group={group} />
+      ) : (
+        <div className={zoom === "detail" ? "grid gap-5" : "grid gap-3"}>
+          {group.events.map((event) => (
+            <TimelineItem
+              key={event.id}
+              event={event}
+              zoom={zoom}
+              onImage={onImage}
+              onVideo={onVideo}
+            />
+          ))}
+        </div>
+      )}
+    </motion.section>
+  );
+}
+
+function YearSummary({ group }: { group: TimelineGroup }) {
+  return (
+    <article className="rounded-lg border border-stone-200 bg-white p-3 shadow-sm">
+      <p className="text-sm font-semibold text-stone-950">
+        {group.events.length} {group.events.length === 1 ? "Ereignis" : "Ereignisse"}
+      </p>
+      <div className="mt-2 grid gap-1">
+        {group.events.map((event) => (
+          <a
+            key={event.id}
+            data-event-id={event.id}
+            className="rounded-md px-2 py-1 text-sm font-medium text-stone-700 hover:bg-stone-50 hover:text-teal-800"
+            href={`#event-${encodeURIComponent(event.slug || event.id)}`}
+          >
+            <span className="font-semibold text-teal-700">{formatEventDate(event.event_date)}</span>
+            <span className="ml-2">{event.title}</span>
+          </a>
+        ))}
+      </div>
+    </article>
+  );
+}
+
+function TimelineItem({
+  event,
+  zoom,
+  onImage,
+  onVideo,
+}: {
+  event: TimelineEvent;
   zoom: TimelineZoom;
   onImage: (event: TimelineEvent) => void;
   onVideo: (event: TimelineEvent) => void;
@@ -370,28 +465,14 @@ function TimelineItem({
   const detail = zoom === "detail";
 
   return (
-    <motion.article
+    <article
       data-event-id={event.id}
       className={
         compact
-          ? "relative scroll-mt-72 rounded-lg border border-stone-200 bg-white p-3 shadow-sm sm:p-4"
+          ? "scroll-mt-72 rounded-lg border border-stone-200 bg-white p-3 shadow-sm sm:p-4"
           : "relative scroll-mt-72 rounded-lg border border-stone-200 bg-white p-4 shadow-sm sm:p-5"
       }
-      initial={{ opacity: 0, y: 12 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-40px" }}
-      transition={{ delay: Math.min(index * 0.03, 0.18) }}
     >
-      <span className="absolute -left-[1.98rem] top-5 flex h-6 w-6 items-center justify-center rounded-full bg-teal-700 text-white ring-4 ring-[#f6f3ee] sm:-left-[2.3rem]">
-        {event.video_url ? (
-          <Video className="h-3.5 w-3.5" />
-        ) : event.pdf_url ? (
-          <FileText className="h-3.5 w-3.5" />
-        ) : (
-          <Search className="h-3.5 w-3.5" />
-        )}
-      </span>
-
       <p className="text-sm font-semibold text-teal-700">{formatEventDate(event.event_date)}</p>
       <h2
         className={
@@ -470,7 +551,7 @@ function TimelineItem({
           </a>
         ) : null}
       </div>
-    </motion.article>
+    </article>
   );
 }
 
@@ -543,6 +624,42 @@ function buildYearNavigation(events: TimelineEvent[]) {
   }
 
   return [...years.values()];
+}
+
+function buildTimelineGroups(events: TimelineEvent[], zoom: TimelineZoom): TimelineGroup[] {
+  const groups = new Map<string, TimelineGroup>();
+
+  for (const event of events) {
+    const date = parseEventDate(event.event_date);
+    const year = String(date.getFullYear());
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const key = zoom === "compact" ? year : `${year}-${month}`;
+    const existing = groups.get(key);
+
+    if (existing) {
+      existing.events.push(event);
+      continue;
+    }
+
+    groups.set(key, {
+      id: key,
+      year,
+      month: zoom === "compact" ? undefined : month,
+      monthLabel: zoom === "compact" ? undefined : formatMonth(date),
+      events: [event],
+    });
+  }
+
+  return [...groups.values()];
+}
+
+function parseEventDate(date: string) {
+  const parsed = new Date(date);
+  return Number.isNaN(parsed.getTime()) ? new Date(`${date.slice(0, 4)}-01-01`) : parsed;
+}
+
+function formatMonth(date: Date) {
+  return new Intl.DateTimeFormat("de-DE", { month: "short" }).format(date);
 }
 
 function getTime(date: string) {
