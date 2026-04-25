@@ -8,8 +8,8 @@ export const metadata: Metadata = {
   title: siteConfig.name,
   description: siteConfig.description,
   icons: {
-    icon: "/logo-timeline.png",
-    apple: "/logo-timeline.png",
+    icon: "/icon.png",
+    apple: "/apple-icon.png",
   },
   openGraph: {
     title: siteConfig.name,
