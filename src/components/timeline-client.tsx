@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { CalendarDays, FileText, ImageIcon, LinkIcon, Play, Search, Video } from "lucide-react";
+import { FileText, ImageIcon, LinkIcon, Play, Search, Video } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AppLogo } from "@/components/app-logo";
 import { VideoFrame } from "@/components/video-frame";
@@ -141,28 +141,17 @@ export function TimelineClient({ events, ownerName }: { events: TimelineEvent[];
     <>
       <section className="min-h-[calc(100svh-4rem)] bg-[#f6f3ee]">
         <div className="sticky top-0 z-30 border-b border-stone-200 bg-[#f6f3ee]/95 backdrop-blur">
-          <div className="mx-auto flex w-full max-w-7xl flex-col gap-4 px-5 py-4">
-            <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <AppLogo />
-                <div className="mt-4 max-w-3xl">
-                  <p className="mb-2 flex items-center gap-2 text-sm font-medium uppercase tracking-[0.16em] text-teal-700">
-                    <CalendarDays className="h-4 w-4" />
-                    Medien-Zeitliste
-                  </p>
-                  <h1 className="text-3xl font-semibold leading-tight text-stone-950 sm:text-5xl">
-                    Timeline für {ownerName}
-                  </h1>
-                </div>
-              </div>
+          <div className="mx-auto flex w-full max-w-7xl flex-col gap-2 px-4 py-2 sm:px-5 sm:py-3">
+            <header className="flex items-center justify-between gap-3">
+              <AppLogo compact label={`Timeline für ${ownerName}`} />
               <span className="text-sm font-semibold text-stone-600">{sortedEvents.length} Ereignisse</span>
             </header>
 
-            <div className="grid gap-3 rounded-lg border border-stone-200 bg-white p-3 shadow-sm xl:grid-cols-[1fr_auto_auto]">
+            <div className="grid gap-2 rounded-lg border border-stone-200 bg-white p-2 shadow-sm xl:grid-cols-[1fr_auto_auto]">
               <label className="relative block">
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
                 <input
-                  className="h-11 w-full rounded-md border border-stone-300 pl-9 pr-3 text-sm outline-none focus:border-teal-700"
+                  className="h-10 w-full rounded-md border border-stone-300 pl-9 pr-3 text-sm outline-none focus:border-teal-700"
                   placeholder="Titel, Beschreibung oder Datum suchen"
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
@@ -179,8 +168,8 @@ export function TimelineClient({ events, ownerName }: { events: TimelineEvent[];
                     key={id}
                     className={
                       mediaFilter === id
-                        ? "h-11 rounded-md bg-stone-950 px-4 text-sm font-semibold text-white"
-                        : "h-11 rounded-md border border-stone-300 px-4 text-sm font-semibold text-stone-700 hover:border-teal-700 hover:text-teal-700"
+                        ? "h-10 rounded-md bg-stone-950 px-3 text-sm font-semibold text-white"
+                        : "h-10 rounded-md border border-stone-300 px-3 text-sm font-semibold text-stone-700 hover:border-teal-700 hover:text-teal-700"
                     }
                     onClick={() => setMediaFilter(id as MediaFilter)}
                   >
@@ -208,8 +197,8 @@ export function TimelineClient({ events, ownerName }: { events: TimelineEvent[];
               </div>
             </div>
 
-            <div className="flex items-center justify-between gap-3 rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm text-stone-600 shadow-sm">
-              <span>Pinch zum Zoomen</span>
+            <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-stone-200 bg-white px-2 py-1.5 text-sm text-stone-600 shadow-sm">
+              <span className="text-xs font-medium">Pinch zum Zoomen</span>
               <div className="flex rounded-md border border-stone-300 bg-stone-50 p-1">
                 {zoomLevels.map((level) => (
                   <button
@@ -232,7 +221,7 @@ export function TimelineClient({ events, ownerName }: { events: TimelineEvent[];
                 {yearNavigation.map((item) => (
                   <button
                     key={item.year}
-                    className="h-9 shrink-0 rounded-md border border-stone-300 bg-white px-3 text-sm font-semibold text-stone-800 shadow-sm hover:border-teal-700 hover:text-teal-700"
+                    className="h-8 shrink-0 rounded-md border border-stone-300 bg-white px-3 text-sm font-semibold text-stone-800 shadow-sm hover:border-teal-700 hover:text-teal-700"
                     onClick={() => selectYear(item.year)}
                     aria-label={`Zum Jahr ${item.year} springen`}
                   >

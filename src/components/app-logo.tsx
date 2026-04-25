@@ -2,9 +2,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { siteConfig } from "@/lib/env";
 
-export function AppLogo({ compact = false }: { compact?: boolean }) {
+export function AppLogo({ compact = false, label }: { compact?: boolean; label?: string }) {
   return (
-    <Link className="inline-flex items-center gap-3" href="/" aria-label={`${siteConfig.name} Startseite`}>
+    <Link className="inline-flex items-center gap-3" href="/" aria-label={`${label ?? siteConfig.name} Startseite`}>
       <Image
         src="/logo-timeline.png"
         alt=""
@@ -14,7 +14,7 @@ export function AppLogo({ compact = false }: { compact?: boolean }) {
         priority={!compact}
       />
       <span className={compact ? "text-sm font-semibold text-stone-900" : "text-xl font-semibold text-stone-950"}>
-        {siteConfig.name}
+        {label ?? siteConfig.name}
       </span>
     </Link>
   );
