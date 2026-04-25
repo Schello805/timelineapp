@@ -79,6 +79,12 @@ https://timeline.bechhofen-hilft.de/ereignis/EREIGNIS-SLUG
 Im Admin-Bereich gibt es pro Ereignis einen Button zum Öffnen. In der öffentlichen Detailansicht
 kann der direkte Link kopiert und anschließend als QR-Code verwendet werden.
 
+## Externe Bild-URLs
+
+Externe Bild-URLs müssen in `next.config.ts` unter `images.remotePatterns` erlaubt sein, damit
+Next.js sie optimieren und anzeigen kann. Bereits erlaubt sind unter anderem Unsplash, Pexels,
+Pixabay und Wikimedia.
+
 ## Healthcheck
 
 ```text
