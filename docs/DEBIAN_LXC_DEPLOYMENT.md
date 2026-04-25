@@ -140,10 +140,13 @@ TLS anschließend mit Certbot oder deinem vorhandenen Reverse Proxy aktivieren.
 
 ```bash
 cd /opt/media-timeline
-sudo -u www-data git pull
-sudo -u www-data npm ci
-sudo -u www-data npm run build
-sudo systemctl restart media-timeline
+sudo ./scripts/update-production.sh
+```
+
+Optional können Pfade und Service-Name angepasst werden:
+
+```bash
+sudo APP_DIR=/opt/media-timeline SERVICE_NAME=media-timeline ./scripts/update-production.sh
 ```
 
 ## Backup

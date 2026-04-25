@@ -87,6 +87,18 @@ https://timeline.bechhofen-hilft.de/health
 
 Antwortet mit JSON und prüft dabei, ob die lokale SQLite-Datenbank erreichbar ist.
 
+## Updates auf dem Server
+
+Auf dem Debian-LXC reicht nach der Erstinstallation:
+
+```bash
+cd /opt/media-timeline
+sudo ./scripts/update-production.sh
+```
+
+Das Script holt den aktuellen GitHub-Stand, installiert Abhängigkeiten, baut die App neu,
+setzt Rechte, startet den systemd-Service neu und prüft `/health`.
+
 ## Lizenz
 
 Dieses Projekt ist zur freien nicht-kommerziellen Nutzung gedacht und steht unter der
