@@ -1,11 +1,11 @@
 # Security Policy
 
-Bitte melde Sicherheitsprobleme nicht als oeffentliches Issue.
+Bitte melde Sicherheitsprobleme nicht als öffentliches Issue.
 
 ## Hinweise
 
-- Admin-Zugangsdaten gehoeren in `.env.local`, nicht ins Repository.
-- `ADMIN_SESSION_SECRET` sollte ein langer zufaelliger Wert sein.
-- Fuer produktive Nutzung sollten Impressum, Datenschutz und Cookiehinweise rechtlich geprueft werden.
-- Abhaengigkeiten regelmaessig mit `npm audit` pruefen. Automatische Fixes nur uebernehmen, wenn sie
+- Admin-Zugangsdaten gehören in `.env.local`, nicht ins Repository.
+- `ADMIN_SESSION_SECRET` sollte ein langer zufälliger Wert sein.
+- Für produktive Nutzung sollten Impressum, Datenschutz und Cookiehinweise rechtlich geprüft werden.
+- Abhängigkeiten regelmäßig mit `npm audit` prüfen. Automatische Fixes nur übernehmen, wenn sie
   keine Downgrades auf veraltete Framework-Versionen erzwingen.

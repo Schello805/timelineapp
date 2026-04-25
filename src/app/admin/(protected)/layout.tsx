@@ -36,7 +36,7 @@ export default async function ProtectedAdminLayout({ children }: { children: Rea
         <div className="grid gap-2">
           <AppLogo compact />
           <Link className="text-sm font-semibold text-teal-700 hover:text-teal-900" href="/">
-            Oeffentliche Timeline
+            Öffentliche Timeline
           </Link>
           <h1 className="mt-2 text-3xl font-semibold text-stone-950">Admin Dashboard</h1>
         </div>

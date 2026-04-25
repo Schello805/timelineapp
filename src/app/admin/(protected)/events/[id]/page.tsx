@@ -15,7 +15,7 @@ export default async function EditEventPage({ params }: { params: Promise<{ id: 
   return (
     <section className="mx-auto max-w-2xl">
       <Link className="text-sm font-semibold text-teal-700 hover:text-teal-900" href="/admin">
-        Zurueck zur Uebersicht
+        Zurück zur Übersicht
       </Link>
       <h2 className="mb-4 mt-3 text-2xl font-semibold text-stone-950">Ereignis bearbeiten</h2>
       <EventForm event={event} />

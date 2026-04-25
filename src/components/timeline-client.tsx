@@ -21,7 +21,7 @@ import { VideoFrame } from "@/components/video-frame";
 type ZoomLevel = "years" | "months" | "events";
 
 const zoomLevels: Array<{ id: ZoomLevel; label: string; unit: string }> = [
-  { id: "years", label: "Jahre", unit: "Ueberblick" },
+  { id: "years", label: "Jahre", unit: "Überblick" },
   { id: "months", label: "Monate", unit: "Genauer" },
   { id: "events", label: "Ereignisse", unit: "Details" },
 ];
@@ -99,7 +99,7 @@ export function TimelineClient({ events }: { events: TimelineEvent[] }) {
                   Zoombare Medien-Zeitliste
                 </p>
                 <h1 className="text-3xl font-semibold leading-tight text-stone-950 sm:text-5xl">
-                  Vom Jahresueberblick bis zum einzelnen Ereignis.
+                  Vom Jahresüberblick bis zum einzelnen Ereignis.
                 </h1>
               </div>
             </div>
@@ -189,7 +189,7 @@ export function TimelineClient({ events }: { events: TimelineEvent[] }) {
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ delay: Math.min(index * 0.05, 0.25) }}
                         onClick={() => selectEvent(event)}
-                        aria-label={`${event.title} auswaehlen`}
+                        aria-label={`${event.title} auswählen`}
                       >
                         <span
                           className={
@@ -261,7 +261,7 @@ export function TimelineClient({ events }: { events: TimelineEvent[] }) {
               className="absolute right-4 top-4 rounded-md bg-white px-3 py-2 text-sm font-semibold text-stone-950"
               onClick={() => setSelectedImage(null)}
             >
-              Schliessen
+              Schließen
             </button>
             <div className="relative h-[80svh] w-full max-w-5xl" onClick={(event) => event.stopPropagation()}>
               <Image
@@ -287,7 +287,7 @@ export function TimelineClient({ events }: { events: TimelineEvent[] }) {
               className="absolute right-4 top-4 rounded-md bg-white px-3 py-2 text-sm font-semibold text-stone-950"
               onClick={() => setSelectedVideo(null)}
             >
-              Schliessen
+              Schließen
             </button>
             <div
               className="aspect-video w-full max-w-5xl overflow-hidden rounded-lg bg-black"
@@ -314,7 +314,7 @@ function EventDetail({
   if (!event) {
     return (
       <aside className="rounded-lg border border-stone-200 bg-white p-5 shadow-sm">
-        <p className="text-sm font-semibold text-stone-900">Kein Ereignis ausgewaehlt.</p>
+        <p className="text-sm font-semibold text-stone-900">Kein Ereignis ausgewählt.</p>
       </aside>
     );
   }
@@ -329,7 +329,7 @@ function EventDetail({
         <button
           className="group relative mt-5 aspect-[4/3] w-full overflow-hidden rounded-lg bg-stone-100"
           onClick={onImage}
-          aria-label={`${event.title} als grosses Bild oeffnen`}
+          aria-label={`${event.title} als grosses Bild öffnen`}
         >
           <Image
             src={event.image_url}
@@ -362,7 +362,7 @@ function EventDetail({
             rel="noopener noreferrer"
           >
             <FileText className="h-4 w-4" />
-            Dokument oeffnen
+            Dokument öffnen
           </a>
         ) : null}
       </div>

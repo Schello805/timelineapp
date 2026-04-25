@@ -1,7 +1,7 @@
 # Deployment auf Debian 13 LXC
 
 Diese Anleitung beschreibt den Betrieb auf einem Debian-13-LXC mit lokaler SQLite-Datenbank.
-Es wird kein Supabase oder externer Datenbankdienst benoetigt.
+Es wird kein Supabase oder externer Datenbankdienst benötigt.
 
 ## Voraussetzungen
 
@@ -22,7 +22,7 @@ node --version
 npm --version
 ```
 
-`build-essential` und `python3` sind fuer native Node-Pakete wie SQLite wichtig.
+`build-essential` und `python3` sind für native Node-Pakete wie SQLite wichtig.
 
 ## App installieren
 
@@ -36,7 +36,7 @@ cp .env.example .env.local
 nano .env.local
 ```
 
-## .env.local fuer deine Domain
+## .env.local für deine Domain
 
 Setze diese Werte:
 
@@ -44,11 +44,11 @@ Setze diese Werte:
 NEXT_PUBLIC_SITE_URL=https://timeline.bechhofen-hilft.de
 ADMIN_EMAIL=Info@schellenberger.biz
 ADMIN_PASSWORD=ein-sehr-sicheres-passwort
-ADMIN_SESSION_SECRET=ein-langer-zufaelliger-geheimer-wert
+ADMIN_SESSION_SECRET=ein-langer-zufälliger-geheimer-wert
 TIMELINE_DATABASE_PATH=./data/timeline.sqlite
 ```
 
-Einen guten Wert fuer `ADMIN_SESSION_SECRET` kannst du so erzeugen:
+Einen guten Wert für `ADMIN_SESSION_SECRET` kannst du so erzeugen:
 
 ```bash
 openssl rand -hex 32
@@ -134,7 +134,7 @@ sudo nginx -t
 sudo systemctl reload nginx
 ```
 
-TLS anschliessend mit Certbot oder deinem vorhandenen Reverse Proxy aktivieren.
+TLS anschließend mit Certbot oder deinem vorhandenen Reverse Proxy aktivieren.
 
 ## Updates
 
@@ -155,11 +155,11 @@ Wichtig sind diese lokalen Daten:
 /opt/media-timeline/public/uploads
 ```
 
-Diese Dateien/Ordner regelmaessig sichern.
+Diese Dateien/Ordner regelmäßig sichern.
 
 ## Hinweise
 
 - Keine `.env.local` ins GitHub-Repository committen.
 - Der Admin-Bereich liegt unter `/admin`.
 - Die Datenbank wird automatisch als SQLite-Datei erstellt.
-- Fuer produktive Nutzung Rechtsdokumente final ausfuellen und pruefen lassen.
+- Für produktive Nutzung Rechtsdokumente final ausfüllen und prüfen lassen.

@@ -1,16 +1,16 @@
 # Media Timeline
 
-Eine mobile-first Web-App fuer eine interaktive Medien-Timeline mit geschuetztem Admin-Dashboard.
+Eine mobile-first Web-App für eine interaktive Medien-Timeline mit geschütztem Admin-Dashboard.
 Die App speichert Inhalte lokal in SQLite und braucht keinen externen Backend-Dienst.
 
 ## Features
 
-- Zoombare oeffentliche Timeline mit Jahres-, Monats- und Ereignisansicht
+- Zoombare öffentliche Timeline mit Jahres-, Monats- und Ereignisansicht
 - Bild-Lightbox, Video-Overlay und PDF-Buttons
-- Admin-Login ueber lokale Zugangsdaten aus `.env.local`
-- Admin-Formular zum Erstellen, Bearbeiten und Loeschen von Events
-- Lokale Uploads fuer Bilder und PDFs
-- Rechtsseiten fuer Impressum, Datenschutz und Cookiehinweise
+- Admin-Login über lokale Zugangsdaten aus `.env.local`
+- Admin-Formular zum Erstellen, Bearbeiten und Löschen von Events
+- Lokale Uploads für Bilder und PDFs
+- Rechtsseiten für Impressum, Datenschutz und Cookiehinweise
 - Demo-Daten, solange lokal noch keine Ereignisse angelegt wurden
 
 ## Tech Stack
@@ -18,7 +18,7 @@ Die App speichert Inhalte lokal in SQLite und braucht keinen externen Backend-Di
 - Next.js App Router
 - TypeScript
 - Tailwind CSS
-- SQLite ueber `better-sqlite3`
+- SQLite über `better-sqlite3`
 - Framer Motion
 - Lucide Icons
 
@@ -30,7 +30,7 @@ cp .env.example .env.local
 npm run dev
 ```
 
-Die lokale App laeuft danach unter `http://localhost:3000`.
+Die lokale App läuft danach unter `http://localhost:3000`.
 
 In `.env.local` werden Admin-Zugang, Site URL und lokale Speicherpfade gesetzt:
 
@@ -42,17 +42,17 @@ ADMIN_SESSION_SECRET=change-this-long-random-secret
 TIMELINE_DATABASE_PATH=./data/timeline.sqlite
 ```
 
-Fuer produktive Installationen sollte `ADMIN_SESSION_SECRET` mit `openssl rand -hex 32`
+Für produktive Installationen sollte `ADMIN_SESSION_SECRET` mit `openssl rand -hex 32`
 erzeugt werden.
 
 ## Deployment
 
-Fuer den Betrieb auf einem Debian-13-LXC gibt es eine eigene Anleitung mit Node.js, systemd und
+Für den Betrieb auf einem Debian-13-LXC gibt es eine eigene Anleitung mit Node.js, systemd und
 Reverse-Proxy-Beispiel: `docs/DEBIAN_LXC_DEPLOYMENT.md`.
 
 ## Datenmodell
 
-Die lokale SQLite-Tabelle `timeline_events` enthaelt:
+Die lokale SQLite-Tabelle `timeline_events` enthält:
 
 - `event_date`
 - `title`
@@ -72,5 +72,5 @@ gestattet.
 ## Status
 
 `npm run lint`, `npm run typecheck` und `npm run build` sollten vor Releases erfolgreich laufen.
-Falls `npm audit` eine moderate Next.js/PostCSS-Warnung meldet, pruefe zuerst, ob ein aktuelles
-Next.js-Patchrelease verfuegbar ist. Kein automatisches Downgrade auf alte Next-Versionen ausfuehren.
+Falls `npm audit` eine moderate Next.js/PostCSS-Warnung meldet, prüfe zuerst, ob ein aktuelles
+Next.js-Patchrelease verfügbar ist. Kein automatisches Downgrade auf alte Next-Versionen ausführen.

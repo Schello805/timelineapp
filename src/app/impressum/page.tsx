@@ -4,7 +4,7 @@ export default function ImpressumPage() {
   return (
     <LegalPage title="Impressum">
       <p>
-        Angaben gemaess § 5 TMG.
+        Angaben gemäß § 5 TMG.
       </p>
       <p>
         Michael Schellenberger
@@ -22,12 +22,12 @@ export default function ImpressumPage() {
         </a>
       </p>
       <p>
-        Verantwortlich fuer den Inhalt nach § 18 Abs. 2 MStV:
+        Verantwortlich für den Inhalt nach § 18 Abs. 2 MStV:
         <br />
         Michael Schellenberger, Anschrift wie oben.
       </p>
       <p>
-        Bitte pruefe vor der produktiven Veroeffentlichung, ob fuer deinen konkreten Einsatz weitere
+        Bitte prüfe vor der produktiven Veröffentlichung, ob für deinen konkreten Einsatz weitere
         Pflichtangaben erforderlich sind.
       </p>
     </LegalPage>

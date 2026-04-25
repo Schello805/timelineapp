@@ -16,7 +16,7 @@ const eventSchema = z.object({
   id: z.string().optional(),
   event_date: z.string().min(1, "Bitte ein Datum eintragen."),
   title: z.string().min(2, "Bitte einen Titel eintragen.").max(160),
-  description: z.string().min(10, "Bitte eine aussagekraeftige Beschreibung eintragen."),
+  description: z.string().min(10, "Bitte eine aussagekräftige Beschreibung eintragen."),
   image_url: z.string().url().optional().or(z.literal("")),
   video_url: z.string().url().optional().or(z.literal("")),
   pdf_url: z.string().url().optional().or(z.literal("")),
@@ -64,7 +64,7 @@ export async function upsertTimelineEvent(formData: FormData) {
   if (!parsed.success) {
     return {
       ok: false,
-      message: parsed.error.issues.at(0)?.message ?? "Bitte pruefe deine Eingaben.",
+      message: parsed.error.issues.at(0)?.message ?? "Bitte prüfe deine Eingaben.",
     };
   }
 

@@ -18,7 +18,7 @@ export default function DatenschutzPage() {
       </p>
       <h2 className="text-xl font-semibold text-stone-950">Verarbeitung personenbezogener Daten</h2>
       <p>
-        Diese App stellt eine oeffentliche Medien-Timeline bereit. Beim Aufruf der Website werden
+        Diese App stellt eine öffentliche Medien-Timeline bereit. Beim Aufruf der Website werden
         technisch notwendige Zugriffsdaten verarbeitet, zum Beispiel IP-Adresse, Zeitpunkt des
         Abrufs, Browserinformationen und angeforderte Seiten. Diese Daten sind erforderlich, um die
         Website sicher und stabil auszuliefern.
@@ -28,13 +28,13 @@ export default function DatenschutzPage() {
         Die App speichert Timeline-Inhalte lokal in einer SQLite-Datenbank auf dem Server. Hochgeladene
         Bilder und PDF-Dateien werden lokal im Upload-Verzeichnis der Anwendung abgelegt. Im
         Admin-Bereich wird ein technisch notwendiges Session-Cookie verwendet, damit angemeldete
-        Administratoren erkannt werden koennen.
+        Administratoren erkannt werden können.
       </p>
       <h2 className="text-xl font-semibold text-stone-950">Eingebundene Medien</h2>
       <p>
-        In der Timeline koennen externe Medienquellen wie YouTube, Vimeo, direkte Bild-URLs,
-        Video-Dateien oder PDF-Dateien eingebunden werden. Beim Oeffnen oder Abspielen solcher
-        Inhalte koennen Daten an den jeweiligen Anbieter uebertragen werden.
+        In der Timeline können externe Medienquellen wie YouTube, Vimeo, direkte Bild-URLs,
+        Video-Dateien oder PDF-Dateien eingebunden werden. Beim Öffnen oder Abspielen solcher
+        Inhalte können Daten an den jeweiligen Anbieter übertragen werden.
       </p>
       <h2 className="text-xl font-semibold text-stone-950">Kontakt und Betroffenenrechte</h2>
       <p>
@@ -42,12 +42,12 @@ export default function DatenschutzPage() {
         <a className="font-semibold text-teal-700 hover:text-teal-900" href="mailto:Info@schellenberger.biz">
           Info@schellenberger.biz
         </a>{" "}
-        melden, wenn du Auskunft, Berichtigung, Loeschung, Einschraenkung der Verarbeitung oder
-        Widerspruch gegen eine Verarbeitung geltend machen moechtest.
+        melden, wenn du Auskunft, Berichtigung, Löschung, Einschränkung der Verarbeitung oder
+        Widerspruch gegen eine Verarbeitung geltend machen möchtest.
       </p>
       <p>
-        Bitte lasse diese Datenschutzerklaerung vor produktiver Nutzung rechtlich pruefen und um
-        konkrete Hosting-, Speicher- und Anbieterangaben ergaenzen.
+        Bitte lasse diese Datenschutzerklärung vor produktiver Nutzung rechtlich prüfen und um
+        konkrete Hosting-, Speicher- und Anbieterangaben ergänzen.
       </p>
     </LegalPage>
   );
