@@ -11,38 +11,55 @@ export function EventList({ events }: { events: TimelineEvent[] }) {
     <div className="overflow-hidden rounded-lg border border-stone-200 bg-white shadow-sm">
       <div className="grid gap-0">
         {events.map((event) => (
-          <div key={event.id} className="grid gap-4 border-b border-stone-100 p-4 last:border-b-0 sm:grid-cols-[1fr_auto]">
-            <div>
-              <p className="text-sm font-semibold text-teal-700">{formatEventDate(event.event_date)}</p>
-              <h3 className="mt-1 text-lg font-semibold text-stone-950">{event.title}</h3>
-              <p className="mt-1 line-clamp-2 text-sm leading-6 text-stone-600">{event.description}</p>
+          <div
+            key={event.id}
+            className="grid gap-4 border-b border-stone-100 p-4 last:border-b-0 xl:grid-cols-[minmax(7rem,9rem)_minmax(0,1fr)]"
+          >
+            <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 xl:block">
+              <p className="text-sm font-semibold leading-6 text-teal-700">{formatEventDate(event.event_date)}</p>
+              <p className="text-xs font-medium leading-5 text-stone-500">{event.slug}</p>
             </div>
-            <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-              <QrCodeButton url={`${siteConfig.url}/ereignis/${event.slug}`} title={event.title} />
-              <a
-                className="inline-flex h-10 items-center gap-2 rounded-md border border-stone-300 px-3 text-sm font-semibold text-stone-800 hover:bg-stone-50"
-                href={`/ereignis/${event.slug}`}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <ExternalLink className="h-4 w-4" />
-                Öffnen
-              </a>
-              <a
-                className="inline-flex h-10 items-center gap-2 rounded-md border border-stone-300 px-3 text-sm font-semibold text-stone-800 hover:bg-stone-50"
-                href={`/admin/events/${event.id}`}
-              >
-                <Pencil className="h-4 w-4" />
-                Bearbeiten
-              </a>
-              <form action={duplicateTimelineEvent}>
-                <input type="hidden" name="id" value={event.id} />
-                <button className="inline-flex h-10 items-center gap-2 rounded-md border border-stone-300 px-3 text-sm font-semibold text-stone-800 hover:bg-stone-50">
-                  <Copy className="h-4 w-4" />
-                  Duplizieren
-                </button>
-              </form>
-              <DeleteEventForm id={event.id} title={event.title} />
+
+            <div className="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1fr)_auto]">
+              <div className="min-w-0">
+                <h3 className="text-xl font-semibold leading-7 text-stone-950">{event.title}</h3>
+                <p className="mt-2 line-clamp-3 max-w-3xl text-sm leading-6 text-stone-600">
+                  {event.description}
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold">
+                  {event.image_url ? <span className="rounded bg-blue-50 px-2 py-1 text-blue-700">Bild</span> : null}
+                  {event.video_url ? <span className="rounded bg-orange-50 px-2 py-1 text-orange-700">Video</span> : null}
+                  {event.pdf_url ? <span className="rounded bg-teal-50 px-2 py-1 text-teal-700">PDF</span> : null}
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-start gap-2 lg:max-w-72 lg:justify-end">
+                <QrCodeButton url={`${siteConfig.url}/ereignis/${event.slug}`} title={event.title} />
+                <a
+                  className="inline-flex h-10 items-center gap-2 rounded-md border border-stone-300 px-3 text-sm font-semibold text-stone-800 hover:bg-stone-50"
+                  href={`/ereignis/${event.slug}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                  Öffnen
+                </a>
+                <a
+                  className="inline-flex h-10 items-center gap-2 rounded-md border border-stone-300 px-3 text-sm font-semibold text-stone-800 hover:bg-stone-50"
+                  href={`/admin/events/${event.id}`}
+                >
+                  <Pencil className="h-4 w-4" />
+                  Bearbeiten
+                </a>
+                <form action={duplicateTimelineEvent}>
+                  <input type="hidden" name="id" value={event.id} />
+                  <button className="inline-flex h-10 items-center gap-2 rounded-md border border-stone-300 px-3 text-sm font-semibold text-stone-800 hover:bg-stone-50">
+                    <Copy className="h-4 w-4" />
+                    Duplizieren
+                  </button>
+                </form>
+                <DeleteEventForm id={event.id} title={event.title} />
+              </div>
             </div>
           </div>
         ))}
