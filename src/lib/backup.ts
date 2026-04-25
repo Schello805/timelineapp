@@ -5,6 +5,7 @@ import { listTimelineEvents, replaceTimelineEvents } from "@/lib/db";
 import type { TimelineEvent } from "@/lib/types";
 
 const uploadRoot = path.join(process.cwd(), "public", "uploads");
+const backupRoot = path.join(process.cwd(), "data", "backups");
 const backupVersion = 1;
 
 const eventSchema = z.object({
@@ -49,6 +50,18 @@ export async function createTimelineBackup(): Promise<TimelineBackup> {
     events,
     files,
   };
+}
+
+export async function writeSafetyBackup(reason = "before-restore") {
+  const backup = await createTimelineBackup();
+  const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+  const fileName = `media-timeline-${reason}-${timestamp}.json`;
+  const filePath = path.join(backupRoot, fileName);
+
+  await fs.mkdir(backupRoot, { recursive: true });
+  await fs.writeFile(filePath, JSON.stringify(backup, null, 2));
+
+  return filePath;
 }
 
 export async function restoreTimelineBackup(rawJson: string) {

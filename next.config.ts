@@ -4,7 +4,7 @@ const nextConfig: NextConfig = {
   serverExternalPackages: ["better-sqlite3", "sharp"],
   experimental: {
     serverActions: {
-      bodySizeLimit: "250mb",
+      bodySizeLimit: "3gb",
     },
   },
   images: {

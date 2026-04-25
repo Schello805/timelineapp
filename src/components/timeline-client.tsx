@@ -30,6 +30,7 @@ const zoomLevels: Array<{ id: ZoomLevel; label: string; unit: string }> = [
 
 const monthNames = ["Jan", "Feb", "Mar", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"];
 const pinchThreshold = 0.16;
+const collapsedDescriptionLength = 210;
 
 export function TimelineClient({ events }: { events: TimelineEvent[] }) {
   const [zoom, setZoom] = useState<ZoomLevel>("years");
@@ -321,7 +322,9 @@ export function TimelineClient({ events }: { events: TimelineEvent[] }) {
 
           <MobileTimeline
             events={sortedEvents}
+            yearNavigation={yearNavigation}
             onSelect={selectEvent}
+            onYearSelect={selectYear}
             onImage={setSelectedImage}
             onVideo={setSelectedVideo}
           />
@@ -503,12 +506,16 @@ export function TimelineClient({ events }: { events: TimelineEvent[] }) {
 
 function MobileTimeline({
   events,
+  yearNavigation,
   onSelect,
+  onYearSelect,
   onImage,
   onVideo,
 }: {
   events: TimelineEvent[];
+  yearNavigation: Array<{ year: string; count: number; firstEvent: TimelineEvent }>;
   onSelect: (event: TimelineEvent) => void;
+  onYearSelect: (year: string) => void;
   onImage: (event: TimelineEvent) => void;
   onVideo: (event: TimelineEvent) => void;
 }) {
@@ -521,85 +528,142 @@ function MobileTimeline({
         <span>{events.length} Ereignisse</span>
       </div>
 
+      {yearNavigation.length > 1 ? (
+        <div className="sticky top-0 z-20 -mx-5 mb-4 border-y border-stone-200 bg-[#f6f3ee]/95 px-5 py-2 backdrop-blur">
+          <div className="flex gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {yearNavigation.map((item) => (
+              <button
+                key={item.year}
+                className="h-9 shrink-0 rounded-md border border-stone-300 bg-white px-3 text-sm font-semibold text-stone-800 shadow-sm"
+                onClick={() => onYearSelect(item.year)}
+                aria-label={`Zum Jahr ${item.year} springen`}
+              >
+                {item.year}
+                <span className="ml-2 text-stone-400">{item.count}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
       <div className="relative grid gap-5 pl-6">
         <div className="absolute bottom-0 left-[0.7rem] top-0 w-px bg-gradient-to-b from-blue-700 via-teal-600 to-orange-500" />
 
         {events.map((event, index) => (
-          <motion.article
+          <MobileTimelineItem
             key={event.id}
-            data-event-id={event.id}
-            className="relative rounded-lg border border-stone-200 bg-white p-4 shadow-sm"
-            initial={{ opacity: 0, y: 12 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-40px" }}
-            transition={{ delay: Math.min(index * 0.03, 0.18) }}
-          >
-            <span className="absolute -left-[1.98rem] top-5 flex h-6 w-6 items-center justify-center rounded-full bg-teal-700 text-white ring-4 ring-[#f6f3ee]">
-              {event.video_url ? (
-                <Video className="h-3.5 w-3.5" />
-              ) : event.pdf_url ? (
-                <FileText className="h-3.5 w-3.5" />
-              ) : (
-                <Search className="h-3.5 w-3.5" />
-              )}
-            </span>
-
-            <button className="block w-full text-left" onClick={() => onSelect(event)}>
-              <p className="text-sm font-semibold text-teal-700">{formatEventDate(event.event_date)}</p>
-              <h2 className="mt-1 text-xl font-semibold leading-tight text-stone-950">{event.title}</h2>
-              <p className="mt-3 text-sm leading-6 text-stone-650">{event.description}</p>
-            </button>
-
-            {event.image_url ? (
-              <button
-                className="group relative mt-4 aspect-[4/3] w-full overflow-hidden rounded-lg bg-stone-100"
-                onClick={() => onImage(event)}
-                aria-label={`${event.title} als grosses Bild öffnen`}
-              >
-                <EventImage
-                  src={event.image_url}
-                  alt={event.title}
-                  className="object-cover transition duration-300 group-hover:scale-[1.03]"
-                />
-                <span className="absolute right-3 top-3 rounded-full bg-white/90 p-2 text-stone-900 shadow-sm">
-                  <ImageIcon className="h-5 w-5" />
-                </span>
-              </button>
-            ) : null}
-
-            {event.video_url ? (
-              <div className="mt-4 aspect-video overflow-hidden rounded-lg bg-black">
-                <VideoFrame url={event.video_url} title={event.title} />
-              </div>
-            ) : null}
-
-            <div className="mt-4 flex flex-wrap gap-2">
-              <CopyEventLinkButton event={event} />
-              {event.video_url ? (
-                <button
-                  className="inline-flex h-11 items-center gap-2 rounded-md bg-stone-950 px-4 text-sm font-semibold text-white hover:bg-stone-800"
-                  onClick={() => onVideo(event)}
-                >
-                  <Play className="h-4 w-4 fill-current" />
-                  Video ansehen
-                </button>
-              ) : null}
-              {event.pdf_url ? (
-                <a
-                  className="inline-flex h-11 items-center gap-2 rounded-md border border-stone-300 px-4 text-sm font-semibold text-stone-900 hover:bg-stone-50"
-                  href={event.pdf_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <FileText className="h-4 w-4" />
-                  Dokument öffnen
-                </a>
-              ) : null}
-            </div>
-          </motion.article>
+            event={event}
+            index={index}
+            onSelect={onSelect}
+            onImage={onImage}
+            onVideo={onVideo}
+          />
         ))}
       </div>
     </div>
+  );
+}
+
+function MobileTimelineItem({
+  event,
+  index,
+  onSelect,
+  onImage,
+  onVideo,
+}: {
+  event: TimelineEvent;
+  index: number;
+  onSelect: (event: TimelineEvent) => void;
+  onImage: (event: TimelineEvent) => void;
+  onVideo: (event: TimelineEvent) => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const isLongDescription = event.description.length > collapsedDescriptionLength;
+  const visibleDescription =
+    expanded || !isLongDescription
+      ? event.description
+      : `${event.description.slice(0, collapsedDescriptionLength).trim()}...`;
+
+  return (
+    <motion.article
+      data-event-id={event.id}
+      className="relative rounded-lg border border-stone-200 bg-white p-4 shadow-sm"
+      initial={{ opacity: 0, y: 12 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-40px" }}
+      transition={{ delay: Math.min(index * 0.03, 0.18) }}
+    >
+      <span className="absolute -left-[1.98rem] top-5 flex h-6 w-6 items-center justify-center rounded-full bg-teal-700 text-white ring-4 ring-[#f6f3ee]">
+        {event.video_url ? (
+          <Video className="h-3.5 w-3.5" />
+        ) : event.pdf_url ? (
+          <FileText className="h-3.5 w-3.5" />
+        ) : (
+          <Search className="h-3.5 w-3.5" />
+        )}
+      </span>
+
+      <button className="block w-full text-left" onClick={() => onSelect(event)}>
+        <p className="text-sm font-semibold text-teal-700">{formatEventDate(event.event_date)}</p>
+        <h2 className="mt-1 text-xl font-semibold leading-tight text-stone-950">{event.title}</h2>
+      </button>
+      <p className="mt-3 text-sm leading-6 text-stone-650">{visibleDescription}</p>
+      {isLongDescription ? (
+        <button
+          className="mt-2 text-sm font-semibold text-teal-700 hover:text-teal-900"
+          onClick={() => setExpanded((current) => !current)}
+        >
+          {expanded ? "Weniger anzeigen" : "Mehr anzeigen"}
+        </button>
+      ) : null}
+
+      {event.image_url ? (
+        <button
+          className="group relative mt-4 aspect-[4/3] w-full overflow-hidden rounded-lg bg-stone-100"
+          onClick={() => onImage(event)}
+          aria-label={`${event.title} als grosses Bild öffnen`}
+        >
+          <EventImage
+            src={event.image_url}
+            alt={event.title}
+            className="object-cover transition duration-300 group-hover:scale-[1.03]"
+          />
+          <span className="absolute right-3 top-3 rounded-full bg-white/90 p-2 text-stone-900 shadow-sm">
+            <ImageIcon className="h-5 w-5" />
+          </span>
+        </button>
+      ) : null}
+
+      {event.video_url ? (
+        <div className="mt-4 aspect-video overflow-hidden rounded-lg bg-black">
+          <VideoFrame url={event.video_url} title={event.title} />
+        </div>
+      ) : null}
+
+      <div className="mt-4 flex flex-wrap gap-2">
+        <CopyEventLinkButton event={event} />
+        {event.video_url ? (
+          <button
+            className="inline-flex h-11 items-center gap-2 rounded-md bg-stone-950 px-4 text-sm font-semibold text-white hover:bg-stone-800"
+            onClick={() => onVideo(event)}
+          >
+            <Play className="h-4 w-4 fill-current" />
+            Video ansehen
+          </button>
+        ) : null}
+        {event.pdf_url ? (
+          <a
+            className="inline-flex h-11 items-center gap-2 rounded-md border border-stone-300 px-4 text-sm font-semibold text-stone-900 hover:bg-stone-50"
+            href={event.pdf_url}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <FileText className="h-4 w-4" />
+            Dokument öffnen
+          </a>
+        ) : null}
+      </div>
+    </motion.article>
   );
 }
 
@@ -677,10 +741,27 @@ function EventDetail({
 }
 
 function EventImage({ src, alt, className }: { src: string; alt: string; className?: string }) {
+  const [failed, setFailed] = useState(false);
+
+  if (failed) {
+    return (
+      <span className="flex h-full w-full flex-col items-center justify-center gap-2 bg-stone-100 px-5 text-center text-sm font-semibold text-stone-500">
+        <ImageIcon className="h-7 w-7 text-stone-400" />
+        Bild konnte nicht geladen werden
+      </span>
+    );
+  }
+
   return (
     // Event images may come from arbitrary external URLs. A plain img avoids Next image domain 400s.
     // eslint-disable-next-line @next/next/no-img-element
-    <img src={src} alt={alt} className={`h-full w-full ${className ?? ""}`} loading="lazy" />
+    <img
+      src={src}
+      alt={alt}
+      className={`h-full w-full ${className ?? ""}`}
+      loading="lazy"
+      onError={() => setFailed(true)}
+    />
   );
 }
 

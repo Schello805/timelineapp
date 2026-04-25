@@ -35,9 +35,17 @@ export default async function ProtectedAdminLayout({ children }: { children: Rea
       <header className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="grid gap-2">
           <AppLogo compact />
-          <Link className="text-sm font-semibold text-teal-700 hover:text-teal-900" href="/">
-            Öffentliche Timeline
-          </Link>
+          <nav className="flex flex-wrap gap-3 text-sm font-semibold">
+            <Link className="text-teal-700 hover:text-teal-900" href="/">
+              Öffentliche Timeline
+            </Link>
+            <Link className="text-teal-700 hover:text-teal-900" href="/admin">
+              Inhalte
+            </Link>
+            <Link className="text-teal-700 hover:text-teal-900" href="/admin/sicherheit">
+              Sicherheit
+            </Link>
+          </nav>
           <h1 className="mt-2 text-3xl font-semibold text-stone-950">Admin Dashboard</h1>
         </div>
         <form action={signOut}>

@@ -14,7 +14,8 @@ export function BackupPanel() {
       <div>
         <h2 className="text-xl font-semibold text-stone-950">Backup & Restore</h2>
         <p className="mt-2 text-sm leading-6 text-stone-600">
-          Exportiert Ereignisse und lokale Uploads als JSON. Beim Wiederherstellen wird die aktuelle Timeline ersetzt.
+          Exportiert Ereignisse und lokale Uploads als JSON. Vor jedem Restore wird automatisch ein Sicherheitsbackup
+          der aktuellen Timeline unter <code>data/backups</code> abgelegt.
         </p>
       </div>
 

@@ -10,7 +10,7 @@ import {
   credentialsMatch,
   isAdminAuthenticated,
 } from "@/lib/auth";
-import { restoreTimelineBackup } from "@/lib/backup";
+import { restoreTimelineBackup, writeSafetyBackup } from "@/lib/backup";
 import { deleteEvent, getTimelineEventById, upsertEvent } from "@/lib/db";
 import { saveUpload } from "@/lib/uploads";
 
@@ -174,13 +174,14 @@ export async function restoreTimelineBackupAction(
   }
 
   try {
+    const safetyBackupPath = await writeSafetyBackup();
     const result = await restoreTimelineBackup(await file.text());
     revalidatePath("/");
     revalidatePath("/admin");
 
     return {
       ok: true,
-      message: `Backup wiederhergestellt: ${result.eventCount} Ereignisse, ${result.fileCount} lokale Dateien.`,
+      message: `Backup wiederhergestellt: ${result.eventCount} Ereignisse, ${result.fileCount} lokale Dateien. Sicherheitsbackup: ${safetyBackupPath}`,
     };
   } catch {
     return { ok: false, message: "Dieses Backup konnte nicht gelesen oder wiederhergestellt werden." };
