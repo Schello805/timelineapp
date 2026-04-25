@@ -1,4 +1,3 @@
-import { BackupPanel } from "@/components/backup-panel";
 import { EventForm } from "@/components/event-form";
 import { EventList } from "@/components/event-list";
 import { getTimelineEvents } from "@/lib/timeline";
@@ -11,12 +10,11 @@ export default async function AdminPage() {
       <section>
         <div className="mb-4">
           <h2 className="text-xl font-semibold text-stone-950">Verwaltung</h2>
-          <p className="mt-1 text-sm leading-6 text-stone-600">Ereignisse anlegen, Medien hochladen und Backups verwalten.</p>
+          <p className="mt-1 text-sm leading-6 text-stone-600">Ereignisse anlegen und Medien hochladen.</p>
         </div>
         <div className="grid gap-5">
           <h3 className="text-base font-semibold text-stone-950">Neues Ereignis</h3>
           <EventForm />
-          <BackupPanel />
         </div>
       </section>
       <section>

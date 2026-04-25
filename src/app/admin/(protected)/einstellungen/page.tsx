@@ -1,3 +1,4 @@
+import { BackupPanel } from "@/components/backup-panel";
 import { SettingsForm } from "@/components/settings-form";
 import { getTimelineOwnerName } from "@/lib/settings";
 
@@ -13,6 +14,7 @@ export default function AdminSettingsPage() {
         </p>
       </div>
       <SettingsForm ownerName={ownerName} />
+      <BackupPanel />
     </div>
   );
 }
