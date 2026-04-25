@@ -9,8 +9,12 @@ export default async function AdminPage() {
   return (
     <div className="grid gap-8 lg:grid-cols-[420px_1fr]">
       <section>
-        <h2 className="mb-4 text-xl font-semibold text-stone-950">Neues Ereignis</h2>
+        <div className="mb-4">
+          <h2 className="text-xl font-semibold text-stone-950">Verwaltung</h2>
+          <p className="mt-1 text-sm leading-6 text-stone-600">Ereignisse anlegen, Medien hochladen und Backups verwalten.</p>
+        </div>
         <div className="grid gap-5">
+          <h3 className="text-base font-semibold text-stone-950">Neues Ereignis</h3>
           <EventForm />
           <BackupPanel />
         </div>

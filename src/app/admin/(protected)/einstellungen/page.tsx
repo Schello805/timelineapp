@@ -7,13 +7,12 @@ export default function AdminSettingsPage() {
   return (
     <div className="mx-auto grid max-w-xl gap-5">
       <div>
-        <h2 className="text-xl font-semibold text-stone-950">Einstellungen</h2>
+        <h2 className="text-xl font-semibold text-stone-950">App-Einstellungen</h2>
         <p className="mt-2 text-sm leading-6 text-stone-600">
-          Allgemeine Angaben für die öffentliche Timeline.
+          Allgemeine Angaben für die öffentliche Timeline und die Darstellung der App.
         </p>
       </div>
       <SettingsForm ownerName={ownerName} />
     </div>
   );
 }
-

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { signOut } from "@/app/actions";
+import { AdminMenu } from "@/components/admin-menu";
 import { AppLogo } from "@/components/app-logo";
 import { isAdminAuthenticated, isAdminConfigured } from "@/lib/auth";
 
@@ -35,21 +36,10 @@ export default async function ProtectedAdminLayout({ children }: { children: Rea
       <header className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="grid gap-2">
           <AppLogo compact />
-          <nav className="flex flex-wrap gap-3 text-sm font-semibold">
-            <Link className="text-teal-700 hover:text-teal-900" href="/">
-              Öffentliche Timeline
-            </Link>
-            <Link className="text-teal-700 hover:text-teal-900" href="/admin">
-              Inhalte
-            </Link>
-            <Link className="text-teal-700 hover:text-teal-900" href="/admin/einstellungen">
-              Einstellungen
-            </Link>
-            <Link className="text-teal-700 hover:text-teal-900" href="/admin/sicherheit">
-              Sicherheit
-            </Link>
-          </nav>
-          <h1 className="mt-2 text-3xl font-semibold text-stone-950">Admin Dashboard</h1>
+          <h1 className="mt-2 text-3xl font-semibold text-stone-950">Adminbereich</h1>
+          <p className="max-w-2xl text-sm leading-6 text-stone-600">
+            Verwaltung der Timeline-Inhalte und Einstellungen der App.
+          </p>
         </div>
         <form action={signOut}>
           <button className="h-10 rounded-md border border-stone-300 px-4 text-sm font-semibold text-stone-800 hover:bg-white">
@@ -57,6 +47,9 @@ export default async function ProtectedAdminLayout({ children }: { children: Rea
           </button>
         </form>
       </header>
+      <div className="mb-8">
+        <AdminMenu />
+      </div>
       {children}
     </main>
   );
