@@ -25,7 +25,7 @@ export function TimelineClient({ events, ownerName }: { events: TimelineEvent[];
   const [query, setQuery] = useState("");
   const [mediaFilter, setMediaFilter] = useState<MediaFilter>("all");
   const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
-  const [timelineZoom, setTimelineZoom] = useState<TimelineZoom>("normal");
+  const [timelineZoom, setTimelineZoom] = useState<TimelineZoom>("compact");
   const pinchRef = useRef<{ distance: number; zoom: TimelineZoom } | null>(null);
 
   const allEvents = useMemo(
@@ -140,7 +140,7 @@ export function TimelineClient({ events, ownerName }: { events: TimelineEvent[];
   return (
     <>
       <section className="min-h-[calc(100svh-4rem)] bg-[#f6f3ee]">
-        <div className="sticky top-0 z-30 border-b border-stone-200 bg-[#f6f3ee]/95 backdrop-blur">
+        <div className="border-b border-stone-200 bg-[#f6f3ee]/95 backdrop-blur md:sticky md:top-0 md:z-30">
           <div className="mx-auto flex w-full max-w-7xl flex-col gap-2 px-4 py-2 sm:px-5 sm:py-3">
             <header className="flex items-center justify-between gap-3">
               <AppLogo compact label={`Timeline für ${ownerName}`} />
@@ -198,7 +198,24 @@ export function TimelineClient({ events, ownerName }: { events: TimelineEvent[];
             </div>
 
             <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-stone-200 bg-white px-2 py-1.5 text-sm text-stone-600 shadow-sm">
-              <span className="text-xs font-medium">Pinch zum Zoomen</span>
+              {yearNavigation.length > 1 ? (
+                <div className="hidden gap-2 overflow-x-auto [scrollbar-width:none] md:flex [&::-webkit-scrollbar]:hidden">
+                  {yearNavigation.map((item) => (
+                    <button
+                      key={item.year}
+                      className="h-8 shrink-0 rounded-md border border-stone-300 bg-white px-3 text-sm font-semibold text-stone-800 shadow-sm hover:border-teal-700 hover:text-teal-700"
+                      onClick={() => selectYear(item.year)}
+                      aria-label={`Zum Jahr ${item.year} springen`}
+                    >
+                      {item.year}
+                      <span className="ml-2 text-stone-400">{item.count}</span>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <span className="hidden text-xs font-medium md:inline">Pinch zum Zoomen</span>
+              )}
+              <span className="text-xs font-medium md:hidden">Pinch zum Zoomen</span>
               <div className="flex rounded-md border border-stone-300 bg-stone-50 p-1">
                 {zoomLevels.map((level) => (
                   <button
@@ -217,7 +234,7 @@ export function TimelineClient({ events, ownerName }: { events: TimelineEvent[];
             </div>
 
             {yearNavigation.length > 1 ? (
-              <div className="flex gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              <div className="flex gap-2 overflow-x-auto [scrollbar-width:none] md:hidden [&::-webkit-scrollbar]:hidden">
                 {yearNavigation.map((item) => (
                   <button
                     key={item.year}
