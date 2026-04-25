@@ -1,4 +1,4 @@
-import { Pencil, Trash2 } from "lucide-react";
+import { ExternalLink, Pencil, Trash2 } from "lucide-react";
 import { deleteTimelineEvent } from "@/app/actions";
 import { formatEventDate } from "@/lib/timeline-format";
 import type { TimelineEvent } from "@/lib/types";
@@ -15,6 +15,15 @@ export function EventList({ events }: { events: TimelineEvent[] }) {
               <p className="mt-1 line-clamp-2 text-sm leading-6 text-stone-600">{event.description}</p>
             </div>
             <div className="flex items-center gap-2">
+              <a
+                className="inline-flex h-10 items-center gap-2 rounded-md border border-stone-300 px-3 text-sm font-semibold text-stone-800 hover:bg-stone-50"
+                href={`/#event-${encodeURIComponent(event.id)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <ExternalLink className="h-4 w-4" />
+                Öffnen
+              </a>
               <a
                 className="inline-flex h-10 items-center gap-2 rounded-md border border-stone-300 px-3 text-sm font-semibold text-stone-800 hover:bg-stone-50"
                 href={`/admin/events/${event.id}`}

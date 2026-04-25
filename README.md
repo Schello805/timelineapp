@@ -63,6 +63,17 @@ Die lokale SQLite-Tabelle `timeline_events` enthält:
 
 Die Datenbank wird beim ersten Start automatisch erstellt.
 
+## Direkte Ereignislinks
+
+Jedes Ereignis kann direkt per URL verlinkt werden:
+
+```text
+https://timeline.bechhofen-hilft.de/#event-EREIGNIS_ID
+```
+
+Im Admin-Bereich gibt es pro Ereignis einen Button zum Öffnen. In der öffentlichen Detailansicht
+kann der direkte Link kopiert und anschließend als QR-Code verwendet werden.
+
 ## Lizenz
 
 Dieses Projekt ist zur freien nicht-kommerziellen Nutzung gedacht und steht unter der

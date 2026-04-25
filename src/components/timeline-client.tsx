@@ -6,13 +6,14 @@ import {
   CalendarDays,
   FileText,
   ImageIcon,
+  LinkIcon,
   Minus,
   Play,
   Plus,
   Search,
   Video,
 } from "lucide-react";
-import { useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { TimelineEvent } from "@/lib/types";
 import { formatEventDate, getYear } from "@/lib/timeline-format";
 import { AppLogo } from "@/components/app-logo";
@@ -41,6 +42,28 @@ export function TimelineClient({ events }: { events: TimelineEvent[] }) {
   );
 
   const timeline = useMemo(() => buildTimeline(sortedEvents, zoom), [sortedEvents, zoom]);
+
+  const scrollToEvent = useCallback((id: string) => {
+    const target = document.querySelector(`[data-event-id="${id}"]`);
+    target?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+  }, []);
+
+  useEffect(() => {
+    const selectFromHash = () => {
+      const eventId = decodeURIComponent(window.location.hash.replace(/^#event-/, ""));
+      if (!eventId) return;
+
+      const event = sortedEvents.find((item) => item.id === eventId);
+      if (!event) return;
+
+      setSelectedEvent(event);
+      window.requestAnimationFrame(() => scrollToEvent(event.id));
+    };
+
+    selectFromHash();
+    window.addEventListener("hashchange", selectFromHash);
+    return () => window.removeEventListener("hashchange", selectFromHash);
+  }, [scrollToEvent, sortedEvents]);
 
   if (sortedEvents.length === 0) {
     return (
@@ -76,14 +99,10 @@ export function TimelineClient({ events }: { events: TimelineEvent[] }) {
     setZoomLevel(next.id);
   }
 
-  function scrollToEvent(id: string) {
-    const target = document.querySelector(`[data-event-id="${id}"]`);
-    target?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
-  }
-
   function selectEvent(event: TimelineEvent) {
     setSelectedEvent(event);
     scrollToEvent(event.id);
+    window.history.replaceState(null, "", `#event-${encodeURIComponent(event.id)}`);
   }
 
   return (
@@ -345,6 +364,7 @@ function EventDetail({
       ) : null}
 
       <div className="mt-5 flex flex-wrap gap-3">
+        <CopyEventLinkButton eventId={event.id} />
         {event.video_url ? (
           <button
             className="inline-flex h-11 items-center gap-2 rounded-md bg-stone-950 px-4 text-sm font-semibold text-white hover:bg-stone-800"
@@ -367,6 +387,27 @@ function EventDetail({
         ) : null}
       </div>
     </aside>
+  );
+}
+
+function CopyEventLinkButton({ eventId }: { eventId: string }) {
+  const [copied, setCopied] = useState(false);
+
+  async function copyLink() {
+    const url = `${window.location.origin}${window.location.pathname}#event-${encodeURIComponent(eventId)}`;
+    await navigator.clipboard.writeText(url);
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1800);
+  }
+
+  return (
+    <button
+      className="inline-flex h-11 items-center gap-2 rounded-md border border-stone-300 px-4 text-sm font-semibold text-stone-900 hover:bg-stone-50"
+      onClick={copyLink}
+    >
+      <LinkIcon className="h-4 w-4" />
+      {copied ? "Link kopiert" : "Link kopieren"}
+    </button>
   );
 }
 
