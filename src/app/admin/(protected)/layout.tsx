@@ -42,6 +42,9 @@ export default async function ProtectedAdminLayout({ children }: { children: Rea
             <Link className="text-teal-700 hover:text-teal-900" href="/admin">
               Inhalte
             </Link>
+            <Link className="text-teal-700 hover:text-teal-900" href="/admin/einstellungen">
+              Einstellungen
+            </Link>
             <Link className="text-teal-700 hover:text-teal-900" href="/admin/sicherheit">
               Sicherheit
             </Link>

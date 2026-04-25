@@ -12,6 +12,7 @@ import {
 } from "@/lib/auth";
 import { restoreTimelineBackup, writeSafetyBackup } from "@/lib/backup";
 import { deleteEvent, getTimelineEventById, upsertEvent } from "@/lib/db";
+import { setTimelineOwnerName } from "@/lib/settings";
 import { saveUpload } from "@/lib/uploads";
 
 const mediaUrlSchema = z
@@ -32,6 +33,10 @@ const eventSchema = z.object({
   image_url: mediaUrlSchema,
   video_url: mediaUrlSchema,
   pdf_url: mediaUrlSchema,
+});
+
+const settingsSchema = z.object({
+  timeline_owner_name: z.string().trim().min(2, "Bitte einen Namen eintragen.").max(100),
 });
 
 function cleanOptionalText(value: FormDataEntryValue | null) {
@@ -156,6 +161,27 @@ export async function duplicateTimelineEvent(formData: FormData) {
 
   revalidatePath("/");
   revalidatePath("/admin");
+}
+
+export async function updateTimelineSettings(
+  _previousState: { ok: boolean; message: string } | null,
+  formData: FormData,
+) {
+  await requireAdmin();
+
+  const parsed = settingsSchema.safeParse({
+    timeline_owner_name: String(formData.get("timeline_owner_name") ?? ""),
+  });
+
+  if (!parsed.success) {
+    return { ok: false, message: parsed.error.issues.at(0)?.message ?? "Bitte prüfe die Eingabe." };
+  }
+
+  setTimelineOwnerName(parsed.data.timeline_owner_name);
+  revalidatePath("/");
+  revalidatePath("/admin/einstellungen");
+
+  return { ok: true, message: "Einstellungen gespeichert." };
 }
 
 export async function restoreTimelineBackupAction(

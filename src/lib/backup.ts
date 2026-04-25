@@ -2,6 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { z } from "zod";
 import { listTimelineEvents, replaceTimelineEvents } from "@/lib/db";
+import { listPublicSettings, setTimelineOwnerName } from "@/lib/settings";
 import type { TimelineEvent } from "@/lib/types";
 
 const uploadRoot = path.join(process.cwd(), "public", "uploads");
@@ -25,6 +26,11 @@ const backupSchema = z.object({
   app: z.literal("media-timeline"),
   version: z.number().int().min(1),
   exported_at: z.string(),
+  settings: z
+    .object({
+      timeline_owner_name: z.string().optional(),
+    })
+    .optional(),
   events: z.array(eventSchema),
   files: z
     .array(
@@ -47,6 +53,7 @@ export async function createTimelineBackup(): Promise<TimelineBackup> {
     app: "media-timeline",
     version: backupVersion,
     exported_at: new Date().toISOString(),
+    settings: listPublicSettings(),
     events,
     files,
   };
@@ -70,6 +77,9 @@ export async function restoreTimelineBackup(rawJson: string) {
 
   await restoreLocalFiles(backup.files ?? []);
   replaceTimelineEvents(backup.events.map(normalizeEvent));
+  if (backup.settings?.timeline_owner_name) {
+    setTimelineOwnerName(backup.settings.timeline_owner_name);
+  }
 
   return { eventCount: backup.events.length, fileCount: backup.files?.length ?? 0 };
 }

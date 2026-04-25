@@ -32,7 +32,7 @@ const monthNames = ["Jan", "Feb", "Mar", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep
 const pinchThreshold = 0.16;
 const collapsedDescriptionLength = 210;
 
-export function TimelineClient({ events }: { events: TimelineEvent[] }) {
+export function TimelineClient({ events, ownerName }: { events: TimelineEvent[]; ownerName: string }) {
   const [zoom, setZoom] = useState<ZoomLevel>("years");
   const [selectedEvent, setSelectedEvent] = useState<TimelineEvent | null>(events.at(0) ?? null);
   const [selectedImage, setSelectedImage] = useState<TimelineEvent | null>(null);
@@ -226,7 +226,7 @@ export function TimelineClient({ events }: { events: TimelineEvent[] }) {
                   Zoombare Medien-Zeitliste
                 </p>
                 <h1 className="text-3xl font-semibold leading-tight text-stone-950 sm:text-5xl">
-                  Vom Jahresüberblick bis zum einzelnen Ereignis.
+                  Timeline für {ownerName}
                 </h1>
               </div>
             </div>
