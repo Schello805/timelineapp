@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   CalendarDays,
@@ -416,11 +415,9 @@ export function TimelineClient({ events }: { events: TimelineEvent[] }) {
               Schließen
             </button>
             <div className="relative h-[80svh] w-full max-w-5xl" onClick={(event) => event.stopPropagation()}>
-              <Image
+              <EventImage
                 src={selectedImage.image_url ?? ""}
                 alt={selectedImage.title}
-                fill
-                sizes="90vw"
                 className="object-contain"
               />
             </div>
@@ -483,17 +480,21 @@ function EventDetail({
           onClick={onImage}
           aria-label={`${event.title} als grosses Bild öffnen`}
         >
-          <Image
+          <EventImage
             src={event.image_url}
             alt={event.title}
-            fill
-            sizes="380px"
             className="object-cover transition duration-300 group-hover:scale-[1.03]"
           />
           <span className="absolute right-3 top-3 rounded-full bg-white/90 p-2 text-stone-900 shadow-sm">
             <ImageIcon className="h-5 w-5" />
           </span>
         </button>
+      ) : null}
+
+      {event.video_url ? (
+        <div className="mt-5 aspect-video overflow-hidden rounded-lg bg-black">
+          <VideoFrame url={event.video_url} title={event.title} />
+        </div>
       ) : null}
 
       <div className="mt-5 flex flex-wrap gap-3">
@@ -520,6 +521,14 @@ function EventDetail({
         ) : null}
       </div>
     </aside>
+  );
+}
+
+function EventImage({ src, alt, className }: { src: string; alt: string; className?: string }) {
+  return (
+    // Event images may come from arbitrary external URLs. A plain img avoids Next image domain 400s.
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src={src} alt={alt} className={`h-full w-full ${className ?? ""}`} loading="lazy" />
   );
 }
 

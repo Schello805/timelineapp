@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useActionState, useState } from "react";
 import { UploadCloud } from "lucide-react";
 import { upsertTimelineEvent } from "@/app/actions";
@@ -85,8 +84,10 @@ export function EventForm({ event }: { event?: TimelineEvent }) {
       />
 
       {previewSrc ? (
-        <div className="relative aspect-video overflow-hidden rounded-lg border border-stone-200 bg-stone-100">
-          <Image src={previewSrc} alt="Bildvorschau" fill sizes="420px" className="object-cover" />
+        <div className="aspect-video overflow-hidden rounded-lg border border-stone-200 bg-stone-100">
+          {/* Admin previews may use arbitrary external URLs or local upload paths. */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={previewSrc} alt="Bildvorschau" className="h-full w-full object-cover" />
         </div>
       ) : null}
 
