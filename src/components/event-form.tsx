@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState } from "react";
+import Image from "next/image";
+import { useActionState, useState } from "react";
 import { UploadCloud } from "lucide-react";
 import { upsertTimelineEvent } from "@/app/actions";
 import type { TimelineEvent } from "@/lib/types";
@@ -12,6 +13,8 @@ export function EventForm({ event }: { event?: TimelineEvent }) {
     async (_previousState, formData) => upsertTimelineEvent(formData),
     null,
   );
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const previewSrc = imagePreview ?? event?.image_url ?? null;
 
   return (
     <form action={formAction} className="grid gap-5 rounded-lg border border-stone-200 bg-white p-5 shadow-sm">
@@ -44,6 +47,20 @@ export function EventForm({ event }: { event?: TimelineEvent }) {
         />
       </div>
 
+      {event?.slug ? (
+        <div className="grid gap-2">
+          <label className="text-sm font-semibold text-stone-800" htmlFor="slug">
+            URL-Slug
+          </label>
+          <input
+            id="slug"
+            name="slug"
+            defaultValue={event.slug}
+            className="h-11 rounded-md border border-stone-300 px-3 outline-none focus:border-teal-700"
+          />
+        </div>
+      ) : null}
+
       <div className="grid gap-2">
         <label className="text-sm font-semibold text-stone-800" htmlFor="description">
           Beschreibung
@@ -64,7 +81,14 @@ export function EventForm({ event }: { event?: TimelineEvent }) {
         label="Bild"
         defaultValue={event?.image_url ?? ""}
         accept="image/*"
+        onFilePreview={setImagePreview}
       />
+
+      {previewSrc ? (
+        <div className="relative aspect-video overflow-hidden rounded-lg border border-stone-200 bg-stone-100">
+          <Image src={previewSrc} alt="Bildvorschau" fill sizes="420px" className="object-cover" />
+        </div>
+      ) : null}
 
       <div className="grid gap-2">
         <label className="text-sm font-semibold text-stone-800" htmlFor="video_url">
@@ -109,12 +133,14 @@ function UrlUploadField({
   label,
   defaultValue,
   accept,
+  onFilePreview,
 }: {
   name: string;
   fileName: string;
   label: string;
   defaultValue: string;
   accept: string;
+  onFilePreview?: (url: string | null) => void;
 }) {
   return (
     <div className="grid gap-2">
@@ -132,7 +158,17 @@ function UrlUploadField({
       <label className="inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-md border border-stone-300 px-4 text-sm font-semibold text-stone-800 hover:bg-stone-50">
         <UploadCloud className="h-4 w-4" />
         Datei lokal hochladen
-        <input name={fileName} type="file" accept={accept} className="sr-only" />
+        <input
+          name={fileName}
+          type="file"
+          accept={accept}
+          className="sr-only"
+          onChange={(event) => {
+            const file = event.currentTarget.files?.[0];
+            if (!file || !onFilePreview) return;
+            onFilePreview(URL.createObjectURL(file));
+          }}
+        />
       </label>
     </div>
   );

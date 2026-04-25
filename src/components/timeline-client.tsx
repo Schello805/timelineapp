@@ -20,6 +20,7 @@ import { AppLogo } from "@/components/app-logo";
 import { VideoFrame } from "@/components/video-frame";
 
 type ZoomLevel = "years" | "months" | "events";
+type MediaFilter = "all" | "image" | "video" | "pdf";
 
 const zoomLevels: Array<{ id: ZoomLevel; label: string; unit: string }> = [
   { id: "years", label: "Jahre", unit: "Überblick" },
@@ -34,14 +35,35 @@ export function TimelineClient({ events }: { events: TimelineEvent[] }) {
   const [selectedEvent, setSelectedEvent] = useState<TimelineEvent | null>(events.at(0) ?? null);
   const [selectedImage, setSelectedImage] = useState<TimelineEvent | null>(null);
   const [selectedVideo, setSelectedVideo] = useState<TimelineEvent | null>(null);
+  const [query, setQuery] = useState("");
+  const [mediaFilter, setMediaFilter] = useState<MediaFilter>("all");
   const scrollerRef = useRef<HTMLDivElement>(null);
 
-  const sortedEvents = useMemo(
+  const allEvents = useMemo(
     () => [...events].sort((a, b) => getTime(a.event_date) - getTime(b.event_date)),
     [events],
   );
+  const sortedEvents = useMemo(() => {
+    const normalizedQuery = query.trim().toLowerCase();
 
-  const timeline = useMemo(() => buildTimeline(sortedEvents, zoom), [sortedEvents, zoom]);
+    return allEvents.filter((event) => {
+      const matchesQuery =
+        !normalizedQuery ||
+        event.title.toLowerCase().includes(normalizedQuery) ||
+        event.description.toLowerCase().includes(normalizedQuery) ||
+        event.event_date.includes(normalizedQuery);
+      const matchesMedia =
+        mediaFilter === "all" ||
+        (mediaFilter === "image" && Boolean(event.image_url)) ||
+        (mediaFilter === "video" && Boolean(event.video_url)) ||
+        (mediaFilter === "pdf" && Boolean(event.pdf_url));
+
+      return matchesQuery && matchesMedia;
+    });
+  }, [allEvents, mediaFilter, query]);
+
+  const timelineEvents = sortedEvents.length ? sortedEvents : allEvents;
+  const timeline = useMemo(() => buildTimeline(timelineEvents, zoom), [timelineEvents, zoom]);
 
   const scrollToEvent = useCallback((id: string) => {
     const target = document.querySelector(`[data-event-id="${id}"]`);
@@ -50,10 +72,10 @@ export function TimelineClient({ events }: { events: TimelineEvent[] }) {
 
   useEffect(() => {
     const selectFromHash = () => {
-      const eventId = decodeURIComponent(window.location.hash.replace(/^#event-/, ""));
-      if (!eventId) return;
+      const eventKey = decodeURIComponent(window.location.hash.replace(/^#event-/, ""));
+      if (!eventKey) return;
 
-      const event = sortedEvents.find((item) => item.id === eventId);
+      const event = sortedEvents.find((item) => item.id === eventKey || item.slug === eventKey);
       if (!event) return;
 
       setSelectedEvent(event);
@@ -65,7 +87,7 @@ export function TimelineClient({ events }: { events: TimelineEvent[] }) {
     return () => window.removeEventListener("hashchange", selectFromHash);
   }, [scrollToEvent, sortedEvents]);
 
-  if (sortedEvents.length === 0) {
+  if (allEvents.length === 0) {
     return (
       <section className="min-h-[calc(100svh-4rem)] bg-[#f6f3ee]">
         <div className="mx-auto flex w-full max-w-7xl flex-col px-5 py-8">
@@ -102,7 +124,7 @@ export function TimelineClient({ events }: { events: TimelineEvent[] }) {
   function selectEvent(event: TimelineEvent) {
     setSelectedEvent(event);
     scrollToEvent(event.id);
-    window.history.replaceState(null, "", `#event-${encodeURIComponent(event.id)}`);
+    window.history.replaceState(null, "", `#event-${encodeURIComponent(event.slug || event.id)}`);
   }
 
   return (
@@ -155,6 +177,44 @@ export function TimelineClient({ events }: { events: TimelineEvent[] }) {
               </button>
             </div>
           </header>
+
+          <div className="mt-5 grid gap-3 rounded-lg border border-stone-200 bg-white p-3 shadow-sm sm:grid-cols-[1fr_auto]">
+            <label className="relative block">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
+              <input
+                className="h-11 w-full rounded-md border border-stone-300 pl-9 pr-3 text-sm outline-none focus:border-teal-700"
+                placeholder="Titel, Beschreibung oder Datum suchen"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+              />
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {[
+                ["all", "Alle"],
+                ["image", "Bilder"],
+                ["video", "Videos"],
+                ["pdf", "PDFs"],
+              ].map(([id, label]) => (
+                <button
+                  key={id}
+                  className={
+                    mediaFilter === id
+                      ? "h-11 rounded-md bg-stone-950 px-4 text-sm font-semibold text-white"
+                      : "h-11 rounded-md border border-stone-300 px-4 text-sm font-semibold text-stone-700 hover:border-teal-700 hover:text-teal-700"
+                  }
+                  onClick={() => setMediaFilter(id as MediaFilter)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {sortedEvents.length === 0 ? (
+            <div className="mt-5 rounded-lg border border-stone-200 bg-white p-6 text-sm font-semibold text-stone-700 shadow-sm">
+              Keine Ereignisse für diese Suche gefunden.
+            </div>
+          ) : null}
 
           <div className="mt-5 grid gap-5 lg:grid-cols-[1fr_380px]">
             <div className="min-w-0">
@@ -364,7 +424,7 @@ function EventDetail({
       ) : null}
 
       <div className="mt-5 flex flex-wrap gap-3">
-        <CopyEventLinkButton eventId={event.id} />
+        <CopyEventLinkButton event={event} />
         {event.video_url ? (
           <button
             className="inline-flex h-11 items-center gap-2 rounded-md bg-stone-950 px-4 text-sm font-semibold text-white hover:bg-stone-800"
@@ -390,11 +450,11 @@ function EventDetail({
   );
 }
 
-function CopyEventLinkButton({ eventId }: { eventId: string }) {
+function CopyEventLinkButton({ event }: { event: TimelineEvent }) {
   const [copied, setCopied] = useState(false);
 
   async function copyLink() {
-    const url = `${window.location.origin}${window.location.pathname}#event-${encodeURIComponent(eventId)}`;
+    const url = `${window.location.origin}/ereignis/${encodeURIComponent(event.slug || event.id)}`;
     await navigator.clipboard.writeText(url);
     setCopied(true);
     window.setTimeout(() => setCopied(false), 1800);

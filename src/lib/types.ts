@@ -1,5 +1,6 @@
 export type TimelineEvent = {
   id: string;
+  slug: string;
   event_date: string;
   title: string;
   description: string;
@@ -11,6 +12,7 @@ export type TimelineEvent = {
 };
 
 export type TimelineEventInput = {
+  slug?: string | null;
   event_date: string;
   title: string;
   description: string;

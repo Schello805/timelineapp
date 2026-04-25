@@ -3,6 +3,7 @@ import type { TimelineEvent } from "@/lib/types";
 export const demoEvents: TimelineEvent[] = [
   {
     id: "demo-1",
+    slug: "1989-ein-wendepunkt",
     event_date: "1989-11-09",
     title: "Ein Wendepunkt",
     description:
@@ -14,6 +15,7 @@ export const demoEvents: TimelineEvent[] = [
   },
   {
     id: "demo-2",
+    slug: "2007-mobile-wird-alltag",
     event_date: "2007-01-09",
     title: "Mobile wird Alltag",
     description:
@@ -25,6 +27,7 @@ export const demoEvents: TimelineEvent[] = [
   },
   {
     id: "demo-3",
+    slug: "2026-eigene-medien-timeline",
     event_date: "2026-04-24",
     title: "Eigene Medien-Timeline",
     description:

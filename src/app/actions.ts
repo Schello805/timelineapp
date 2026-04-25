@@ -5,21 +5,32 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import {
   clearAdminSession,
+  changeAdminPassword,
   createAdminSession,
   credentialsMatch,
   isAdminAuthenticated,
 } from "@/lib/auth";
-import { deleteEvent, upsertEvent } from "@/lib/db";
+import { deleteEvent, getTimelineEventById, upsertEvent } from "@/lib/db";
 import { saveUpload } from "@/lib/uploads";
+
+const mediaUrlSchema = z
+  .string()
+  .optional()
+  .or(z.literal(""))
+  .refine((value) => {
+    if (!value) return true;
+    return value.startsWith("/") || z.string().url().safeParse(value).success;
+  }, "Bitte eine gültige URL oder einen lokalen Pfad verwenden.");
 
 const eventSchema = z.object({
   id: z.string().optional(),
+  slug: z.string().optional(),
   event_date: z.string().min(1, "Bitte ein Datum eintragen."),
   title: z.string().min(2, "Bitte einen Titel eintragen.").max(160),
   description: z.string().min(10, "Bitte eine aussagekräftige Beschreibung eintragen."),
-  image_url: z.string().url().optional().or(z.literal("")),
-  video_url: z.string().url().optional().or(z.literal("")),
-  pdf_url: z.string().url().optional().or(z.literal("")),
+  image_url: mediaUrlSchema,
+  video_url: mediaUrlSchema,
+  pdf_url: mediaUrlSchema,
 });
 
 function cleanOptionalText(value: FormDataEntryValue | null) {
@@ -53,6 +64,7 @@ export async function upsertTimelineEvent(formData: FormData) {
 
   const parsed = eventSchema.safeParse({
     id: cleanOptionalText(formData.get("id")) ?? undefined,
+    slug: cleanOptionalText(formData.get("slug")) ?? undefined,
     event_date: String(formData.get("event_date") ?? ""),
     title: String(formData.get("title") ?? ""),
     description: String(formData.get("description") ?? ""),
@@ -70,6 +82,7 @@ export async function upsertTimelineEvent(formData: FormData) {
 
   upsertEvent({
     id: parsed.data.id,
+    slug: parsed.data.slug || null,
     event_date: parsed.data.event_date,
     title: parsed.data.title,
     description: parsed.data.description,
@@ -83,6 +96,31 @@ export async function upsertTimelineEvent(formData: FormData) {
   return { ok: true, message: "Ereignis gespeichert." };
 }
 
+export async function updateAdminPassword(
+  _previousState: { ok: boolean; message: string } | null,
+  formData: FormData,
+) {
+  await requireAdmin();
+
+  const currentPassword = String(formData.get("current_password") ?? "");
+  const nextPassword = String(formData.get("next_password") ?? "");
+  const confirmPassword = String(formData.get("confirm_password") ?? "");
+
+  if (nextPassword.length < 12) {
+    return { ok: false, message: "Das neue Passwort muss mindestens 12 Zeichen lang sein." };
+  }
+
+  if (nextPassword !== confirmPassword) {
+    return { ok: false, message: "Die neuen Passwörter stimmen nicht überein." };
+  }
+
+  const result = changeAdminPassword(currentPassword, nextPassword);
+  if (!result.ok) return result;
+
+  await clearAdminSession();
+  redirect("/admin/login");
+}
+
 export async function deleteTimelineEvent(formData: FormData) {
   await requireAdmin();
 
@@ -92,6 +130,28 @@ export async function deleteTimelineEvent(formData: FormData) {
   }
 
   deleteEvent(id);
+  revalidatePath("/");
+  revalidatePath("/admin");
+}
+
+export async function duplicateTimelineEvent(formData: FormData) {
+  await requireAdmin();
+
+  const id = String(formData.get("id") ?? "");
+  const event = getTimelineEventById(id);
+  if (!event) {
+    throw new Error("Ereignis nicht gefunden.");
+  }
+
+  upsertEvent({
+    event_date: event.event_date,
+    title: `${event.title} Kopie`,
+    description: event.description,
+    image_url: event.image_url,
+    video_url: event.video_url,
+    pdf_url: event.pdf_url,
+  });
+
   revalidatePath("/");
   revalidatePath("/admin");
 }

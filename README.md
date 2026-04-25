@@ -10,6 +10,11 @@ Die App speichert Inhalte lokal in SQLite und braucht keinen externen Backend-Di
 - Admin-Login über lokale Zugangsdaten aus `.env.local`
 - Admin-Formular zum Erstellen, Bearbeiten und Löschen von Events
 - Lokale Uploads für Bilder und PDFs
+- automatische Bildverkleinerung beim Upload
+- QR-Codes und direkte Ereignislinks
+- Suche und Medienfilter in der öffentlichen Timeline
+- Admin-Passwort kann im Dashboard geändert werden
+- Healthcheck unter `/health`
 - Rechtsseiten für Impressum, Datenschutz und Cookiehinweise
 - Demo-Daten, solange lokal noch keine Ereignisse angelegt wurden
 
@@ -68,11 +73,19 @@ Die Datenbank wird beim ersten Start automatisch erstellt.
 Jedes Ereignis kann direkt per URL verlinkt werden:
 
 ```text
-https://timeline.bechhofen-hilft.de/#event-EREIGNIS_ID
+https://timeline.bechhofen-hilft.de/ereignis/EREIGNIS-SLUG
 ```
 
 Im Admin-Bereich gibt es pro Ereignis einen Button zum Öffnen. In der öffentlichen Detailansicht
 kann der direkte Link kopiert und anschließend als QR-Code verwendet werden.
+
+## Healthcheck
+
+```text
+https://timeline.bechhofen-hilft.de/health
+```
+
+Antwortet mit JSON und prüft dabei, ob die lokale SQLite-Datenbank erreichbar ist.
 
 ## Lizenz
 

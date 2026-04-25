@@ -1,5 +1,8 @@
-import { ExternalLink, Pencil, Trash2 } from "lucide-react";
-import { deleteTimelineEvent } from "@/app/actions";
+import { Copy, ExternalLink, Pencil } from "lucide-react";
+import { duplicateTimelineEvent } from "@/app/actions";
+import { DeleteEventForm } from "@/components/delete-event-form";
+import { QrCodeButton } from "@/components/qr-code-button";
+import { siteConfig } from "@/lib/env";
 import { formatEventDate } from "@/lib/timeline-format";
 import type { TimelineEvent } from "@/lib/types";
 
@@ -14,10 +17,11 @@ export function EventList({ events }: { events: TimelineEvent[] }) {
               <h3 className="mt-1 text-lg font-semibold text-stone-950">{event.title}</h3>
               <p className="mt-1 line-clamp-2 text-sm leading-6 text-stone-600">{event.description}</p>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+              <QrCodeButton url={`${siteConfig.url}/ereignis/${event.slug}`} title={event.title} />
               <a
                 className="inline-flex h-10 items-center gap-2 rounded-md border border-stone-300 px-3 text-sm font-semibold text-stone-800 hover:bg-stone-50"
-                href={`/#event-${encodeURIComponent(event.id)}`}
+                href={`/ereignis/${event.slug}`}
                 target="_blank"
                 rel="noopener noreferrer"
               >
@@ -31,13 +35,14 @@ export function EventList({ events }: { events: TimelineEvent[] }) {
                 <Pencil className="h-4 w-4" />
                 Bearbeiten
               </a>
-              <form action={deleteTimelineEvent}>
+              <form action={duplicateTimelineEvent}>
                 <input type="hidden" name="id" value={event.id} />
-                <button className="inline-flex h-10 items-center gap-2 rounded-md border border-red-200 px-3 text-sm font-semibold text-red-700 hover:bg-red-50">
-                  <Trash2 className="h-4 w-4" />
-                  Löschen
+                <button className="inline-flex h-10 items-center gap-2 rounded-md border border-stone-300 px-3 text-sm font-semibold text-stone-800 hover:bg-stone-50">
+                  <Copy className="h-4 w-4" />
+                  Duplizieren
                 </button>
               </form>
+              <DeleteEventForm id={event.id} title={event.title} />
             </div>
           </div>
         ))}

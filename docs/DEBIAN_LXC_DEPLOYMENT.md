@@ -161,5 +161,7 @@ Diese Dateien/Ordner regelmäßig sichern.
 
 - Keine `.env.local` ins GitHub-Repository committen.
 - Der Admin-Bereich liegt unter `/admin`.
+- Der Healthcheck liegt unter `/health`.
 - Die Datenbank wird automatisch als SQLite-Datei erstellt.
+- Hochgeladene Bilder werden automatisch auf sinnvolle Web-Größe optimiert.
 - Für produktive Nutzung Rechtsdokumente final ausfüllen und prüfen lassen.

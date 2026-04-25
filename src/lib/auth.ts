@@ -1,5 +1,6 @@
 import crypto from "node:crypto";
 import { cookies } from "next/headers";
+import { getSetting, setSetting } from "@/lib/db";
 
 const cookieName = "timeline_admin_session";
 
@@ -54,5 +55,35 @@ export async function isAdminAuthenticated() {
 }
 
 export function credentialsMatch(email: string, password: string) {
-  return email === process.env.ADMIN_EMAIL && password === process.env.ADMIN_PASSWORD;
+  if (email !== process.env.ADMIN_EMAIL) return false;
+
+  const storedHash = getSetting("admin_password_hash")?.value;
+  if (storedHash) {
+    return verifyPassword(password, storedHash);
+  }
+
+  return password === process.env.ADMIN_PASSWORD;
+}
+
+export function changeAdminPassword(currentPassword: string, nextPassword: string) {
+  if (!credentialsMatch(process.env.ADMIN_EMAIL ?? "", currentPassword)) {
+    return { ok: false, message: "Das aktuelle Passwort ist falsch." };
+  }
+
+  setSetting("admin_password_hash", hashPassword(nextPassword));
+  return { ok: true, message: "Passwort geändert." };
+}
+
+function hashPassword(password: string) {
+  const salt = crypto.randomBytes(16).toString("hex");
+  const hash = crypto.pbkdf2Sync(password, salt, 210_000, 32, "sha256").toString("hex");
+  return `${salt}:${hash}`;
+}
+
+function verifyPassword(password: string, stored: string) {
+  const [salt, hash] = stored.split(":");
+  if (!salt || !hash) return false;
+
+  const candidate = crypto.pbkdf2Sync(password, salt, 210_000, 32, "sha256").toString("hex");
+  return hash.length === candidate.length && crypto.timingSafeEqual(Buffer.from(hash), Buffer.from(candidate));
 }
