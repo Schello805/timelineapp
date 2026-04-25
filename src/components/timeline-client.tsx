@@ -29,6 +29,7 @@ const zoomLevels: Array<{ id: ZoomLevel; label: string; unit: string }> = [
 ];
 
 const monthNames = ["Jan", "Feb", "Mar", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"];
+const pinchThreshold = 0.16;
 
 export function TimelineClient({ events }: { events: TimelineEvent[] }) {
   const [zoom, setZoom] = useState<ZoomLevel>("years");
@@ -38,6 +39,12 @@ export function TimelineClient({ events }: { events: TimelineEvent[] }) {
   const [query, setQuery] = useState("");
   const [mediaFilter, setMediaFilter] = useState<MediaFilter>("all");
   const scrollerRef = useRef<HTMLDivElement>(null);
+  const pinchRef = useRef<{
+    distance: number;
+    zoom: ZoomLevel;
+    centerRatio: number;
+    centerX: number;
+  } | null>(null);
 
   const allEvents = useMemo(
     () => [...events].sort((a, b) => getTime(a.event_date) - getTime(b.event_date)),
@@ -108,17 +115,81 @@ export function TimelineClient({ events }: { events: TimelineEvent[] }) {
     );
   }
 
-  function setZoomLevel(nextZoom: ZoomLevel) {
+  function setZoomLevel(
+    nextZoom: ZoomLevel,
+    options?: { preserveViewport?: boolean; centerRatio?: number; centerX?: number },
+  ) {
     setZoom(nextZoom);
     window.requestAnimationFrame(() => {
+      const scroller = scrollerRef.current;
+      if (options?.preserveViewport && scroller && options.centerRatio !== undefined && options.centerX !== undefined) {
+        scroller.scrollLeft = scroller.scrollWidth * options.centerRatio - options.centerX;
+        return;
+      }
+
       if (selectedEvent) scrollToEvent(selectedEvent.id);
     });
   }
 
-  function zoomBy(direction: 1 | -1) {
+  function zoomBy(
+    direction: 1 | -1,
+    options?: { preserveViewport?: boolean; centerRatio?: number; centerX?: number },
+  ) {
     const index = zoomLevels.findIndex((item) => item.id === zoom);
     const next = zoomLevels[Math.min(Math.max(index + direction, 0), zoomLevels.length - 1)];
-    setZoomLevel(next.id);
+    setZoomLevel(next.id, options);
+  }
+
+  function handleTouchStart(event: React.TouchEvent<HTMLDivElement>) {
+    if (event.touches.length !== 2) return;
+
+    const scroller = scrollerRef.current;
+    if (!scroller) return;
+
+    const centerX = getTouchCenterX(event.touches, scroller);
+    pinchRef.current = {
+      distance: getTouchDistance(event.touches),
+      zoom,
+      centerX,
+      centerRatio: (scroller.scrollLeft + centerX) / Math.max(scroller.scrollWidth, 1),
+    };
+  }
+
+  function handleTouchMove(event: React.TouchEvent<HTMLDivElement>) {
+    const pinch = pinchRef.current;
+    if (!pinch || event.touches.length !== 2) return;
+
+    event.preventDefault();
+    const scale = getTouchDistance(event.touches) / pinch.distance;
+    const startIndex = zoomLevels.findIndex((level) => level.id === pinch.zoom);
+    const direction = scale > 1 + pinchThreshold ? 1 : scale < 1 - pinchThreshold ? -1 : 0;
+    if (!direction) return;
+
+    const next = zoomLevels[Math.min(Math.max(startIndex + direction, 0), zoomLevels.length - 1)];
+    if (next.id === zoom) return;
+
+    setZoomLevel(next.id, {
+      preserveViewport: true,
+      centerRatio: pinch.centerRatio,
+      centerX: pinch.centerX,
+    });
+  }
+
+  function handleTouchEnd(event: React.TouchEvent<HTMLDivElement>) {
+    if (event.touches.length < 2) {
+      pinchRef.current = null;
+    }
+  }
+
+  function handleWheel(event: React.WheelEvent<HTMLDivElement>) {
+    if (!event.ctrlKey && !event.metaKey) return;
+
+    event.preventDefault();
+    const scroller = scrollerRef.current;
+    const rect = scroller?.getBoundingClientRect();
+    const centerX = rect ? event.clientX - rect.left : 0;
+    const centerRatio = scroller ? (scroller.scrollLeft + centerX) / Math.max(scroller.scrollWidth, 1) : 0.5;
+    zoomBy(event.deltaY < 0 ? 1 : -1, { preserveViewport: true, centerRatio, centerX });
   }
 
   function selectEvent(event: TimelineEvent) {
@@ -222,12 +293,18 @@ export function TimelineClient({ events }: { events: TimelineEvent[] }) {
                 <span className="font-semibold text-stone-900">
                   {zoomLevels.find((level) => level.id === zoom)?.unit}
                 </span>
-                <span>{timeline.startYear} bis {timeline.endYear}</span>
+                <span>Pinch zum Zoomen · {timeline.startYear} bis {timeline.endYear}</span>
               </div>
 
               <div
                 ref={scrollerRef}
                 className="overflow-x-auto rounded-lg border border-stone-200 bg-white shadow-sm [scrollbar-width:thin]"
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
+                onTouchCancel={handleTouchEnd}
+                onWheel={handleWheel}
+                style={{ touchAction: "pan-x" }}
                 aria-label="Zoombare Timeline"
               >
                 <div className="relative h-[420px]" style={{ width: timeline.width }}>
@@ -524,4 +601,21 @@ function buildTicks(startYear: number, endYear: number, zoom: ZoomLevel, width: 
 function getTime(date: string) {
   const parsed = new Date(date);
   return Number.isNaN(parsed.getTime()) ? new Date(`${date.slice(0, 4)}-01-01`).getTime() : parsed.getTime();
+}
+
+function getTouchDistance(touches: React.TouchList) {
+  const first = touches.item(0);
+  const second = touches.item(1);
+  if (!first || !second) return 1;
+
+  return Math.hypot(first.clientX - second.clientX, first.clientY - second.clientY);
+}
+
+function getTouchCenterX(touches: React.TouchList, element: HTMLElement) {
+  const first = touches.item(0);
+  const second = touches.item(1);
+  if (!first || !second) return element.clientWidth / 2;
+
+  const rect = element.getBoundingClientRect();
+  return (first.clientX + second.clientX) / 2 - rect.left;
 }
