@@ -4,6 +4,9 @@ set -Eeuo pipefail
 APP_DIR="${APP_DIR:-/opt/media-timeline}"
 SERVICE_NAME="${SERVICE_NAME:-media-timeline}"
 HEALTH_URL="${HEALTH_URL:-https://timeline.bechhofen-hilft.de/health}"
+LOCAL_HEALTH_URL="${LOCAL_HEALTH_URL:-http://127.0.0.1:3000/health}"
+HEALTH_RETRIES="${HEALTH_RETRIES:-12}"
+HEALTH_RETRY_DELAY="${HEALTH_RETRY_DELAY:-2}"
 APP_USER="${APP_USER:-www-data}"
 APP_GROUP="${APP_GROUP:-www-data}"
 
@@ -14,6 +17,24 @@ log() {
 fail() {
   printf '\n\033[1;31mFehler:\033[0m %s\n' "$1" >&2
   exit 1
+}
+
+check_health() {
+  local url="$1"
+  local label="$2"
+  local attempt
+
+  for attempt in $(seq 1 "$HEALTH_RETRIES"); do
+    if curl -fsS "$url" >/dev/null; then
+      printf 'Healthcheck OK (%s): %s\n' "$label" "$url"
+      return 0
+    fi
+
+    printf 'Healthcheck wartet (%s), Versuch %s/%s...\n' "$label" "$attempt" "$HEALTH_RETRIES"
+    sleep "$HEALTH_RETRY_DELAY"
+  done
+
+  return 1
 }
 
 command -v git >/dev/null || fail "git ist nicht installiert."
@@ -56,8 +77,17 @@ systemctl is-active --quiet "$SERVICE_NAME" || {
 
 log "Healthcheck prüfen"
 if command -v curl >/dev/null; then
-  curl -fsS "$HEALTH_URL" >/dev/null || fail "Healthcheck ${HEALTH_URL} ist fehlgeschlagen."
-  printf 'Healthcheck OK: %s\n' "$HEALTH_URL"
+  check_health "$LOCAL_HEALTH_URL" "lokal" || {
+    systemctl status "$SERVICE_NAME" --no-pager || true
+    journalctl -u "$SERVICE_NAME" -n 80 --no-pager || true
+    fail "Lokaler Healthcheck ${LOCAL_HEALTH_URL} ist fehlgeschlagen."
+  }
+
+  if ! check_health "$HEALTH_URL" "Domain"; then
+    printf '\n\033[1;33mWarnung:\033[0m Die App läuft lokal, aber der Domain-Healthcheck ist fehlgeschlagen.\n'
+    printf 'Bitte Nginx, DNS oder TLS prüfen. Das Update selbst wurde erfolgreich installiert.\n'
+    nginx -t 2>/dev/null || true
+  fi
 else
   printf 'curl ist nicht installiert, Healthcheck übersprungen.\n'
 fi
