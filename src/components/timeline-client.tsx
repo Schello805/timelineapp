@@ -70,6 +70,7 @@ export function TimelineClient({ events }: { events: TimelineEvent[] }) {
 
   const timelineEvents = sortedEvents.length ? sortedEvents : allEvents;
   const timeline = useMemo(() => buildTimeline(timelineEvents, zoom), [timelineEvents, zoom]);
+  const yearNavigation = useMemo(() => buildYearNavigation(timelineEvents), [timelineEvents]);
 
   const scrollToEvent = useCallback((id: string) => {
     const target = document.querySelector(`[data-event-id="${id}"]`);
@@ -195,6 +196,13 @@ export function TimelineClient({ events }: { events: TimelineEvent[] }) {
     setSelectedEvent(event);
     scrollToEvent(event.id);
     window.history.replaceState(null, "", `#event-${encodeURIComponent(event.slug || event.id)}`);
+  }
+
+  function selectYear(year: string) {
+    const event = yearNavigation.find((item) => item.year === year)?.firstEvent;
+    if (!event) return;
+
+    selectEvent(event);
   }
 
   return (
@@ -381,21 +389,31 @@ export function TimelineClient({ events }: { events: TimelineEvent[] }) {
             />
           </div>
 
-          <div className="mt-5 flex gap-2 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {sortedEvents.map((event) => (
-              <button
-                key={event.id}
-                className={
-                  selectedEvent?.id === event.id
-                    ? "h-10 rounded-md bg-stone-950 px-4 text-sm font-semibold text-white"
-                    : "h-10 rounded-md border border-stone-300 bg-white px-4 text-sm font-semibold text-stone-700 hover:border-teal-700 hover:text-teal-700"
-                }
-                onClick={() => selectEvent(event)}
-              >
-                {getYear(event.event_date)}
-              </button>
-            ))}
-          </div>
+          {yearNavigation.length > 1 ? (
+            <div className="mt-5 flex gap-2 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {yearNavigation.map((item) => {
+                const isActive = selectedEvent ? getYear(selectedEvent.event_date) === item.year : false;
+
+                return (
+                  <button
+                    key={item.year}
+                    className={
+                      isActive
+                        ? "h-10 rounded-md bg-stone-950 px-4 text-sm font-semibold text-white"
+                        : "h-10 rounded-md border border-stone-300 bg-white px-4 text-sm font-semibold text-stone-700 hover:border-teal-700 hover:text-teal-700"
+                    }
+                    onClick={() => selectYear(item.year)}
+                    aria-label={`Zum Jahr ${item.year} springen`}
+                  >
+                    {item.year}
+                    <span className={isActive ? "ml-2 text-white/70" : "ml-2 text-stone-400"}>
+                      {item.count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          ) : null}
         </div>
       </section>
 
@@ -601,6 +619,23 @@ function buildTicks(startYear: number, endYear: number, zoom: ZoomLevel, width: 
   }
 
   return ticks;
+}
+
+function buildYearNavigation(events: TimelineEvent[]) {
+  const years = new Map<string, { year: string; count: number; firstEvent: TimelineEvent }>();
+
+  for (const event of events) {
+    const year = getYear(event.event_date);
+    const existing = years.get(year);
+
+    if (existing) {
+      existing.count += 1;
+    } else {
+      years.set(year, { year, count: 1, firstEvent: event });
+    }
+  }
+
+  return [...years.values()];
 }
 
 function getEventLabelClass(index: number) {
