@@ -31,6 +31,7 @@ export function EventForm({ event }: { event?: TimelineEvent }) {
           defaultValue={event?.event_date ?? ""}
           className="h-11 rounded-md border border-stone-300 px-3 outline-none focus:border-teal-700"
         />
+        <p className="text-sm leading-6 text-stone-600">Vergangene und zukünftige Termine sind erlaubt.</p>
       </div>
 
       <div className="grid gap-2">
