@@ -132,6 +132,37 @@ export function deleteEvent(id: string) {
   getDb().prepare("delete from timeline_events where id = ?").run(id);
 }
 
+export function replaceTimelineEvents(events: TimelineEvent[]) {
+  const db = getDb();
+  const replace = db.transaction((items: TimelineEvent[]) => {
+    db.prepare("delete from timeline_events").run();
+
+    const insert = db.prepare(
+      `insert into timeline_events
+       (id, slug, event_date, title, description, image_url, video_url, pdf_url, created_at, updated_at)
+       values (@id, @slug, @event_date, @title, @description, @image_url, @video_url, @pdf_url, @created_at, @updated_at)`,
+    );
+
+    for (const item of items) {
+      const id = item.id || crypto.randomUUID();
+      insert.run({
+        id,
+        slug: item.slug?.trim() || createUniqueSlug(db, item.title, item.event_date, id),
+        event_date: item.event_date,
+        title: item.title,
+        description: item.description,
+        image_url: item.image_url ?? null,
+        video_url: item.video_url ?? null,
+        pdf_url: item.pdf_url ?? null,
+        created_at: item.created_at ?? new Date().toISOString(),
+        updated_at: item.updated_at ?? new Date().toISOString(),
+      });
+    }
+  });
+
+  replace(events);
+}
+
 export function getSetting(key: string) {
   return getDb().prepare("select value from app_settings where key = ?").get(key) as
     | { value: string }

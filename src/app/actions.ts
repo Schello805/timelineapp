@@ -10,6 +10,7 @@ import {
   credentialsMatch,
   isAdminAuthenticated,
 } from "@/lib/auth";
+import { restoreTimelineBackup } from "@/lib/backup";
 import { deleteEvent, getTimelineEventById, upsertEvent } from "@/lib/db";
 import { saveUpload } from "@/lib/uploads";
 
@@ -155,6 +156,35 @@ export async function duplicateTimelineEvent(formData: FormData) {
 
   revalidatePath("/");
   revalidatePath("/admin");
+}
+
+export async function restoreTimelineBackupAction(
+  _previousState: { ok: boolean; message: string } | null,
+  formData: FormData,
+) {
+  await requireAdmin();
+
+  if (formData.get("confirm_restore") !== "yes") {
+    return { ok: false, message: "Bitte bestätige den Restore zuerst." };
+  }
+
+  const file = formData.get("backup_file");
+  if (!(file instanceof File) || file.size === 0) {
+    return { ok: false, message: "Bitte eine JSON-Backup-Datei auswählen." };
+  }
+
+  try {
+    const result = await restoreTimelineBackup(await file.text());
+    revalidatePath("/");
+    revalidatePath("/admin");
+
+    return {
+      ok: true,
+      message: `Backup wiederhergestellt: ${result.eventCount} Ereignisse, ${result.fileCount} lokale Dateien.`,
+    };
+  } catch {
+    return { ok: false, message: "Dieses Backup konnte nicht gelesen oder wiederhergestellt werden." };
+  }
 }
 
 export async function signOut() {
