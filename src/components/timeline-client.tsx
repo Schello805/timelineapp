@@ -20,6 +20,7 @@ import { VideoFrame } from "@/components/video-frame";
 
 type ZoomLevel = "years" | "months" | "events";
 type MediaFilter = "all" | "image" | "video" | "pdf";
+type SortOrder = "asc" | "desc";
 
 const zoomLevels: Array<{ id: ZoomLevel; label: string; unit: string }> = [
   { id: "years", label: "Jahre", unit: "Überblick" },
@@ -37,6 +38,7 @@ export function TimelineClient({ events }: { events: TimelineEvent[] }) {
   const [selectedVideo, setSelectedVideo] = useState<TimelineEvent | null>(null);
   const [query, setQuery] = useState("");
   const [mediaFilter, setMediaFilter] = useState<MediaFilter>("all");
+  const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
   const scrollerRef = useRef<HTMLDivElement>(null);
   const pinchRef = useRef<{
     distance: number;
@@ -49,7 +51,7 @@ export function TimelineClient({ events }: { events: TimelineEvent[] }) {
     () => [...events].sort((a, b) => getTime(a.event_date) - getTime(b.event_date)),
     [events],
   );
-  const sortedEvents = useMemo(() => {
+  const filteredEvents = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
 
     return allEvents.filter((event) => {
@@ -67,13 +69,18 @@ export function TimelineClient({ events }: { events: TimelineEvent[] }) {
       return matchesQuery && matchesMedia;
     });
   }, [allEvents, mediaFilter, query]);
+  const sortedEvents = useMemo(() => {
+    const direction = sortOrder === "asc" ? 1 : -1;
+    return [...filteredEvents].sort((a, b) => (getTime(a.event_date) - getTime(b.event_date)) * direction);
+  }, [filteredEvents, sortOrder]);
 
   const timelineEvents = sortedEvents.length ? sortedEvents : allEvents;
   const timeline = useMemo(() => buildTimeline(timelineEvents, zoom), [timelineEvents, zoom]);
   const yearNavigation = useMemo(() => buildYearNavigation(timelineEvents), [timelineEvents]);
 
   const scrollToEvent = useCallback((id: string) => {
-    const target = document.querySelector(`[data-event-id="${id}"]`);
+    const targets = [...document.querySelectorAll<HTMLElement>(`[data-event-id="${id}"]`)];
+    const target = targets.find((element) => element.offsetParent !== null) ?? targets.at(0);
     target?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
   }, []);
 
@@ -223,7 +230,7 @@ export function TimelineClient({ events }: { events: TimelineEvent[] }) {
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="hidden flex-wrap items-center gap-2 lg:flex">
               <button
                 className="flex h-11 w-11 items-center justify-center rounded-md border border-stone-300 bg-white text-stone-800 hover:border-teal-700 hover:text-teal-700"
                 onClick={() => zoomBy(-1)}
@@ -256,7 +263,7 @@ export function TimelineClient({ events }: { events: TimelineEvent[] }) {
             </div>
           </header>
 
-          <div className="mt-5 grid gap-3 rounded-lg border border-stone-200 bg-white p-3 shadow-sm sm:grid-cols-[1fr_auto]">
+          <div className="mt-5 grid gap-3 rounded-lg border border-stone-200 bg-white p-3 shadow-sm xl:grid-cols-[1fr_auto_auto]">
             <label className="relative block">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
               <input
@@ -286,6 +293,24 @@ export function TimelineClient({ events }: { events: TimelineEvent[] }) {
                 </button>
               ))}
             </div>
+            <div className="flex rounded-md border border-stone-300 bg-stone-50 p-1">
+              {[
+                ["asc", "Alt nach neu"],
+                ["desc", "Neu nach alt"],
+              ].map(([id, label]) => (
+                <button
+                  key={id}
+                  className={
+                    sortOrder === id
+                      ? "h-9 rounded bg-stone-950 px-3 text-sm font-semibold text-white"
+                      : "h-9 rounded px-3 text-sm font-semibold text-stone-700 hover:bg-white"
+                  }
+                  onClick={() => setSortOrder(id as SortOrder)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
 
           {sortedEvents.length === 0 ? (
@@ -294,7 +319,14 @@ export function TimelineClient({ events }: { events: TimelineEvent[] }) {
             </div>
           ) : null}
 
-          <div className="mt-5 grid gap-5 lg:grid-cols-[1fr_380px]">
+          <MobileTimeline
+            events={sortedEvents}
+            onSelect={selectEvent}
+            onImage={setSelectedImage}
+            onVideo={setSelectedVideo}
+          />
+
+          <div className="mt-5 hidden gap-5 lg:grid lg:grid-cols-[1fr_380px]">
             <div className="min-w-0">
               <div className="mb-3 flex items-center justify-between gap-3 text-sm text-stone-600">
                 <span className="font-semibold text-stone-900">
@@ -390,7 +422,7 @@ export function TimelineClient({ events }: { events: TimelineEvent[] }) {
           </div>
 
           {yearNavigation.length > 1 ? (
-            <div className="mt-5 flex gap-2 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <div className="mt-5 hidden gap-2 overflow-x-auto pb-2 [scrollbar-width:none] lg:flex [&::-webkit-scrollbar]:hidden">
               {yearNavigation.map((item) => {
                 const isActive = selectedEvent ? getYear(selectedEvent.event_date) === item.year : false;
 
@@ -466,6 +498,108 @@ export function TimelineClient({ events }: { events: TimelineEvent[] }) {
         ) : null}
       </AnimatePresence>
     </>
+  );
+}
+
+function MobileTimeline({
+  events,
+  onSelect,
+  onImage,
+  onVideo,
+}: {
+  events: TimelineEvent[];
+  onSelect: (event: TimelineEvent) => void;
+  onImage: (event: TimelineEvent) => void;
+  onVideo: (event: TimelineEvent) => void;
+}) {
+  if (events.length === 0) return null;
+
+  return (
+    <div className="mt-5 lg:hidden">
+      <div className="mb-3 flex items-center justify-between text-sm text-stone-600">
+        <span className="font-semibold text-stone-900">Zeitliste</span>
+        <span>{events.length} Ereignisse</span>
+      </div>
+
+      <div className="relative grid gap-5 pl-6">
+        <div className="absolute bottom-0 left-[0.7rem] top-0 w-px bg-gradient-to-b from-blue-700 via-teal-600 to-orange-500" />
+
+        {events.map((event, index) => (
+          <motion.article
+            key={event.id}
+            data-event-id={event.id}
+            className="relative rounded-lg border border-stone-200 bg-white p-4 shadow-sm"
+            initial={{ opacity: 0, y: 12 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-40px" }}
+            transition={{ delay: Math.min(index * 0.03, 0.18) }}
+          >
+            <span className="absolute -left-[1.98rem] top-5 flex h-6 w-6 items-center justify-center rounded-full bg-teal-700 text-white ring-4 ring-[#f6f3ee]">
+              {event.video_url ? (
+                <Video className="h-3.5 w-3.5" />
+              ) : event.pdf_url ? (
+                <FileText className="h-3.5 w-3.5" />
+              ) : (
+                <Search className="h-3.5 w-3.5" />
+              )}
+            </span>
+
+            <button className="block w-full text-left" onClick={() => onSelect(event)}>
+              <p className="text-sm font-semibold text-teal-700">{formatEventDate(event.event_date)}</p>
+              <h2 className="mt-1 text-xl font-semibold leading-tight text-stone-950">{event.title}</h2>
+              <p className="mt-3 text-sm leading-6 text-stone-650">{event.description}</p>
+            </button>
+
+            {event.image_url ? (
+              <button
+                className="group relative mt-4 aspect-[4/3] w-full overflow-hidden rounded-lg bg-stone-100"
+                onClick={() => onImage(event)}
+                aria-label={`${event.title} als grosses Bild öffnen`}
+              >
+                <EventImage
+                  src={event.image_url}
+                  alt={event.title}
+                  className="object-cover transition duration-300 group-hover:scale-[1.03]"
+                />
+                <span className="absolute right-3 top-3 rounded-full bg-white/90 p-2 text-stone-900 shadow-sm">
+                  <ImageIcon className="h-5 w-5" />
+                </span>
+              </button>
+            ) : null}
+
+            {event.video_url ? (
+              <div className="mt-4 aspect-video overflow-hidden rounded-lg bg-black">
+                <VideoFrame url={event.video_url} title={event.title} />
+              </div>
+            ) : null}
+
+            <div className="mt-4 flex flex-wrap gap-2">
+              <CopyEventLinkButton event={event} />
+              {event.video_url ? (
+                <button
+                  className="inline-flex h-11 items-center gap-2 rounded-md bg-stone-950 px-4 text-sm font-semibold text-white hover:bg-stone-800"
+                  onClick={() => onVideo(event)}
+                >
+                  <Play className="h-4 w-4 fill-current" />
+                  Video ansehen
+                </button>
+              ) : null}
+              {event.pdf_url ? (
+                <a
+                  className="inline-flex h-11 items-center gap-2 rounded-md border border-stone-300 px-4 text-sm font-semibold text-stone-900 hover:bg-stone-50"
+                  href={event.pdf_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <FileText className="h-4 w-4" />
+                  Dokument öffnen
+                </a>
+              ) : null}
+            </div>
+          </motion.article>
+        ))}
+      </div>
+    </div>
   );
 }
 
