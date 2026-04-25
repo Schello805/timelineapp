@@ -307,14 +307,14 @@ export function TimelineClient({ events }: { events: TimelineEvent[] }) {
                 style={{ touchAction: "pan-x" }}
                 aria-label="Zoombare Timeline"
               >
-                <div className="relative h-[420px]" style={{ width: timeline.width }}>
-                  <div className="absolute left-0 right-0 top-44 h-px bg-stone-300" />
-                  <div className="absolute left-0 right-0 top-44 h-px bg-gradient-to-r from-blue-700 via-teal-600 to-orange-500" />
+                <div className="relative h-[560px]" style={{ width: timeline.width }}>
+                  <div className="absolute left-0 right-0 top-64 h-px bg-stone-300" />
+                  <div className="absolute left-0 right-0 top-64 h-px bg-gradient-to-r from-blue-700 via-teal-600 to-orange-500" />
 
                   {timeline.ticks.map((tick) => (
                     <div
                       key={tick.id}
-                      className="absolute top-28 h-28"
+                      className="absolute top-48 h-28"
                       style={{ left: tick.left }}
                     >
                       <div className={tick.major ? "h-16 w-px bg-stone-800" : "ml-px h-10 w-px bg-stone-300"} />
@@ -333,13 +333,13 @@ export function TimelineClient({ events }: { events: TimelineEvent[] }) {
                   {sortedEvents.map((event, index) => {
                     const left = timeline.position(event.event_date);
                     const isSelected = selectedEvent?.id === event.id;
-                    const above = index % 2 === 0;
+                    const labelClass = getEventLabelClass(index);
 
                     return (
                       <motion.button
                         key={event.id}
                         data-event-id={event.id}
-                        className="absolute top-44 -translate-x-1/2 -translate-y-1/2 text-left"
+                        className="absolute top-64 -translate-x-1/2 -translate-y-1/2 text-left"
                         style={{ left }}
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
@@ -357,11 +357,7 @@ export function TimelineClient({ events }: { events: TimelineEvent[] }) {
                           {event.video_url ? <Video className="h-3.5 w-3.5" /> : event.pdf_url ? <FileText className="h-3.5 w-3.5" /> : <Search className="h-3.5 w-3.5" />}
                         </span>
                         <span
-                          className={
-                            above
-                              ? "absolute bottom-9 left-1/2 w-48 -translate-x-1/2"
-                              : "absolute left-1/2 top-9 w-48 -translate-x-1/2"
-                          }
+                          className={labelClass}
                         >
                           <span className="block rounded-md border border-stone-200 bg-white px-3 py-2 shadow-sm">
                             <span className="block text-xs font-semibold text-teal-700">
@@ -596,6 +592,19 @@ function buildTicks(startYear: number, endYear: number, zoom: ZoomLevel, width: 
   }
 
   return ticks;
+}
+
+function getEventLabelClass(index: number) {
+  const lanes = [
+    "absolute bottom-10 left-1/2 w-52 -translate-x-1/2",
+    "absolute left-1/2 top-10 w-52 -translate-x-1/2",
+    "absolute bottom-28 left-1/2 w-52 -translate-x-1/2",
+    "absolute left-1/2 top-28 w-52 -translate-x-1/2",
+    "absolute bottom-44 left-1/2 w-52 -translate-x-1/2",
+    "absolute left-1/2 top-44 w-52 -translate-x-1/2",
+  ];
+
+  return lanes[index % lanes.length];
 }
 
 function getTime(date: string) {

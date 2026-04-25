@@ -60,6 +60,7 @@ export async function upsertTimelineEvent(formData: FormData) {
   await requireAdmin();
 
   const uploadedImage = await saveUpload(formData.get("image_file") as File | null, "images");
+  const uploadedVideo = await saveUpload(formData.get("video_file") as File | null, "videos");
   const uploadedPdf = await saveUpload(formData.get("pdf_file") as File | null, "pdfs");
 
   const parsed = eventSchema.safeParse({
@@ -69,7 +70,7 @@ export async function upsertTimelineEvent(formData: FormData) {
     title: String(formData.get("title") ?? ""),
     description: String(formData.get("description") ?? ""),
     image_url: uploadedImage ?? cleanOptionalText(formData.get("image_url")) ?? "",
-    video_url: cleanOptionalText(formData.get("video_url")) ?? "",
+    video_url: uploadedVideo ?? cleanOptionalText(formData.get("video_url")) ?? "",
     pdf_url: uploadedPdf ?? cleanOptionalText(formData.get("pdf_url")) ?? "",
   });
 

@@ -92,15 +92,21 @@ export function EventForm({ event }: { event?: TimelineEvent }) {
 
       <div className="grid gap-2">
         <label className="text-sm font-semibold text-stone-800" htmlFor="video_url">
-          Video-Link (YouTube, Vimeo oder MP4)
+          Video-Link
         </label>
         <input
           id="video_url"
           name="video_url"
-          type="url"
+          type="text"
+          placeholder="YouTube, Vimeo, MP4-URL oder lokaler Upload-Pfad"
           defaultValue={event?.video_url ?? ""}
           className="h-11 rounded-md border border-stone-300 px-3 outline-none focus:border-teal-700"
         />
+        <label className="inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-md border border-stone-300 px-4 text-sm font-semibold text-stone-800 hover:bg-stone-50">
+          <UploadCloud className="h-4 w-4" />
+          Video lokal hochladen
+          <input name="video_file" type="file" accept="video/*" className="sr-only" />
+        </label>
       </div>
 
       <UrlUploadField
@@ -150,8 +156,8 @@ function UrlUploadField({
       <input
         id={name}
         name={name}
-        type="url"
-        placeholder="Optional: bestehende URL eintragen"
+        type="text"
+        placeholder="Optional: URL oder lokaler Upload-Pfad"
         defaultValue={defaultValue}
         className="h-11 rounded-md border border-stone-300 px-3 outline-none focus:border-teal-700"
       />

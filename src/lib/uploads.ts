@@ -4,7 +4,7 @@ import sharp from "sharp";
 
 const uploadRoot = path.join(process.cwd(), "public", "uploads");
 
-export async function saveUpload(file: File | null, folder: "images" | "pdfs") {
+export async function saveUpload(file: File | null, folder: "images" | "videos" | "pdfs") {
   if (!file || file.size === 0) return null;
 
   const bytes = Buffer.from(await file.arrayBuffer());

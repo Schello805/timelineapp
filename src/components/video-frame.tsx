@@ -4,12 +4,15 @@ export function VideoFrame({ url, title }: { url: string | null; title: string }
   const embedUrl = getVideoEmbedUrl(url);
   if (!embedUrl) return null;
 
-  const isMp4 = embedUrl.toLowerCase().includes(".mp4");
+  const lowerUrl = embedUrl.toLowerCase();
+  const isVideoFile = [".mp4", ".webm", ".mov", ".m4v", ".ogg"].some((extension) =>
+    lowerUrl.includes(extension),
+  );
 
-  if (isMp4) {
+  if (isVideoFile || embedUrl.startsWith("/uploads/videos/")) {
     return (
       <video className="h-full w-full object-cover" controls preload="metadata">
-        <source src={embedUrl} type="video/mp4" />
+        <source src={embedUrl} />
       </video>
     );
   }
