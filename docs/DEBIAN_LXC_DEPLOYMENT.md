@@ -140,13 +140,13 @@ TLS anschließend mit Certbot oder deinem vorhandenen Reverse Proxy aktivieren.
 
 ```bash
 cd /opt/media-timeline
-sudo ./scripts/update-production.sh
+sudo ./scripts/update.sh
 ```
 
 Optional können Pfade und Service-Name angepasst werden:
 
 ```bash
-sudo APP_DIR=/opt/media-timeline SERVICE_NAME=media-timeline ./scripts/update-production.sh
+sudo APP_DIR=/opt/media-timeline SERVICE_NAME=media-timeline ./scripts/update.sh
 ```
 
 ## Backup

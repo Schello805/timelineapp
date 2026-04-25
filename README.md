@@ -99,7 +99,7 @@ Auf dem Debian-LXC reicht nach der Erstinstallation:
 
 ```bash
 cd /opt/media-timeline
-sudo ./scripts/update-production.sh
+sudo ./scripts/update.sh
 ```
 
 Das Script holt den aktuellen GitHub-Stand, installiert Abhängigkeiten, baut die App neu,
