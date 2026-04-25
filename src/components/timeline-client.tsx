@@ -2,7 +2,7 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { CalendarDays, FileText, ImageIcon, LinkIcon, Play, Search, Video } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AppLogo } from "@/components/app-logo";
 import { VideoFrame } from "@/components/video-frame";
 import type { TimelineEvent } from "@/lib/types";
@@ -10,8 +10,14 @@ import { formatEventDate, getYear } from "@/lib/timeline-format";
 
 type MediaFilter = "all" | "image" | "video" | "pdf";
 type SortOrder = "asc" | "desc";
+type TimelineZoom = "compact" | "normal" | "detail";
 
-const collapsedDescriptionLength = 260;
+const zoomLevels: Array<{ id: TimelineZoom; label: string; descriptionLength: number }> = [
+  { id: "compact", label: "Kompakt", descriptionLength: 110 },
+  { id: "normal", label: "Normal", descriptionLength: 260 },
+  { id: "detail", label: "Detail", descriptionLength: 520 },
+];
+const pinchThreshold = 0.18;
 
 export function TimelineClient({ events, ownerName }: { events: TimelineEvent[]; ownerName: string }) {
   const [selectedImage, setSelectedImage] = useState<TimelineEvent | null>(null);
@@ -19,6 +25,8 @@ export function TimelineClient({ events, ownerName }: { events: TimelineEvent[];
   const [query, setQuery] = useState("");
   const [mediaFilter, setMediaFilter] = useState<MediaFilter>("all");
   const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
+  const [timelineZoom, setTimelineZoom] = useState<TimelineZoom>("normal");
+  const pinchRef = useRef<{ distance: number; zoom: TimelineZoom } | null>(null);
 
   const allEvents = useMemo(
     () => [...events].sort((a, b) => getTime(a.event_date) - getTime(b.event_date)),
@@ -96,6 +104,39 @@ export function TimelineClient({ events, ownerName }: { events: TimelineEvent[];
     scrollToEvent(event.id);
   }
 
+  function setZoomByDirection(direction: 1 | -1, startZoom = timelineZoom) {
+    const currentIndex = zoomLevels.findIndex((item) => item.id === startZoom);
+    const next = zoomLevels[Math.min(Math.max(currentIndex + direction, 0), zoomLevels.length - 1)];
+    setTimelineZoom(next.id);
+  }
+
+  function handleTouchStart(event: React.TouchEvent<HTMLElement>) {
+    if (event.touches.length !== 2) return;
+
+    pinchRef.current = {
+      distance: getTouchDistance(event.touches),
+      zoom: timelineZoom,
+    };
+  }
+
+  function handleTouchMove(event: React.TouchEvent<HTMLElement>) {
+    const pinch = pinchRef.current;
+    if (!pinch || event.touches.length !== 2) return;
+
+    event.preventDefault();
+    const scale = getTouchDistance(event.touches) / pinch.distance;
+    const direction = scale > 1 + pinchThreshold ? 1 : scale < 1 - pinchThreshold ? -1 : 0;
+    if (!direction) return;
+
+    setZoomByDirection(direction, pinch.zoom);
+  }
+
+  function handleTouchEnd(event: React.TouchEvent<HTMLElement>) {
+    if (event.touches.length < 2) {
+      pinchRef.current = null;
+    }
+  }
+
   return (
     <>
       <section className="min-h-[calc(100svh-4rem)] bg-[#f6f3ee]">
@@ -167,6 +208,25 @@ export function TimelineClient({ events, ownerName }: { events: TimelineEvent[];
               </div>
             </div>
 
+            <div className="flex items-center justify-between gap-3 rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm text-stone-600 shadow-sm">
+              <span>Pinch zum Zoomen</span>
+              <div className="flex rounded-md border border-stone-300 bg-stone-50 p-1">
+                {zoomLevels.map((level) => (
+                  <button
+                    key={level.id}
+                    className={
+                      timelineZoom === level.id
+                        ? "h-8 rounded bg-teal-700 px-3 text-xs font-semibold text-white"
+                        : "h-8 rounded px-3 text-xs font-semibold text-stone-700 hover:bg-white"
+                    }
+                    onClick={() => setTimelineZoom(level.id)}
+                  >
+                    {level.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {yearNavigation.length > 1 ? (
               <div className="flex gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 {yearNavigation.map((item) => (
@@ -185,13 +245,25 @@ export function TimelineClient({ events, ownerName }: { events: TimelineEvent[];
           </div>
         </div>
 
-        <div className="mx-auto w-full max-w-5xl px-5 py-6 sm:py-8">
+        <div
+          className="mx-auto w-full max-w-5xl px-5 py-6 sm:py-8"
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          onTouchCancel={handleTouchEnd}
+          style={{ touchAction: "pan-y" }}
+        >
           {sortedEvents.length === 0 ? (
             <div className="rounded-lg border border-stone-200 bg-white p-6 text-sm font-semibold text-stone-700 shadow-sm">
               Keine Ereignisse für diese Suche gefunden.
             </div>
           ) : (
-            <VerticalTimeline events={sortedEvents} onImage={setSelectedImage} onVideo={setSelectedVideo} />
+            <VerticalTimeline
+              events={sortedEvents}
+              zoom={timelineZoom}
+              onImage={setSelectedImage}
+              onVideo={setSelectedVideo}
+            />
           )}
         </div>
       </section>
@@ -246,19 +318,23 @@ export function TimelineClient({ events, ownerName }: { events: TimelineEvent[];
 
 function VerticalTimeline({
   events,
+  zoom,
   onImage,
   onVideo,
 }: {
   events: TimelineEvent[];
+  zoom: TimelineZoom;
   onImage: (event: TimelineEvent) => void;
   onVideo: (event: TimelineEvent) => void;
 }) {
+  const gapClass = zoom === "compact" ? "gap-4" : zoom === "detail" ? "gap-8" : "gap-6";
+
   return (
-    <div className="relative grid gap-6 pl-6 sm:pl-8">
+    <div className={`relative grid pl-6 sm:pl-8 ${gapClass}`}>
       <div className="absolute bottom-0 left-[0.7rem] top-0 w-px bg-gradient-to-b from-blue-700 via-teal-600 to-orange-500 sm:left-[0.95rem]" />
 
       {events.map((event, index) => (
-        <TimelineItem key={event.id} event={event} index={index} onImage={onImage} onVideo={onVideo} />
+        <TimelineItem key={event.id} event={event} index={index} zoom={zoom} onImage={onImage} onVideo={onVideo} />
       ))}
     </div>
   );
@@ -267,25 +343,34 @@ function VerticalTimeline({
 function TimelineItem({
   event,
   index,
+  zoom,
   onImage,
   onVideo,
 }: {
   event: TimelineEvent;
   index: number;
+  zoom: TimelineZoom;
   onImage: (event: TimelineEvent) => void;
   onVideo: (event: TimelineEvent) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
-  const isLongDescription = event.description.length > collapsedDescriptionLength;
+  const zoomConfig = zoomLevels.find((item) => item.id === zoom) ?? zoomLevels[1];
+  const isLongDescription = event.description.length > zoomConfig.descriptionLength;
   const visibleDescription =
     expanded || !isLongDescription
       ? event.description
-      : `${event.description.slice(0, collapsedDescriptionLength).trim()}...`;
+      : `${event.description.slice(0, zoomConfig.descriptionLength).trim()}...`;
+  const compact = zoom === "compact";
+  const detail = zoom === "detail";
 
   return (
     <motion.article
       data-event-id={event.id}
-      className="relative scroll-mt-72 rounded-lg border border-stone-200 bg-white p-4 shadow-sm sm:p-5"
+      className={
+        compact
+          ? "relative scroll-mt-72 rounded-lg border border-stone-200 bg-white p-3 shadow-sm sm:p-4"
+          : "relative scroll-mt-72 rounded-lg border border-stone-200 bg-white p-4 shadow-sm sm:p-5"
+      }
       initial={{ opacity: 0, y: 12 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-40px" }}
@@ -302,8 +387,22 @@ function TimelineItem({
       </span>
 
       <p className="text-sm font-semibold text-teal-700">{formatEventDate(event.event_date)}</p>
-      <h2 className="mt-1 text-xl font-semibold leading-tight text-stone-950 sm:text-2xl">{event.title}</h2>
-      <p className="mt-3 whitespace-pre-line text-sm leading-6 text-stone-650 sm:text-base sm:leading-7">
+      <h2
+        className={
+          compact
+            ? "mt-1 text-lg font-semibold leading-tight text-stone-950"
+            : "mt-1 text-xl font-semibold leading-tight text-stone-950 sm:text-2xl"
+        }
+      >
+        {event.title}
+      </h2>
+      <p
+        className={
+          compact
+            ? "mt-2 whitespace-pre-line text-sm leading-6 text-stone-650"
+            : "mt-3 whitespace-pre-line text-sm leading-6 text-stone-650 sm:text-base sm:leading-7"
+        }
+      >
         {visibleDescription}
       </p>
       {isLongDescription ? (
@@ -315,9 +414,13 @@ function TimelineItem({
         </button>
       ) : null}
 
-      {event.image_url ? (
+      {event.image_url && zoom !== "compact" ? (
         <button
-          className="group relative mt-4 aspect-[4/3] w-full overflow-hidden rounded-lg bg-stone-100"
+          className={
+            detail
+              ? "group relative mt-5 aspect-[4/3] w-full overflow-hidden rounded-lg bg-stone-100"
+              : "group relative mt-4 aspect-video w-full overflow-hidden rounded-lg bg-stone-100"
+          }
           onClick={() => onImage(event)}
           aria-label={`${event.title} als grosses Bild öffnen`}
         >
@@ -332,13 +435,13 @@ function TimelineItem({
         </button>
       ) : null}
 
-      {event.video_url ? (
-        <div className="mt-4 aspect-video overflow-hidden rounded-lg bg-black">
+      {event.video_url && zoom !== "compact" ? (
+        <div className={detail ? "mt-5 aspect-video overflow-hidden rounded-lg bg-black" : "mt-4 aspect-video overflow-hidden rounded-lg bg-black"}>
           <VideoFrame url={event.video_url} title={event.title} />
         </div>
       ) : null}
 
-      <div className="mt-4 flex flex-wrap gap-2">
+      <div className={compact ? "mt-3 flex flex-wrap gap-2" : "mt-4 flex flex-wrap gap-2"}>
         <CopyEventLinkButton event={event} />
         {event.video_url ? (
           <button
@@ -363,6 +466,14 @@ function TimelineItem({
       </div>
     </motion.article>
   );
+}
+
+function getTouchDistance(touches: React.TouchList) {
+  const first = touches.item(0);
+  const second = touches.item(1);
+  if (!first || !second) return 1;
+
+  return Math.hypot(first.clientX - second.clientX, first.clientY - second.clientY);
 }
 
 function EventImage({ src, alt, className }: { src: string; alt: string; className?: string }) {
