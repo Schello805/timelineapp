@@ -24,6 +24,7 @@ export function ChangePasswordForm() {
         type="password"
         placeholder="Neues Passwort"
         required
+        minLength={8}
       />
       <input
         className="h-11 rounded-md border border-stone-300 px-3 outline-none focus:border-teal-700"
@@ -31,7 +32,9 @@ export function ChangePasswordForm() {
         type="password"
         placeholder="Neues Passwort wiederholen"
         required
+        minLength={8}
       />
+      <p className="text-xs text-stone-500">Mindestens 8 Zeichen.</p>
       {state?.message ? (
         <p className={state.ok ? "text-sm font-medium text-teal-700" : "text-sm font-medium text-red-700"}>
           {state.message}

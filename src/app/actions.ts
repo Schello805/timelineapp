@@ -51,7 +51,7 @@ const settingsSchema = z.object({
 
 const adminUserSchema = z.object({
   email: z.email("Bitte eine gültige E-Mail-Adresse eintragen.").trim().max(190),
-  password: z.string().min(12, "Das Passwort muss mindestens 12 Zeichen lang sein."),
+  password: z.string().min(8, "Das Passwort muss mindestens 8 Zeichen lang sein."),
 });
 
 const annualMetricSchema = z.object({
@@ -156,8 +156,8 @@ export async function updateAdminPassword(
   const nextPassword = String(formData.get("next_password") ?? "");
   const confirmPassword = String(formData.get("confirm_password") ?? "");
 
-  if (nextPassword.length < 12) {
-    return { ok: false, message: "Das neue Passwort muss mindestens 12 Zeichen lang sein." };
+  if (nextPassword.length < 8) {
+    return { ok: false, message: "Das neue Passwort muss mindestens 8 Zeichen lang sein." };
   }
 
   if (nextPassword !== confirmPassword) {

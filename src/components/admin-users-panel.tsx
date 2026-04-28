@@ -63,9 +63,10 @@ export function AdminUsersPanel({ users }: { users: AdminUser[] }) {
             name="password"
             type="password"
             required
-            minLength={12}
+            minLength={8}
             className="h-11 rounded-md border border-stone-300 px-3 outline-none focus:border-teal-700"
           />
+          <span className="text-xs font-normal text-stone-500">Mindestens 8 Zeichen.</span>
         </label>
 
         {state?.message ? (
