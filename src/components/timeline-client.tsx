@@ -367,10 +367,10 @@ function YearSection({
       transition={{ layout: { type: "spring", stiffness: 180, damping: 22 } }}
     >
       <div className="grid grid-cols-[3.4rem_1.25rem_minmax(0,1fr)] gap-2 sm:grid-cols-[7rem_2rem_minmax(0,1fr)] sm:gap-4">
-        <div className="pt-2 text-right">
+        <div className={hasExpandedEvents(group.events) ? "hidden pt-2 text-right sm:block" : "pt-2 text-right"}>
           <p className="text-xl font-semibold leading-none text-stone-950 sm:text-3xl">{group.year}</p>
         </div>
-        <div className="relative flex justify-center">
+        <div className={hasExpandedEvents(group.events) ? "hidden relative justify-center sm:flex" : "relative flex justify-center"}>
           <div className="absolute bottom-[-0.75rem] top-0 w-px bg-gradient-to-b from-blue-700 via-teal-600 to-orange-500" />
           <span className="relative mt-1 flex h-6 w-6 items-center justify-center rounded-full bg-stone-950 text-white ring-4 ring-[#f6f3ee] sm:h-7 sm:w-7">
             <CalendarDays className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
@@ -383,6 +383,7 @@ function YearSection({
             {group.months.map((month) => (
               <MonthSection
                 key={month.id}
+                year={group.year}
                 month={month}
                 onOpenEvent={onOpenEvent}
                 onOpenImage={onOpenImage}
@@ -489,10 +490,12 @@ function AnnualMetricsPanel({ metrics }: { metrics: AnnualMetric[] }) {
 }
 
 function MonthSection({
+  year,
   month,
   onOpenEvent,
   onOpenImage,
 }: {
+  year: string;
   month: TimelineMonth;
   onOpenEvent: (event: TimelineEvent) => void;
   onOpenImage: (event: TimelineEvent) => void;
@@ -503,8 +506,9 @@ function MonthSection({
       className="grid grid-cols-[3.4rem_1.25rem_minmax(0,1fr)] gap-2 sm:grid-cols-[7rem_2rem_minmax(0,1fr)] sm:gap-4"
       transition={{ layout: { type: "spring", stiffness: 180, damping: 22 } }}
     >
-      <div className="pt-1.5 text-right">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-teal-700 sm:text-sm sm:tracking-[0.16em]">
+      <div className="pt-1 text-right">
+        <p className="text-xl font-semibold leading-none text-stone-950 sm:hidden">{year}</p>
+        <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-teal-700 sm:mt-0 sm:text-sm sm:tracking-[0.16em]">
           {month.monthLabel}
         </p>
       </div>
