@@ -9,6 +9,7 @@ import {
   LinkIcon,
   Play,
   Search,
+  Sparkles,
 } from "lucide-react";
 import { startTransition, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { AppLogo } from "@/components/app-logo";
@@ -16,9 +17,9 @@ import { VideoFrame } from "@/components/video-frame";
 import type { TimelineEvent } from "@/lib/types";
 import { formatEventDate, formatEventDateNumeric, getYear } from "@/lib/timeline-format";
 
-type MediaFilter = "all" | "image" | "video" | "pdf";
 type SortOrder = "asc" | "desc";
 type TimelineZoom = "compact" | "normal" | "detail";
+type EventWeight = "brief" | "standard" | "milestone";
 type TimelineMonth = {
   id: string;
   monthLabel: string;
@@ -32,7 +33,7 @@ type TimelineYear = {
 };
 
 const zoomLevels: Array<{ id: TimelineZoom; label: string; descriptionLength: number }> = [
-  { id: "compact", label: "Kompakt", descriptionLength: 120 },
+  { id: "compact", label: "Kompakt", descriptionLength: 110 },
   { id: "normal", label: "Monate", descriptionLength: 220 },
   { id: "detail", label: "Detail", descriptionLength: 520 },
 ];
@@ -42,10 +43,11 @@ export function TimelineClient({ events, ownerName }: { events: TimelineEvent[];
   const [selectedImage, setSelectedImage] = useState<TimelineEvent | null>(null);
   const [query, setQuery] = useState("");
   const deferredQuery = useDeferredValue(query);
-  const [mediaFilter, setMediaFilter] = useState<MediaFilter>("all");
   const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
   const [timelineZoom, setTimelineZoom] = useState<TimelineZoom>("compact");
   const [pinchScale, setPinchScale] = useState(1);
+  const [activeYear, setActiveYear] = useState<string>("");
+  const [showYearJump, setShowYearJump] = useState(false);
   const pinchRef = useRef<{ distance: number } | null>(null);
 
   const allEvents = useMemo(
@@ -56,20 +58,15 @@ export function TimelineClient({ events, ownerName }: { events: TimelineEvent[];
     const normalizedQuery = deferredQuery.trim().toLowerCase();
 
     return allEvents.filter((event) => {
-      const matchesQuery =
-        !normalizedQuery ||
+      if (!normalizedQuery) return true;
+
+      return (
         event.title.toLowerCase().includes(normalizedQuery) ||
         event.description.toLowerCase().includes(normalizedQuery) ||
-        event.event_date.includes(normalizedQuery);
-      const matchesMedia =
-        mediaFilter === "all" ||
-        (mediaFilter === "image" && Boolean(event.image_url)) ||
-        (mediaFilter === "video" && Boolean(event.video_url)) ||
-        (mediaFilter === "pdf" && Boolean(event.pdf_url));
-
-      return matchesQuery && matchesMedia;
+        event.event_date.includes(normalizedQuery)
+      );
     });
-  }, [allEvents, deferredQuery, mediaFilter]);
+  }, [allEvents, deferredQuery]);
   const sortedEvents = useMemo(() => {
     const direction = sortOrder === "asc" ? 1 : -1;
     return [...filteredEvents].sort((a, b) => (getTime(a.event_date) - getTime(b.event_date)) * direction);
@@ -98,6 +95,38 @@ export function TimelineClient({ events, ownerName }: { events: TimelineEvent[];
     return () => window.removeEventListener("hashchange", selectFromHash);
   }, [allEvents]);
 
+  useEffect(() => {
+    const sections = [...document.querySelectorAll<HTMLElement>("[data-year-anchor]")];
+    if (sections.length === 0) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)
+          .at(0);
+        const year = visible?.target.getAttribute("data-year-anchor");
+        if (year) {
+          setActiveYear(year);
+        }
+      },
+      {
+        rootMargin: "-18% 0px -62% 0px",
+        threshold: [0.15, 0.4, 0.7],
+      },
+    );
+
+    sections.forEach((section) => observer.observe(section));
+    return () => observer.disconnect();
+  }, [timelineYears]);
+
+  useEffect(() => {
+    const onScroll = () => setShowYearJump(window.scrollY > 420);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
   if (allEvents.length === 0) {
     return (
       <section className="min-h-[calc(100svh-4rem)] bg-[#f6f3ee]">
@@ -119,6 +148,8 @@ export function TimelineClient({ events, ownerName }: { events: TimelineEvent[];
     const target = document.querySelector<HTMLElement>(`[data-year-anchor="${year}"]`);
     target?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
+
+  const visibleYear = activeYear || yearNavigation[0]?.year || "";
 
   function changeZoom(nextZoom: TimelineZoom) {
     startTransition(() => setTimelineZoom(nextZoom));
@@ -160,44 +191,30 @@ export function TimelineClient({ events, ownerName }: { events: TimelineEvent[];
 
   return (
     <>
-      <section className="min-h-[calc(100svh-4rem)] bg-[#f6f3ee]">
-        <div className="border-b border-stone-200 bg-[#f6f3ee]/95 backdrop-blur md:sticky md:top-0 md:z-30">
+      <section className="min-h-[calc(100svh-4rem)] bg-[radial-gradient(circle_at_top,#fbfaf6_0%,#f6f3ee_45%,#efe7dc_100%)]">
+        <div className="border-b border-stone-200/90 bg-[#f6f3ee]/92 backdrop-blur md:sticky md:top-0 md:z-30">
           <div className="mx-auto flex w-full max-w-7xl flex-col gap-2 px-4 py-2 sm:px-5 sm:py-3">
             <header className="flex items-center justify-between gap-3">
               <AppLogo compact label={`Timeline für ${ownerName}`} />
+              <div className="hidden items-center gap-2 md:flex">
+                <span className="rounded-full border border-stone-300 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-stone-500">
+                  Sichtbar
+                </span>
+                <span className="rounded-full bg-stone-950 px-3 py-1 text-sm font-semibold text-white">{visibleYear}</span>
+              </div>
             </header>
 
-            <div className="grid gap-2 rounded-lg border border-stone-200 bg-white p-2 shadow-sm xl:grid-cols-[1fr_auto_auto]">
+            <div className="grid gap-2 rounded-2xl border border-stone-200/90 bg-white/95 p-2 shadow-[0_18px_50px_-28px_rgba(37,35,32,0.38)] md:grid-cols-[minmax(0,1fr)_auto]">
               <label className="relative block">
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
                 <input
-                  className="h-10 w-full rounded-md border border-stone-300 pl-9 pr-3 text-sm outline-none focus:border-teal-700"
+                  className="h-11 w-full rounded-xl border border-stone-300 bg-white pl-9 pr-3 text-sm outline-none transition focus:border-teal-700"
                   placeholder="Titel, Beschreibung oder Datum suchen"
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
                 />
               </label>
-              <div className="flex flex-wrap gap-2">
-                {[
-                  ["all", "Alle"],
-                  ["image", "Bilder"],
-                  ["video", "Videos"],
-                  ["pdf", "PDFs"],
-                ].map(([id, label]) => (
-                  <button
-                    key={id}
-                    className={
-                      mediaFilter === id
-                        ? "h-10 rounded-md bg-stone-950 px-3 text-sm font-semibold text-white"
-                        : "h-10 rounded-md border border-stone-300 px-3 text-sm font-semibold text-stone-700 hover:border-teal-700 hover:text-teal-700"
-                    }
-                    onClick={() => setMediaFilter(id as MediaFilter)}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-              <div className="flex rounded-md border border-stone-300 bg-stone-50 p-1">
+              <div className="flex gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 {[
                   ["asc", "Älteste zuerst"],
                   ["desc", "Neueste zuerst"],
@@ -206,8 +223,8 @@ export function TimelineClient({ events, ownerName }: { events: TimelineEvent[];
                     key={id}
                     className={
                       sortOrder === id
-                        ? "h-9 rounded bg-stone-950 px-3 text-sm font-semibold text-white"
-                        : "h-9 rounded px-3 text-sm font-semibold text-stone-700 hover:bg-white"
+                        ? "h-11 shrink-0 rounded-xl bg-stone-950 px-4 text-sm font-semibold text-white"
+                        : "h-11 shrink-0 rounded-xl border border-stone-300 bg-white px-4 text-sm font-semibold text-stone-700 hover:border-teal-700 hover:text-teal-700"
                     }
                     onClick={() => setSortOrder(id as SortOrder)}
                   >
@@ -217,12 +234,16 @@ export function TimelineClient({ events, ownerName }: { events: TimelineEvent[];
               </div>
             </div>
 
-            <div className="grid gap-2 rounded-lg border border-stone-200 bg-white px-2 py-1.5 shadow-sm md:grid-cols-[1fr_auto] md:items-center">
-              <div className="flex flex-wrap gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <div className="grid gap-2 rounded-2xl border border-stone-200/90 bg-white/90 px-2 py-2 shadow-sm md:grid-cols-[1fr_auto] md:items-center">
+              <div className="flex gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 {yearNavigation.map((item) => (
                   <button
                     key={item.year}
-                    className="h-8 shrink-0 rounded-md border border-stone-300 bg-white px-3 text-sm font-semibold text-stone-800 shadow-sm hover:border-teal-700 hover:text-teal-700"
+                    className={
+                      visibleYear === item.year
+                        ? "h-9 shrink-0 rounded-xl bg-[#0f766e] px-3 text-sm font-semibold text-white shadow-sm"
+                        : "h-9 shrink-0 rounded-xl border border-stone-300 bg-white px-3 text-sm font-semibold text-stone-700 hover:border-teal-700 hover:text-teal-700"
+                    }
                     onClick={() => selectYear(item.year)}
                     aria-label={`Zum Jahr ${item.year} springen`}
                   >
@@ -231,16 +252,17 @@ export function TimelineClient({ events, ownerName }: { events: TimelineEvent[];
                 ))}
               </div>
               <div className="flex items-center justify-between gap-2 sm:justify-end">
-                <span className="text-xs font-medium text-stone-500 md:hidden">Pinch zum Zoomen</span>
-                <span className="hidden text-xs font-medium text-stone-500 md:inline">Jahresansicht und Zoom</span>
-                <div className="flex rounded-md border border-stone-300 bg-stone-50 p-1">
+                <span className="rounded-full bg-stone-100 px-3 py-1 text-xs font-medium text-stone-500 md:hidden">
+                  {visibleYear}
+                </span>
+                <div className="flex rounded-xl border border-stone-300 bg-stone-50 p-1">
                   {zoomLevels.map((level) => (
                     <button
                       key={level.id}
                       className={
                         timelineZoom === level.id
-                          ? "h-8 rounded bg-teal-700 px-3 text-xs font-semibold text-white"
-                          : "h-8 rounded px-3 text-xs font-semibold text-stone-700 hover:bg-white"
+                          ? "h-9 rounded-lg bg-teal-700 px-3 text-xs font-semibold text-white"
+                          : "h-9 rounded-lg px-3 text-xs font-semibold text-stone-700 hover:bg-white"
                       }
                       onClick={() => changeZoom(level.id)}
                     >
@@ -264,7 +286,7 @@ export function TimelineClient({ events, ownerName }: { events: TimelineEvent[];
           style={{ touchAction: "pan-y" }}
         >
           {sortedEvents.length === 0 ? (
-            <div className="rounded-lg border border-stone-200 bg-white p-6 text-sm font-semibold text-stone-700 shadow-sm">
+            <div className="rounded-2xl border border-stone-200 bg-white p-6 text-sm font-semibold text-stone-700 shadow-sm">
               Keine Ereignisse für diese Suche gefunden.
             </div>
           ) : (
@@ -286,19 +308,21 @@ export function TimelineClient({ events, ownerName }: { events: TimelineEvent[];
       <AnimatePresence>
         {selectedEvent ? (
           <motion.div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-stone-950/82 p-3 sm:p-5"
+            className="fixed inset-0 z-50 bg-stone-950/54 md:flex md:items-center md:justify-center md:p-5"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setSelectedEvent(null)}
           >
             <motion.div
-              className="max-h-[92svh] w-full max-w-4xl overflow-y-auto rounded-2xl border border-stone-200 bg-white p-5 shadow-2xl sm:p-7"
-              initial={{ opacity: 0, y: 20, scale: 0.98 }}
+              className="fixed inset-x-0 bottom-0 max-h-[88svh] overflow-y-auto rounded-t-[1.75rem] border border-stone-200 bg-white p-5 shadow-2xl md:relative md:inset-auto md:w-full md:max-w-4xl md:rounded-3xl md:p-7"
+              initial={{ opacity: 0, y: 44, scale: 0.99 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 12, scale: 0.98 }}
+              exit={{ opacity: 0, y: 28, scale: 0.99 }}
+              transition={{ type: "spring", stiffness: 220, damping: 24 }}
               onClick={(event) => event.stopPropagation()}
             >
+              <div className="mx-auto mb-4 h-1.5 w-14 rounded-full bg-stone-200 md:hidden" />
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <p className="text-sm font-semibold text-teal-700">{formatEventDate(selectedEvent.event_date)}</p>
@@ -307,7 +331,7 @@ export function TimelineClient({ events, ownerName }: { events: TimelineEvent[];
                   </h2>
                 </div>
                 <button
-                  className="rounded-md border border-stone-300 px-3 py-2 text-sm font-semibold text-stone-900 hover:bg-stone-50"
+                  className="rounded-xl border border-stone-300 px-3 py-2 text-sm font-semibold text-stone-900 hover:bg-stone-50"
                   onClick={() => setSelectedEvent(null)}
                 >
                   Schließen
@@ -324,7 +348,7 @@ export function TimelineClient({ events, ownerName }: { events: TimelineEvent[];
                 <CopyEventLinkButton event={selectedEvent} />
                 {selectedEvent.pdf_url ? (
                   <a
-                    className="inline-flex h-11 items-center gap-2 rounded-md border border-stone-300 px-4 text-sm font-semibold text-stone-900 hover:bg-stone-50"
+                    className="inline-flex h-11 items-center gap-2 rounded-xl border border-stone-300 px-4 text-sm font-semibold text-stone-900 hover:bg-stone-50"
                     href={selectedEvent.pdf_url}
                     target="_blank"
                     rel="noopener noreferrer"
@@ -347,7 +371,7 @@ export function TimelineClient({ events, ownerName }: { events: TimelineEvent[];
             onClick={() => setSelectedImage(null)}
           >
             <button
-              className="absolute right-4 top-4 rounded-md bg-white px-3 py-2 text-sm font-semibold text-stone-950"
+              className="absolute right-4 top-4 rounded-xl bg-white px-3 py-2 text-sm font-semibold text-stone-950"
               onClick={() => setSelectedImage(null)}
             >
               Schließen
@@ -356,6 +380,21 @@ export function TimelineClient({ events, ownerName }: { events: TimelineEvent[];
               <EventImage src={selectedImage.image_url ?? ""} alt={selectedImage.title} className="object-contain" />
             </div>
           </motion.div>
+        ) : null}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showYearJump && visibleYear ? (
+          <motion.button
+            className="fixed bottom-5 right-4 z-40 inline-flex items-center gap-2 rounded-full bg-stone-950 px-4 py-3 text-sm font-semibold text-white shadow-[0_18px_35px_-18px_rgba(0,0,0,0.55)] md:hidden"
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 16 }}
+            onClick={() => selectYear(visibleYear)}
+          >
+            <CalendarDays className="h-4 w-4" />
+            {visibleYear}
+          </motion.button>
         ) : null}
       </AnimatePresence>
     </>
@@ -377,7 +416,7 @@ function YearSection({
     <motion.section
       layout
       data-year-anchor={group.year}
-      className="grid gap-3"
+      className="grid gap-4"
       transition={{ layout: { type: "spring", stiffness: 180, damping: 22 } }}
     >
       <div className="grid grid-cols-[minmax(4.5rem,5.5rem)_1.75rem_minmax(0,1fr)] gap-3 sm:grid-cols-[7rem_2rem_minmax(0,1fr)] sm:gap-4">
@@ -418,23 +457,34 @@ function CompactYearCard({
   onOpenEvent: (event: TimelineEvent) => void;
 }) {
   return (
-    <motion.article layout className="rounded-xl border border-stone-200 bg-white p-4 shadow-sm">
+    <motion.article
+      layout
+      className="rounded-2xl border border-stone-200/90 bg-white/95 p-4 shadow-[0_18px_40px_-32px_rgba(33,31,28,0.45)]"
+    >
       <p className="text-sm font-semibold text-stone-950">
         {events.length} {events.length === 1 ? "Ereignis" : "Ereignisse"}
       </p>
       <div className="mt-3 grid gap-2">
-        {events.map((event) => (
-          <button
-            key={event.id}
-            data-event-id={event.id}
-            className="grid gap-1 rounded-lg border border-stone-200 bg-stone-50 px-3 py-3 text-left transition hover:border-teal-700 hover:bg-white"
-            onClick={() => onOpenEvent(event)}
-          >
-            <span className="text-sm font-semibold text-teal-700">{formatEventDateNumeric(event.event_date)}</span>
-            <span className="text-base font-semibold leading-tight text-stone-950">{event.title}</span>
-            <span className="line-clamp-2 text-sm leading-6 text-stone-600">{event.description}</span>
-          </button>
-        ))}
+        {events.map((event) => {
+          const weight = getEventWeight(event);
+
+          return (
+            <button
+              key={event.id}
+              data-event-id={event.id}
+              className={
+                weight === "milestone"
+                  ? "grid gap-1 rounded-xl border border-orange-200 bg-[linear-gradient(135deg,#fffdf8_0%,#fff3e2_100%)] px-3 py-3 text-left shadow-sm transition hover:border-orange-400"
+                  : "grid gap-1 rounded-xl border border-stone-200 bg-stone-50 px-3 py-3 text-left transition hover:border-teal-700 hover:bg-white"
+              }
+              onClick={() => onOpenEvent(event)}
+            >
+              <span className="text-sm font-semibold text-teal-700">{formatEventDateNumeric(event.event_date)}</span>
+              <span className="text-base font-semibold leading-tight text-stone-950">{event.title}</span>
+              <span className="line-clamp-2 text-sm leading-6 text-stone-600">{event.description}</span>
+            </button>
+          );
+        })}
       </div>
     </motion.article>
   );
@@ -498,6 +548,7 @@ function EventRow({
       ? event.description
       : `${event.description.slice(0, zoomConfig.descriptionLength).trim()}...`;
   const detail = zoom === "detail";
+  const weight = getEventWeight(event);
 
   return (
     <motion.article
@@ -513,9 +564,25 @@ function EventRow({
         {formatEventDateNumeric(event.event_date)}-
       </button>
 
-      <div className="rounded-xl border border-stone-200 bg-white p-4 shadow-sm sm:p-5">
+      <div
+        className={
+          weight === "milestone"
+            ? "rounded-2xl border border-orange-200/90 bg-[linear-gradient(180deg,#fffdf8_0%,#fff6ea_100%)] p-5 shadow-[0_18px_45px_-34px_rgba(188,122,37,0.45)] sm:p-6"
+            : weight === "brief"
+              ? "rounded-2xl border border-stone-200/90 bg-white/95 p-4 shadow-sm sm:p-4.5"
+              : "rounded-2xl border border-stone-200/90 bg-white/95 p-4 shadow-[0_18px_40px_-32px_rgba(33,31,28,0.42)] sm:p-5"
+        }
+      >
         <button className="w-full text-left" onClick={() => onOpenEvent(event)}>
-          <h2 className={detail ? "text-2xl font-semibold leading-tight text-stone-950" : "text-xl font-semibold leading-tight text-stone-950"}>
+          <div className="flex flex-wrap items-center gap-2">
+            {weight === "milestone" ? (
+              <span className="inline-flex items-center gap-1 rounded-full bg-orange-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-orange-800">
+                <Sparkles className="h-3 w-3" />
+                Meilenstein
+              </span>
+            ) : null}
+          </div>
+          <h2 className={detail || weight === "milestone" ? "mt-2 text-2xl font-semibold leading-tight text-stone-950" : "mt-1 text-xl font-semibold leading-tight text-stone-950"}>
             {event.title}
           </h2>
         </button>
@@ -533,8 +600,8 @@ function EventRow({
           </button>
         ) : null}
 
-        {zoom === "detail" ? (
-          <EventMediaStack event={event} detail onOpenImage={onOpenImage} />
+        {zoom === "detail" || weight === "milestone" ? (
+          <EventMediaStack event={event} detail={detail || weight === "milestone"} onOpenImage={onOpenImage} />
         ) : (
           <div className="mt-4 flex flex-wrap gap-2 text-xs font-semibold">
             {event.image_url ? <span className="rounded-full bg-blue-50 px-3 py-1 text-blue-700">Bild</span> : null}
@@ -545,7 +612,7 @@ function EventRow({
 
         <div className="mt-4 flex flex-wrap gap-2">
           <button
-            className="inline-flex h-11 items-center gap-2 rounded-md bg-stone-950 px-4 text-sm font-semibold text-white hover:bg-stone-800"
+            className="inline-flex h-11 items-center gap-2 rounded-xl bg-stone-950 px-4 text-sm font-semibold text-white hover:bg-stone-800"
             onClick={() => onOpenEvent(event)}
           >
             <ChevronRight className="h-4 w-4" />
@@ -554,7 +621,7 @@ function EventRow({
           <CopyEventLinkButton event={event} />
           {event.video_url ? (
             <button
-              className="inline-flex h-11 items-center gap-2 rounded-md border border-stone-300 px-4 text-sm font-semibold text-stone-900 hover:bg-stone-50"
+              className="inline-flex h-11 items-center gap-2 rounded-xl border border-stone-300 px-4 text-sm font-semibold text-stone-900 hover:bg-stone-50"
               onClick={() => onOpenEvent(event)}
             >
               <Play className="h-4 w-4 fill-current" />
@@ -563,7 +630,7 @@ function EventRow({
           ) : null}
           {event.pdf_url ? (
             <a
-              className="inline-flex h-11 items-center gap-2 rounded-md border border-stone-300 px-4 text-sm font-semibold text-stone-900 hover:bg-stone-50"
+              className="inline-flex h-11 items-center gap-2 rounded-xl border border-stone-300 px-4 text-sm font-semibold text-stone-900 hover:bg-stone-50"
               href={event.pdf_url}
               target="_blank"
               rel="noopener noreferrer"
@@ -593,7 +660,7 @@ function EventMediaStack({
     <div className={detail ? "mt-5 grid gap-4" : "mt-4 grid gap-3"}>
       {event.image_url ? (
         <button
-          className="group relative aspect-[4/3] w-full overflow-hidden rounded-xl bg-stone-100"
+          className="group relative aspect-[4/3] w-full overflow-hidden rounded-2xl bg-stone-100"
           onClick={() => onOpenImage(event)}
           aria-label={`${event.title} als grosses Bild öffnen`}
         >
@@ -602,14 +669,14 @@ function EventMediaStack({
             alt={event.title}
             className="object-cover transition duration-300 group-hover:scale-[1.03]"
           />
-          <span className="absolute right-3 top-3 rounded-full bg-white/90 p-2 text-stone-900 shadow-sm">
+          <span className="absolute right-3 top-3 rounded-full bg-white/92 p-2 text-stone-900 shadow-sm">
             <ImageIcon className="h-5 w-5" />
           </span>
         </button>
       ) : null}
 
       {event.video_url ? (
-        <div className="aspect-video overflow-hidden rounded-xl bg-black">
+        <div className="aspect-video overflow-hidden rounded-2xl bg-black">
           <VideoFrame url={event.video_url} title={event.title} />
         </div>
       ) : null}
@@ -654,7 +721,7 @@ function CopyEventLinkButton({ event }: { event: TimelineEvent }) {
 
   return (
     <button
-      className="inline-flex h-11 items-center gap-2 rounded-md border border-stone-300 px-4 text-sm font-semibold text-stone-900 hover:bg-stone-50"
+      className="inline-flex h-11 items-center gap-2 rounded-xl border border-stone-300 px-4 text-sm font-semibold text-stone-900 hover:bg-stone-50"
       onClick={copyLink}
     >
       <LinkIcon className="h-4 w-4" />
@@ -763,6 +830,13 @@ function buildTimelineYears(events: TimelineEvent[]) {
   }
 
   return [...years.values()];
+}
+
+function getEventWeight(event: TimelineEvent): EventWeight {
+  const mediaCount = [event.image_url, event.video_url, event.pdf_url].filter(Boolean).length;
+  if (event.video_url || mediaCount >= 2 || event.description.length > 520) return "milestone";
+  if (event.description.length < 120 && !event.image_url && !event.video_url) return "brief";
+  return "standard";
 }
 
 function getTouchDistance(touches: React.TouchList) {

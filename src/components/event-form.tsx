@@ -119,6 +119,9 @@ export function EventForm({ event }: { event?: TimelineEvent }) {
           defaultValue={event?.video_url ?? ""}
           className="h-11 rounded-md border border-stone-300 px-3 outline-none focus:border-teal-700"
         />
+        <p className="text-sm leading-6 text-stone-600">
+          Empfohlen für lokale Uploads: MP4 mit H.264/AAC. Große Dateien sind möglich, laden aber je nach Verbindung und Proxy langsamer.
+        </p>
         <label className="inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-md border border-stone-300 px-4 text-sm font-semibold text-stone-800 hover:bg-stone-50">
           {videoUpload.pending ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <UploadCloud className="h-4 w-4" />}
           {videoUpload.pending ? "Video wird hochgeladen..." : "Video lokal hochladen"}
@@ -260,9 +263,9 @@ function UrlUploadField({
 }) {
   return (
     <div className="grid gap-2">
-      <label className="text-sm font-semibold text-stone-800" htmlFor={name}>
-        {label}
-      </label>
+        <label className="text-sm font-semibold text-stone-800" htmlFor={name}>
+          {label}
+        </label>
       <input
         id={name}
         name={name}
@@ -271,6 +274,16 @@ function UrlUploadField({
         defaultValue={defaultValue}
         className="h-11 rounded-md border border-stone-300 px-3 outline-none focus:border-teal-700"
       />
+      {name === "image_url" ? (
+        <p className="text-sm leading-6 text-stone-600">
+          Bilder wirken am besten im Querformat und mit klarer Hauptszene.
+        </p>
+      ) : null}
+      {name === "pdf_url" ? (
+        <p className="text-sm leading-6 text-stone-600">
+          PDFs werden in der öffentlichen Timeline als direkter Dokument-Link geöffnet.
+        </p>
+      ) : null}
       <label className="inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-md border border-stone-300 px-4 text-sm font-semibold text-stone-800 hover:bg-stone-50">
         <UploadCloud className="h-4 w-4" />
         Datei lokal hochladen

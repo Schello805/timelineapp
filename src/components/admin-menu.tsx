@@ -14,13 +14,13 @@ const menuItems = [
   {
     href: "/admin/einstellungen",
     label: "App-Einstellungen",
-    description: "Name, Benutzer und Backups",
+    description: "Name, Darstellung und Backups",
     icon: Settings,
   },
   {
     href: "/admin/sicherheit",
     label: "Sicherheit",
-    description: "Admin-Zugang",
+    description: "Admins und Passwörter",
     icon: Shield,
   },
 ];
