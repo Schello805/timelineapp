@@ -2,7 +2,15 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import sharp from "sharp";
 
-const uploadRoot = path.join(process.cwd(), "public", "uploads");
+export const uploadRoot = path.join(process.cwd(), "public", "uploads");
+
+export function sanitizeUploadBase(fileName: string) {
+  return fileName.replace(/\.[^/.]+$/, "").replace(/[^a-zA-Z0-9._-]/g, "-").slice(0, 80) || "upload";
+}
+
+export function createUploadFileName(fileName: string, extension: string) {
+  return `${crypto.randomUUID()}-${sanitizeUploadBase(fileName)}.${extension}`;
+}
 
 export async function saveUpload(file: File | null, folder: "images" | "videos" | "pdfs") {
   if (!file || file.size === 0) return null;
@@ -10,11 +18,7 @@ export async function saveUpload(file: File | null, folder: "images" | "videos" 
   const bytes = Buffer.from(await file.arrayBuffer());
   const isImage = folder === "images" && file.type.startsWith("image/");
   const extension = isImage ? "webp" : file.name.split(".").pop() || "bin";
-  const safeBase = file.name
-    .replace(/\.[^/.]+$/, "")
-    .replace(/[^a-zA-Z0-9._-]/g, "-")
-    .slice(0, 80);
-  const name = `${crypto.randomUUID()}-${safeBase}.${extension}`;
+  const name = createUploadFileName(file.name, extension);
   const dir = path.join(uploadRoot, folder);
   const output = isImage
     ? await sharp(bytes)

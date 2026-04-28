@@ -1,46 +1,59 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { FileText, ImageIcon, LinkIcon, Play, Search, Video } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  CalendarDays,
+  ChevronRight,
+  FileText,
+  ImageIcon,
+  LinkIcon,
+  Play,
+  Search,
+} from "lucide-react";
+import { startTransition, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { AppLogo } from "@/components/app-logo";
 import { VideoFrame } from "@/components/video-frame";
 import type { TimelineEvent } from "@/lib/types";
-import { formatEventDate, getYear } from "@/lib/timeline-format";
+import { formatEventDate, formatEventDateNumeric, getYear } from "@/lib/timeline-format";
 
 type MediaFilter = "all" | "image" | "video" | "pdf";
 type SortOrder = "asc" | "desc";
 type TimelineZoom = "compact" | "normal" | "detail";
-type TimelineGroup = {
+type TimelineMonth = {
+  id: string;
+  monthLabel: string;
+  events: TimelineEvent[];
+};
+type TimelineYear = {
   id: string;
   year: string;
-  month?: string;
-  monthLabel?: string;
   events: TimelineEvent[];
+  months: TimelineMonth[];
 };
 
 const zoomLevels: Array<{ id: TimelineZoom; label: string; descriptionLength: number }> = [
-  { id: "compact", label: "Kompakt", descriptionLength: 110 },
-  { id: "normal", label: "Normal", descriptionLength: 260 },
+  { id: "compact", label: "Kompakt", descriptionLength: 120 },
+  { id: "normal", label: "Monate", descriptionLength: 220 },
   { id: "detail", label: "Detail", descriptionLength: 520 },
 ];
-const pinchThreshold = 0.18;
 
 export function TimelineClient({ events, ownerName }: { events: TimelineEvent[]; ownerName: string }) {
+  const [selectedEvent, setSelectedEvent] = useState<TimelineEvent | null>(null);
   const [selectedImage, setSelectedImage] = useState<TimelineEvent | null>(null);
-  const [selectedVideo, setSelectedVideo] = useState<TimelineEvent | null>(null);
   const [query, setQuery] = useState("");
+  const deferredQuery = useDeferredValue(query);
   const [mediaFilter, setMediaFilter] = useState<MediaFilter>("all");
   const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
   const [timelineZoom, setTimelineZoom] = useState<TimelineZoom>("compact");
-  const pinchRef = useRef<{ distance: number; zoom: TimelineZoom } | null>(null);
+  const [pinchScale, setPinchScale] = useState(1);
+  const pinchRef = useRef<{ distance: number } | null>(null);
 
   const allEvents = useMemo(
     () => [...events].sort((a, b) => getTime(a.event_date) - getTime(b.event_date)),
     [events],
   );
   const filteredEvents = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase();
+    const normalizedQuery = deferredQuery.trim().toLowerCase();
 
     return allEvents.filter((event) => {
       const matchesQuery =
@@ -56,21 +69,16 @@ export function TimelineClient({ events, ownerName }: { events: TimelineEvent[];
 
       return matchesQuery && matchesMedia;
     });
-  }, [allEvents, mediaFilter, query]);
+  }, [allEvents, deferredQuery, mediaFilter]);
   const sortedEvents = useMemo(() => {
     const direction = sortOrder === "asc" ? 1 : -1;
     return [...filteredEvents].sort((a, b) => (getTime(a.event_date) - getTime(b.event_date)) * direction);
   }, [filteredEvents, sortOrder]);
-  const timelineGroups = useMemo(() => buildTimelineGroups(sortedEvents, timelineZoom), [sortedEvents, timelineZoom]);
   const yearNavigation = useMemo(() => buildYearNavigation(sortedEvents.length ? sortedEvents : allEvents), [
     allEvents,
     sortedEvents,
   ]);
-
-  const scrollToEvent = useCallback((id: string) => {
-    const target = document.querySelector<HTMLElement>(`[data-event-id="${id}"]`);
-    target?.scrollIntoView({ behavior: "smooth", block: "start" });
-  }, []);
+  const timelineYears = useMemo(() => buildTimelineYears(sortedEvents), [sortedEvents]);
 
   useEffect(() => {
     const selectFromHash = () => {
@@ -80,13 +88,15 @@ export function TimelineClient({ events, ownerName }: { events: TimelineEvent[];
       const event = allEvents.find((item) => item.id === eventKey || item.slug === eventKey);
       if (!event) return;
 
-      window.requestAnimationFrame(() => scrollToEvent(event.id));
+      const target = document.querySelector<HTMLElement>(`[data-event-id="${event.id}"]`);
+      target?.scrollIntoView({ behavior: "smooth", block: "center" });
+      window.setTimeout(() => setSelectedEvent(event), 180);
     };
 
     selectFromHash();
     window.addEventListener("hashchange", selectFromHash);
     return () => window.removeEventListener("hashchange", selectFromHash);
-  }, [allEvents, scrollToEvent]);
+  }, [allEvents]);
 
   if (allEvents.length === 0) {
     return (
@@ -106,25 +116,24 @@ export function TimelineClient({ events, ownerName }: { events: TimelineEvent[];
   }
 
   function selectYear(year: string) {
-    const event = yearNavigation.find((item) => item.year === year)?.firstEvent;
-    if (!event) return;
-
-    scrollToEvent(event.id);
+    const target = document.querySelector<HTMLElement>(`[data-year-anchor="${year}"]`);
+    target?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
-  function setZoomByDirection(direction: 1 | -1, startZoom = timelineZoom) {
-    const currentIndex = zoomLevels.findIndex((item) => item.id === startZoom);
+  function changeZoom(nextZoom: TimelineZoom) {
+    startTransition(() => setTimelineZoom(nextZoom));
+  }
+
+  function setZoomByDirection(direction: 1 | -1) {
+    const currentIndex = zoomLevels.findIndex((item) => item.id === timelineZoom);
     const next = zoomLevels[Math.min(Math.max(currentIndex + direction, 0), zoomLevels.length - 1)];
-    setTimelineZoom(next.id);
+    changeZoom(next.id);
   }
 
   function handleTouchStart(event: React.TouchEvent<HTMLElement>) {
     if (event.touches.length !== 2) return;
-
-    pinchRef.current = {
-      distance: getTouchDistance(event.touches),
-      zoom: timelineZoom,
-    };
+    pinchRef.current = { distance: getTouchDistance(event.touches) };
+    setPinchScale(1);
   }
 
   function handleTouchMove(event: React.TouchEvent<HTMLElement>) {
@@ -132,17 +141,21 @@ export function TimelineClient({ events, ownerName }: { events: TimelineEvent[];
     if (!pinch || event.touches.length !== 2) return;
 
     event.preventDefault();
-    const scale = getTouchDistance(event.touches) / pinch.distance;
-    const direction = scale > 1 + pinchThreshold ? 1 : scale < 1 - pinchThreshold ? -1 : 0;
-    if (!direction) return;
-
-    setZoomByDirection(direction, pinch.zoom);
+    const nextScale = getTouchDistance(event.touches) / pinch.distance;
+    setPinchScale(clamp(nextScale, 0.84, 1.18));
   }
 
-  function handleTouchEnd(event: React.TouchEvent<HTMLElement>) {
-    if (event.touches.length < 2) {
-      pinchRef.current = null;
+  function handleTouchEnd() {
+    if (!pinchRef.current) return;
+
+    if (pinchScale >= 1.11) {
+      setZoomByDirection(1);
+    } else if (pinchScale <= 0.89) {
+      setZoomByDirection(-1);
     }
+
+    pinchRef.current = null;
+    setPinchScale(1);
   }
 
   return (
@@ -204,44 +217,8 @@ export function TimelineClient({ events, ownerName }: { events: TimelineEvent[];
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-stone-200 bg-white px-2 py-1.5 text-sm text-stone-600 shadow-sm">
-              {yearNavigation.length > 1 ? (
-                <div className="hidden gap-2 overflow-x-auto [scrollbar-width:none] md:flex [&::-webkit-scrollbar]:hidden">
-                  {yearNavigation.map((item) => (
-                    <button
-                      key={item.year}
-                      className="h-8 shrink-0 rounded-md border border-stone-300 bg-white px-3 text-sm font-semibold text-stone-800 shadow-sm hover:border-teal-700 hover:text-teal-700"
-                      onClick={() => selectYear(item.year)}
-                      aria-label={`Zum Jahr ${item.year} springen`}
-                    >
-                      {item.year}
-                      <span className="ml-2 text-stone-400">{item.count}</span>
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <span className="hidden text-xs font-medium md:inline">Pinch zum Zoomen</span>
-              )}
-              <span className="text-xs font-medium md:hidden">Pinch zum Zoomen</span>
-              <div className="flex rounded-md border border-stone-300 bg-stone-50 p-1">
-                {zoomLevels.map((level) => (
-                  <button
-                    key={level.id}
-                    className={
-                      timelineZoom === level.id
-                        ? "h-8 rounded bg-teal-700 px-3 text-xs font-semibold text-white"
-                        : "h-8 rounded px-3 text-xs font-semibold text-stone-700 hover:bg-white"
-                    }
-                    onClick={() => setTimelineZoom(level.id)}
-                  >
-                    {level.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {yearNavigation.length > 1 ? (
-              <div className="flex gap-2 overflow-x-auto [scrollbar-width:none] md:hidden [&::-webkit-scrollbar]:hidden">
+            <div className="grid gap-2 rounded-lg border border-stone-200 bg-white px-2 py-1.5 shadow-sm md:grid-cols-[1fr_auto] md:items-center">
+              <div className="flex flex-wrap gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 {yearNavigation.map((item) => (
                   <button
                     key={item.year}
@@ -250,16 +227,36 @@ export function TimelineClient({ events, ownerName }: { events: TimelineEvent[];
                     aria-label={`Zum Jahr ${item.year} springen`}
                   >
                     {item.year}
-                    <span className="ml-2 text-stone-400">{item.count}</span>
                   </button>
                 ))}
               </div>
-            ) : null}
+              <div className="flex items-center justify-between gap-2 sm:justify-end">
+                <span className="text-xs font-medium text-stone-500 md:hidden">Pinch zum Zoomen</span>
+                <span className="hidden text-xs font-medium text-stone-500 md:inline">Jahresansicht und Zoom</span>
+                <div className="flex rounded-md border border-stone-300 bg-stone-50 p-1">
+                  {zoomLevels.map((level) => (
+                    <button
+                      key={level.id}
+                      className={
+                        timelineZoom === level.id
+                          ? "h-8 rounded bg-teal-700 px-3 text-xs font-semibold text-white"
+                          : "h-8 rounded px-3 text-xs font-semibold text-stone-700 hover:bg-white"
+                      }
+                      onClick={() => changeZoom(level.id)}
+                    >
+                      {level.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
-        <div
-          className="mx-auto w-full max-w-5xl px-5 py-6 sm:py-8"
+        <motion.div
+          className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-5 sm:py-8"
+          animate={{ scale: pinchScale }}
+          transition={{ type: "spring", stiffness: 260, damping: 28, mass: 0.9 }}
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
@@ -271,20 +268,79 @@ export function TimelineClient({ events, ownerName }: { events: TimelineEvent[];
               Keine Ereignisse für diese Suche gefunden.
             </div>
           ) : (
-            <VerticalTimeline
-              groups={timelineGroups}
-              zoom={timelineZoom}
-              onImage={setSelectedImage}
-              onVideo={setSelectedVideo}
-            />
+            <div className="grid gap-8">
+              {timelineYears.map((yearGroup) => (
+                <YearSection
+                  key={yearGroup.id}
+                  group={yearGroup}
+                  zoom={timelineZoom}
+                  onOpenEvent={setSelectedEvent}
+                  onOpenImage={setSelectedImage}
+                />
+              ))}
+            </div>
           )}
-        </div>
+        </motion.div>
       </section>
 
       <AnimatePresence>
+        {selectedEvent ? (
+          <motion.div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-stone-950/82 p-3 sm:p-5"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setSelectedEvent(null)}
+          >
+            <motion.div
+              className="max-h-[92svh] w-full max-w-4xl overflow-y-auto rounded-2xl border border-stone-200 bg-white p-5 shadow-2xl sm:p-7"
+              initial={{ opacity: 0, y: 20, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 12, scale: 0.98 }}
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-sm font-semibold text-teal-700">{formatEventDate(selectedEvent.event_date)}</p>
+                  <h2 className="mt-2 text-2xl font-semibold leading-tight text-stone-950 sm:text-4xl">
+                    {selectedEvent.title}
+                  </h2>
+                </div>
+                <button
+                  className="rounded-md border border-stone-300 px-3 py-2 text-sm font-semibold text-stone-900 hover:bg-stone-50"
+                  onClick={() => setSelectedEvent(null)}
+                >
+                  Schließen
+                </button>
+              </div>
+
+              <div className="mt-5 text-sm leading-7 text-stone-700 sm:text-base">
+                <RichDescription text={selectedEvent.description} />
+              </div>
+
+              <EventMediaStack event={selectedEvent} detail onOpenImage={setSelectedImage} />
+
+              <div className="mt-5 flex flex-wrap gap-2">
+                <CopyEventLinkButton event={selectedEvent} />
+                {selectedEvent.pdf_url ? (
+                  <a
+                    className="inline-flex h-11 items-center gap-2 rounded-md border border-stone-300 px-4 text-sm font-semibold text-stone-900 hover:bg-stone-50"
+                    href={selectedEvent.pdf_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <FileText className="h-4 w-4" />
+                    Dokument öffnen
+                  </a>
+                ) : null}
+              </div>
+            </motion.div>
+          </motion.div>
+        ) : null}
+
         {selectedImage ? (
           <motion.div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-stone-950/88 p-4"
+            className="fixed inset-0 z-[60] flex items-center justify-center bg-stone-950/88 p-4"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -301,214 +357,244 @@ export function TimelineClient({ events, ownerName }: { events: TimelineEvent[];
             </div>
           </motion.div>
         ) : null}
-
-        {selectedVideo ? (
-          <motion.div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-stone-950/88 p-4"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setSelectedVideo(null)}
-          >
-            <button
-              className="absolute right-4 top-4 rounded-md bg-white px-3 py-2 text-sm font-semibold text-stone-950"
-              onClick={() => setSelectedVideo(null)}
-            >
-              Schließen
-            </button>
-            <div
-              className="aspect-video w-full max-w-5xl overflow-hidden rounded-lg bg-black"
-              onClick={(event) => event.stopPropagation()}
-            >
-              <VideoFrame url={selectedVideo.video_url} title={selectedVideo.title} />
-            </div>
-          </motion.div>
-        ) : null}
       </AnimatePresence>
     </>
   );
 }
 
-function VerticalTimeline({
-  groups,
-  zoom,
-  onImage,
-  onVideo,
-}: {
-  groups: TimelineGroup[];
-  zoom: TimelineZoom;
-  onImage: (event: TimelineEvent) => void;
-  onVideo: (event: TimelineEvent) => void;
-}) {
-  const gapClass = zoom === "compact" ? "gap-3" : zoom === "detail" ? "gap-8" : "gap-5";
-
-  return (
-    <div className={`relative grid ${gapClass}`}>
-      {groups.map((group, index) => (
-        <TimelineGroupBlock
-          key={group.id}
-          group={group}
-          index={index}
-          zoom={zoom}
-          onImage={onImage}
-          onVideo={onVideo}
-        />
-      ))}
-    </div>
-  );
-}
-
-function TimelineGroupBlock({
+function YearSection({
   group,
-  index,
   zoom,
-  onImage,
-  onVideo,
+  onOpenEvent,
+  onOpenImage,
 }: {
-  group: TimelineGroup;
-  index: number;
+  group: TimelineYear;
   zoom: TimelineZoom;
-  onImage: (event: TimelineEvent) => void;
-  onVideo: (event: TimelineEvent) => void;
+  onOpenEvent: (event: TimelineEvent) => void;
+  onOpenImage: (event: TimelineEvent) => void;
 }) {
   return (
     <motion.section
-      className="grid grid-cols-[4.6rem_1.5rem_minmax(0,1fr)] gap-3 sm:grid-cols-[6rem_1.75rem_minmax(0,1fr)] sm:gap-4"
-      initial={{ opacity: 0, y: 12 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-40px" }}
-      transition={{ delay: Math.min(index * 0.03, 0.18) }}
+      layout
+      data-year-anchor={group.year}
+      className="grid gap-3"
+      transition={{ layout: { type: "spring", stiffness: 180, damping: 22 } }}
     >
-      <div className="pt-1 text-right">
-        <p className="text-base font-semibold leading-tight text-stone-950 sm:text-lg">{group.year}</p>
-        {group.monthLabel ? (
-          <p className="mt-1 text-xs font-semibold uppercase tracking-[0.12em] text-teal-700 sm:text-sm">
-            {group.monthLabel}
-          </p>
-        ) : null}
-      </div>
-
-      <div className="relative flex justify-center">
-        <div className="absolute bottom-[-1rem] top-0 w-px bg-gradient-to-b from-blue-700 via-teal-600 to-orange-500" />
-        <span className="relative mt-1 flex h-6 w-6 items-center justify-center rounded-full bg-teal-700 text-white ring-4 ring-[#f6f3ee]">
-          {zoom === "compact" ? group.events.length : group.events.some((event) => event.video_url) ? (
-            <Video className="h-3.5 w-3.5" />
-          ) : group.events.some((event) => event.pdf_url) ? (
-            <FileText className="h-3.5 w-3.5" />
-          ) : (
-            <Search className="h-3.5 w-3.5" />
-          )}
-        </span>
-      </div>
-
-      {zoom === "compact" ? (
-        <YearSummary group={group} />
-      ) : (
-        <div className={zoom === "detail" ? "grid gap-5" : "grid gap-3"}>
-          {group.events.map((event) => (
-            <TimelineItem
-              key={event.id}
-              event={event}
-              zoom={zoom}
-              onImage={onImage}
-              onVideo={onVideo}
-            />
-          ))}
+      <div className="grid grid-cols-[minmax(4.5rem,5.5rem)_1.75rem_minmax(0,1fr)] gap-3 sm:grid-cols-[7rem_2rem_minmax(0,1fr)] sm:gap-4">
+        <div className="pt-2 text-right">
+          <p className="text-2xl font-semibold leading-none text-stone-950 sm:text-3xl">{group.year}</p>
         </div>
-      )}
+        <div className="relative flex justify-center">
+          <div className="absolute bottom-[-0.75rem] top-0 w-px bg-gradient-to-b from-blue-700 via-teal-600 to-orange-500" />
+          <span className="relative mt-1 flex h-7 w-7 items-center justify-center rounded-full bg-stone-950 text-white ring-4 ring-[#f6f3ee]">
+            <CalendarDays className="h-4 w-4" />
+          </span>
+        </div>
+        {zoom === "compact" ? (
+          <CompactYearCard events={group.events} onOpenEvent={onOpenEvent} />
+        ) : (
+          <div className="grid gap-4">
+            {group.months.map((month) => (
+              <MonthSection
+                key={month.id}
+                month={month}
+                zoom={zoom}
+                onOpenEvent={onOpenEvent}
+                onOpenImage={onOpenImage}
+              />
+            ))}
+          </div>
+        )}
+      </div>
     </motion.section>
   );
 }
 
-function YearSummary({ group }: { group: TimelineGroup }) {
+function CompactYearCard({
+  events,
+  onOpenEvent,
+}: {
+  events: TimelineEvent[];
+  onOpenEvent: (event: TimelineEvent) => void;
+}) {
   return (
-    <article className="rounded-lg border border-stone-200 bg-white p-3 shadow-sm">
+    <motion.article layout className="rounded-xl border border-stone-200 bg-white p-4 shadow-sm">
       <p className="text-sm font-semibold text-stone-950">
-        {group.events.length} {group.events.length === 1 ? "Ereignis" : "Ereignisse"}
+        {events.length} {events.length === 1 ? "Ereignis" : "Ereignisse"}
       </p>
-      <div className="mt-2 grid gap-1">
-        {group.events.map((event) => (
-          <a
+      <div className="mt-3 grid gap-2">
+        {events.map((event) => (
+          <button
             key={event.id}
             data-event-id={event.id}
-            className="rounded-md px-2 py-1 text-sm font-medium text-stone-700 hover:bg-stone-50 hover:text-teal-800"
-            href={`#event-${encodeURIComponent(event.slug || event.id)}`}
+            className="grid gap-1 rounded-lg border border-stone-200 bg-stone-50 px-3 py-3 text-left transition hover:border-teal-700 hover:bg-white"
+            onClick={() => onOpenEvent(event)}
           >
-            <span className="font-semibold text-teal-700">{formatEventDate(event.event_date)}</span>
-            <span className="ml-2">{event.title}</span>
-          </a>
+            <span className="text-sm font-semibold text-teal-700">{formatEventDateNumeric(event.event_date)}</span>
+            <span className="text-base font-semibold leading-tight text-stone-950">{event.title}</span>
+            <span className="line-clamp-2 text-sm leading-6 text-stone-600">{event.description}</span>
+          </button>
         ))}
       </div>
-    </article>
+    </motion.article>
   );
 }
 
-function TimelineItem({
+function MonthSection({
+  month,
+  zoom,
+  onOpenEvent,
+  onOpenImage,
+}: {
+  month: TimelineMonth;
+  zoom: TimelineZoom;
+  onOpenEvent: (event: TimelineEvent) => void;
+  onOpenImage: (event: TimelineEvent) => void;
+}) {
+  return (
+    <motion.div
+      layout
+      className="grid grid-cols-[minmax(4.5rem,5.5rem)_1.75rem_minmax(0,1fr)] gap-3 sm:grid-cols-[7rem_2rem_minmax(0,1fr)] sm:gap-4"
+      transition={{ layout: { type: "spring", stiffness: 180, damping: 22 } }}
+    >
+      <div className="pt-2 text-right">
+        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-teal-700 sm:text-sm">{month.monthLabel}</p>
+      </div>
+      <div className="relative flex justify-center">
+        <div className="absolute bottom-[-1rem] top-0 w-px bg-stone-300" />
+        <span className="relative mt-1 h-3.5 w-3.5 rounded-full bg-teal-700 ring-4 ring-[#f6f3ee]" />
+      </div>
+      <div className="grid gap-3">
+        {month.events.map((event) => (
+          <EventRow
+            key={event.id}
+            event={event}
+            zoom={zoom}
+            onOpenEvent={onOpenEvent}
+            onOpenImage={onOpenImage}
+          />
+        ))}
+      </div>
+    </motion.div>
+  );
+}
+
+function EventRow({
   event,
   zoom,
-  onImage,
-  onVideo,
+  onOpenEvent,
+  onOpenImage,
 }: {
   event: TimelineEvent;
   zoom: TimelineZoom;
-  onImage: (event: TimelineEvent) => void;
-  onVideo: (event: TimelineEvent) => void;
+  onOpenEvent: (event: TimelineEvent) => void;
+  onOpenImage: (event: TimelineEvent) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const zoomConfig = zoomLevels.find((item) => item.id === zoom) ?? zoomLevels[1];
   const isLongDescription = event.description.length > zoomConfig.descriptionLength;
-  const visibleDescription =
+  const description =
     expanded || !isLongDescription
       ? event.description
       : `${event.description.slice(0, zoomConfig.descriptionLength).trim()}...`;
-  const compact = zoom === "compact";
   const detail = zoom === "detail";
 
   return (
-    <article
+    <motion.article
+      layout
       data-event-id={event.id}
-      className={
-        compact
-          ? "scroll-mt-72 rounded-lg border border-stone-200 bg-white p-3 shadow-sm sm:p-4"
-          : "relative scroll-mt-72 rounded-lg border border-stone-200 bg-white p-4 shadow-sm sm:p-5"
-      }
+      className="grid gap-2 sm:grid-cols-[7.5rem_minmax(0,1fr)] sm:gap-4"
+      transition={{ layout: { type: "spring", stiffness: 180, damping: 22 } }}
     >
-      <p className="text-sm font-semibold text-teal-700">{formatEventDate(event.event_date)}</p>
-      <h2
-        className={
-          compact
-            ? "mt-1 text-lg font-semibold leading-tight text-stone-950"
-            : "mt-1 text-xl font-semibold leading-tight text-stone-950 sm:text-2xl"
-        }
+      <button
+        className="inline-flex h-fit items-center justify-start rounded-md px-0 py-2 text-left text-sm font-semibold text-stone-500 hover:text-teal-700"
+        onClick={() => onOpenEvent(event)}
       >
-        {event.title}
-      </h2>
-      <p
-        className={
-          compact
-            ? "mt-2 whitespace-pre-line text-sm leading-6 text-stone-650"
-            : "mt-3 whitespace-pre-line text-sm leading-6 text-stone-650 sm:text-base sm:leading-7"
-        }
-      >
-        {visibleDescription}
-      </p>
-      {isLongDescription ? (
-        <button
-          className="mt-2 text-sm font-semibold text-teal-700 hover:text-teal-900"
-          onClick={() => setExpanded((current) => !current)}
-        >
-          {expanded ? "Weniger anzeigen" : "Mehr anzeigen"}
-        </button>
-      ) : null}
+        {formatEventDateNumeric(event.event_date)}-
+      </button>
 
-      {event.image_url && zoom !== "compact" ? (
+      <div className="rounded-xl border border-stone-200 bg-white p-4 shadow-sm sm:p-5">
+        <button className="w-full text-left" onClick={() => onOpenEvent(event)}>
+          <h2 className={detail ? "text-2xl font-semibold leading-tight text-stone-950" : "text-xl font-semibold leading-tight text-stone-950"}>
+            {event.title}
+          </h2>
+        </button>
+
+        <div className="mt-3 text-sm leading-6 text-stone-700 sm:text-base sm:leading-7">
+          <RichDescription text={description} />
+        </div>
+
+        {isLongDescription ? (
+          <button
+            className="mt-2 text-sm font-semibold text-teal-700 hover:text-teal-900"
+            onClick={() => setExpanded((current) => !current)}
+          >
+            {expanded ? "Weniger anzeigen" : "Mehr anzeigen"}
+          </button>
+        ) : null}
+
+        {zoom === "detail" ? (
+          <EventMediaStack event={event} detail onOpenImage={onOpenImage} />
+        ) : (
+          <div className="mt-4 flex flex-wrap gap-2 text-xs font-semibold">
+            {event.image_url ? <span className="rounded-full bg-blue-50 px-3 py-1 text-blue-700">Bild</span> : null}
+            {event.video_url ? <span className="rounded-full bg-orange-50 px-3 py-1 text-orange-700">Video</span> : null}
+            {event.pdf_url ? <span className="rounded-full bg-teal-50 px-3 py-1 text-teal-700">PDF</span> : null}
+          </div>
+        )}
+
+        <div className="mt-4 flex flex-wrap gap-2">
+          <button
+            className="inline-flex h-11 items-center gap-2 rounded-md bg-stone-950 px-4 text-sm font-semibold text-white hover:bg-stone-800"
+            onClick={() => onOpenEvent(event)}
+          >
+            <ChevronRight className="h-4 w-4" />
+            Bericht öffnen
+          </button>
+          <CopyEventLinkButton event={event} />
+          {event.video_url ? (
+            <button
+              className="inline-flex h-11 items-center gap-2 rounded-md border border-stone-300 px-4 text-sm font-semibold text-stone-900 hover:bg-stone-50"
+              onClick={() => onOpenEvent(event)}
+            >
+              <Play className="h-4 w-4 fill-current" />
+              Video ansehen
+            </button>
+          ) : null}
+          {event.pdf_url ? (
+            <a
+              className="inline-flex h-11 items-center gap-2 rounded-md border border-stone-300 px-4 text-sm font-semibold text-stone-900 hover:bg-stone-50"
+              href={event.pdf_url}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <FileText className="h-4 w-4" />
+              Dokument öffnen
+            </a>
+          ) : null}
+        </div>
+      </div>
+    </motion.article>
+  );
+}
+
+function EventMediaStack({
+  event,
+  detail = false,
+  onOpenImage,
+}: {
+  event: TimelineEvent;
+  detail?: boolean;
+  onOpenImage: (event: TimelineEvent) => void;
+}) {
+  if (!event.image_url && !event.video_url) return null;
+
+  return (
+    <div className={detail ? "mt-5 grid gap-4" : "mt-4 grid gap-3"}>
+      {event.image_url ? (
         <button
-          className={
-            detail
-              ? "group relative mt-5 aspect-[4/3] w-full overflow-hidden rounded-lg bg-stone-100"
-              : "group relative mt-4 aspect-video w-full overflow-hidden rounded-lg bg-stone-100"
-          }
-          onClick={() => onImage(event)}
+          className="group relative aspect-[4/3] w-full overflow-hidden rounded-xl bg-stone-100"
+          onClick={() => onOpenImage(event)}
           aria-label={`${event.title} als grosses Bild öffnen`}
         >
           <EventImage
@@ -522,45 +608,13 @@ function TimelineItem({
         </button>
       ) : null}
 
-      {event.video_url && zoom !== "compact" ? (
-        <div className={detail ? "mt-5 aspect-video overflow-hidden rounded-lg bg-black" : "mt-4 aspect-video overflow-hidden rounded-lg bg-black"}>
+      {event.video_url ? (
+        <div className="aspect-video overflow-hidden rounded-xl bg-black">
           <VideoFrame url={event.video_url} title={event.title} />
         </div>
       ) : null}
-
-      <div className={compact ? "mt-3 flex flex-wrap gap-2" : "mt-4 flex flex-wrap gap-2"}>
-        <CopyEventLinkButton event={event} />
-        {event.video_url ? (
-          <button
-            className="inline-flex h-11 items-center gap-2 rounded-md bg-stone-950 px-4 text-sm font-semibold text-white hover:bg-stone-800"
-            onClick={() => onVideo(event)}
-          >
-            <Play className="h-4 w-4 fill-current" />
-            Video ansehen
-          </button>
-        ) : null}
-        {event.pdf_url ? (
-          <a
-            className="inline-flex h-11 items-center gap-2 rounded-md border border-stone-300 px-4 text-sm font-semibold text-stone-900 hover:bg-stone-50"
-            href={event.pdf_url}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <FileText className="h-4 w-4" />
-            Dokument öffnen
-          </a>
-        ) : null}
-      </div>
-    </article>
+    </div>
   );
-}
-
-function getTouchDistance(touches: React.TouchList) {
-  const first = touches.item(0);
-  const second = touches.item(1);
-  if (!first || !second) return 1;
-
-  return Math.hypot(first.clientX - second.clientX, first.clientY - second.clientY);
 }
 
 function EventImage({ src, alt, className }: { src: string; alt: string; className?: string }) {
@@ -609,48 +663,114 @@ function CopyEventLinkButton({ event }: { event: TimelineEvent }) {
   );
 }
 
+function RichDescription({ text }: { text: string }) {
+  return (
+    <div className="whitespace-pre-wrap">
+      {splitTextWithLinks(text).map((part, index) =>
+        part.type === "link" ? (
+          <a
+            key={`${part.value}-${index}`}
+            className="font-medium text-teal-700 underline decoration-teal-300 underline-offset-2 hover:text-teal-900"
+            href={part.value}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {part.value}
+          </a>
+        ) : (
+          <span key={`${part.value}-${index}`}>{part.value}</span>
+        ),
+      )}
+    </div>
+  );
+}
+
+function splitTextWithLinks(text: string) {
+  const matches = text.match(/https?:\/\/[^\s]+/g);
+  if (!matches) {
+    return [{ type: "text" as const, value: text }];
+  }
+
+  const parts: Array<{ type: "text" | "link"; value: string }> = [];
+  let remaining = text;
+
+  for (const match of matches) {
+    const index = remaining.indexOf(match);
+    if (index > 0) {
+      parts.push({ type: "text", value: remaining.slice(0, index) });
+    }
+    parts.push({ type: "link", value: match });
+    remaining = remaining.slice(index + match.length);
+  }
+
+  if (remaining) {
+    parts.push({ type: "text", value: remaining });
+  }
+
+  return parts;
+}
+
 function buildYearNavigation(events: TimelineEvent[]) {
-  const years = new Map<string, { year: string; count: number; firstEvent: TimelineEvent }>();
+  const years = new Map<string, { year: string; firstEvent: TimelineEvent }>();
 
   for (const event of events) {
     const year = getYear(event.event_date);
-    const existing = years.get(year);
-
-    if (existing) {
-      existing.count += 1;
-    } else {
-      years.set(year, { year, count: 1, firstEvent: event });
+    if (!years.has(year)) {
+      years.set(year, { year, firstEvent: event });
     }
   }
 
   return [...years.values()];
 }
 
-function buildTimelineGroups(events: TimelineEvent[], zoom: TimelineZoom): TimelineGroup[] {
-  const groups = new Map<string, TimelineGroup>();
+function buildTimelineYears(events: TimelineEvent[]) {
+  const years = new Map<string, TimelineYear>();
 
   for (const event of events) {
     const date = parseEventDate(event.event_date);
     const year = String(date.getFullYear());
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const key = zoom === "compact" ? year : `${year}-${month}`;
-    const existing = groups.get(key);
+    const monthKey = String(date.getMonth() + 1).padStart(2, "0");
+    const monthId = `${year}-${monthKey}`;
+    const existingYear = years.get(year);
 
-    if (existing) {
-      existing.events.push(event);
+    if (!existingYear) {
+      years.set(year, {
+        id: year,
+        year,
+        events: [event],
+        months: [
+          {
+            id: monthId,
+            monthLabel: formatMonth(date),
+            events: [event],
+          },
+        ],
+      });
       continue;
     }
 
-    groups.set(key, {
-      id: key,
-      year,
-      month: zoom === "compact" ? undefined : month,
-      monthLabel: zoom === "compact" ? undefined : formatMonth(date),
-      events: [event],
-    });
+    existingYear.events.push(event);
+    const existingMonth = existingYear.months.find((item) => item.id === monthId);
+    if (existingMonth) {
+      existingMonth.events.push(event);
+    } else {
+      existingYear.months.push({
+        id: monthId,
+        monthLabel: formatMonth(date),
+        events: [event],
+      });
+    }
   }
 
-  return [...groups.values()];
+  return [...years.values()];
+}
+
+function getTouchDistance(touches: React.TouchList) {
+  const first = touches.item(0);
+  const second = touches.item(1);
+  if (!first || !second) return 1;
+
+  return Math.hypot(first.clientX - second.clientX, first.clientY - second.clientY);
 }
 
 function parseEventDate(date: string) {
@@ -659,10 +779,13 @@ function parseEventDate(date: string) {
 }
 
 function formatMonth(date: Date) {
-  return new Intl.DateTimeFormat("de-DE", { month: "short" }).format(date);
+  return new Intl.DateTimeFormat("de-DE", { month: "long" }).format(date);
 }
 
 function getTime(date: string) {
-  const parsed = new Date(date);
-  return Number.isNaN(parsed.getTime()) ? new Date(`${date.slice(0, 4)}-01-01`).getTime() : parsed.getTime();
+  return parseEventDate(date).getTime();
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(Math.max(value, min), max);
 }

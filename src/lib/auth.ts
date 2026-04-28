@@ -1,6 +1,14 @@
 import crypto from "node:crypto";
 import { cookies } from "next/headers";
-import { getSetting, setSetting } from "@/lib/db";
+import {
+  ensurePrimaryAdminUser,
+  getAdminUserById,
+  getAdminUserWithPasswordByEmail,
+  getAdminUserWithPasswordById,
+  listAdminUsers,
+  updateAdminUserPassword,
+} from "@/lib/db";
+import { hashPassword, verifyPassword } from "@/lib/passwords";
 
 const cookieName = "timeline_admin_session";
 
@@ -13,12 +21,14 @@ function sign(value: string) {
 }
 
 export function isAdminConfigured() {
-  return Boolean(process.env.ADMIN_EMAIL && process.env.ADMIN_PASSWORD);
+  ensurePrimaryAdminUser();
+  return listAdminUsers().length > 0;
 }
 
-export async function createAdminSession() {
+export async function createAdminSession(userId: string) {
   const issuedAt = String(Date.now());
-  const value = `${issuedAt}.${sign(issuedAt)}`;
+  const payload = `${userId}.${issuedAt}`;
+  const value = `${payload}.${sign(payload)}`;
   const cookieStore = await cookies();
 
   cookieStore.set(cookieName, value, {
@@ -36,54 +46,42 @@ export async function clearAdminSession() {
 }
 
 export async function isAdminAuthenticated() {
-  if (!isAdminConfigured()) return false;
+  return Boolean(await getCurrentAdminUser());
+}
+
+export async function getCurrentAdminUser() {
+  if (!isAdminConfigured()) return null;
 
   const cookieStore = await cookies();
   const value = cookieStore.get(cookieName)?.value;
-  if (!value) return false;
+  if (!value) return null;
 
-  const [issuedAt, signature] = value.split(".");
-  if (!issuedAt || !signature) return false;
+  const [userId, issuedAt, signature] = value.split(".");
+  if (!userId || !issuedAt || !signature) return null;
 
-  const expected = sign(issuedAt);
+  const payload = `${userId}.${issuedAt}`;
+  const expected = sign(payload);
   const validSignature =
     expected.length === signature.length &&
     crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(signature));
   const fresh = Date.now() - Number(issuedAt) < 1000 * 60 * 60 * 24 * 7;
+  if (!validSignature || !fresh) return null;
 
-  return validSignature && fresh;
+  return getAdminUserById(userId) ?? null;
 }
 
-export function credentialsMatch(email: string, password: string) {
-  if (email !== process.env.ADMIN_EMAIL) return false;
-
-  const storedHash = getSetting("admin_password_hash")?.value;
-  if (storedHash) {
-    return verifyPassword(password, storedHash);
-  }
-
-  return password === process.env.ADMIN_PASSWORD;
+export function verifyAdminCredentials(email: string, password: string) {
+  const user = getAdminUserWithPasswordByEmail(email.trim().toLowerCase());
+  if (!user) return null;
+  return verifyPassword(password, user.password_hash) ? user : null;
 }
 
-export function changeAdminPassword(currentPassword: string, nextPassword: string) {
-  if (!credentialsMatch(process.env.ADMIN_EMAIL ?? "", currentPassword)) {
+export function changeAdminPassword(userId: string, currentPassword: string, nextPassword: string) {
+  const user = getAdminUserWithPasswordById(userId);
+  if (!user || !verifyPassword(currentPassword, user.password_hash)) {
     return { ok: false, message: "Das aktuelle Passwort ist falsch." };
   }
 
-  setSetting("admin_password_hash", hashPassword(nextPassword));
+  updateAdminUserPassword(userId, hashPassword(nextPassword));
   return { ok: true, message: "Passwort geändert." };
-}
-
-function hashPassword(password: string) {
-  const salt = crypto.randomBytes(16).toString("hex");
-  const hash = crypto.pbkdf2Sync(password, salt, 210_000, 32, "sha256").toString("hex");
-  return `${salt}:${hash}`;
-}
-
-function verifyPassword(password: string, stored: string) {
-  const [salt, hash] = stored.split(":");
-  if (!salt || !hash) return false;
-
-  const candidate = crypto.pbkdf2Sync(password, salt, 210_000, 32, "sha256").toString("hex");
-  return hash.length === candidate.length && crypto.timingSafeEqual(Buffer.from(hash), Buffer.from(candidate));
 }

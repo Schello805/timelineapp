@@ -17,7 +17,8 @@ export function LoginForm() {
       <div>
         <h1 className="text-3xl font-semibold text-stone-950">Admin Login</h1>
         <p className="mt-2 text-sm leading-6 text-stone-600">
-          Melde dich mit dem lokalen Admin-Benutzer aus deiner <code>.env.local</code> an.
+          Melde dich mit einem lokalen Admin-Benutzer an. Der erste Admin wird aus der <code>.env.local</code>{" "}
+          übernommen und kann später in den Einstellungen erweitert werden.
         </p>
       </div>
 

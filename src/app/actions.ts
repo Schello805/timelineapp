@@ -4,14 +4,15 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import {
+  createAdminSession,
+  getCurrentAdminUser,
   clearAdminSession,
   changeAdminPassword,
-  createAdminSession,
-  credentialsMatch,
-  isAdminAuthenticated,
+  verifyAdminCredentials,
 } from "@/lib/auth";
 import { restoreTimelineBackup, writeSafetyBackup } from "@/lib/backup";
-import { deleteEvent, getTimelineEventById, upsertEvent } from "@/lib/db";
+import { createAdminUser, deleteAdminUser, deleteEvent, getTimelineEventById, upsertEvent } from "@/lib/db";
+import { hashPassword } from "@/lib/passwords";
 import { setTimelineOwnerName } from "@/lib/settings";
 import { saveUpload } from "@/lib/uploads";
 
@@ -39,26 +40,35 @@ const settingsSchema = z.object({
   timeline_owner_name: z.string().trim().min(2, "Bitte einen Namen eintragen.").max(100),
 });
 
+const adminUserSchema = z.object({
+  email: z.email("Bitte eine gültige E-Mail-Adresse eintragen.").trim().max(190),
+  password: z.string().min(12, "Das Passwort muss mindestens 12 Zeichen lang sein."),
+});
+
 function cleanOptionalText(value: FormDataEntryValue | null) {
   const text = String(value ?? "").trim();
   return text.length ? text : null;
 }
 
 async function requireAdmin() {
-  if (!(await isAdminAuthenticated())) {
+  const admin = await getCurrentAdminUser();
+  if (!admin) {
     redirect("/admin/login");
   }
+
+  return admin;
 }
 
 export async function signIn(_previousState: { ok: boolean; message: string } | null, formData: FormData) {
   const email = String(formData.get("email") ?? "");
   const password = String(formData.get("password") ?? "");
 
-  if (!credentialsMatch(email, password)) {
+  const user = verifyAdminCredentials(email, password);
+  if (!user) {
     return { ok: false, message: "E-Mail oder Passwort ist falsch." };
   }
 
-  await createAdminSession();
+  await createAdminSession(user.id);
   redirect("/admin");
 }
 
@@ -76,7 +86,11 @@ export async function upsertTimelineEvent(formData: FormData) {
     title: String(formData.get("title") ?? ""),
     description: String(formData.get("description") ?? ""),
     image_url: uploadedImage ?? cleanOptionalText(formData.get("image_url")) ?? "",
-    video_url: uploadedVideo ?? cleanOptionalText(formData.get("video_url")) ?? "",
+    video_url:
+      cleanOptionalText(formData.get("video_uploaded_path")) ??
+      uploadedVideo ??
+      cleanOptionalText(formData.get("video_url")) ??
+      "",
     pdf_url: uploadedPdf ?? cleanOptionalText(formData.get("pdf_url")) ?? "",
   });
 
@@ -107,7 +121,7 @@ export async function updateAdminPassword(
   _previousState: { ok: boolean; message: string } | null,
   formData: FormData,
 ) {
-  await requireAdmin();
+  const admin = await requireAdmin();
 
   const currentPassword = String(formData.get("current_password") ?? "");
   const nextPassword = String(formData.get("next_password") ?? "");
@@ -121,7 +135,7 @@ export async function updateAdminPassword(
     return { ok: false, message: "Die neuen Passwörter stimmen nicht überein." };
   }
 
-  const result = changeAdminPassword(currentPassword, nextPassword);
+  const result = changeAdminPassword(admin.id, currentPassword, nextPassword);
   if (!result.ok) return result;
 
   await clearAdminSession();
@@ -182,6 +196,46 @@ export async function updateTimelineSettings(
   revalidatePath("/admin/einstellungen");
 
   return { ok: true, message: "Einstellungen gespeichert." };
+}
+
+export async function createAdminUserAction(
+  _previousState: { ok: boolean; message: string } | null,
+  formData: FormData,
+) {
+  await requireAdmin();
+
+  const parsed = adminUserSchema.safeParse({
+    email: String(formData.get("email") ?? ""),
+    password: String(formData.get("password") ?? ""),
+  });
+
+  if (!parsed.success) {
+    return { ok: false, message: parsed.error.issues.at(0)?.message ?? "Bitte prüfe die Eingaben." };
+  }
+
+  try {
+    createAdminUser({
+      email: parsed.data.email,
+      passwordHash: hashPassword(parsed.data.password),
+    });
+  } catch {
+    return { ok: false, message: "Diese E-Mail-Adresse ist bereits als Admin vorhanden." };
+  }
+
+  revalidatePath("/admin/einstellungen");
+  return { ok: true, message: "Admin-Benutzer angelegt." };
+}
+
+export async function deleteAdminUserAction(formData: FormData) {
+  await requireAdmin();
+
+  const userId = String(formData.get("user_id") ?? "");
+  if (!userId) {
+    throw new Error("Keine Benutzer-ID gefunden.");
+  }
+
+  deleteAdminUser(userId);
+  revalidatePath("/admin/einstellungen");
 }
 
 export async function restoreTimelineBackupAction(

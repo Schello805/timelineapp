@@ -1,11 +1,18 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { UploadCloud } from "lucide-react";
+import { LoaderCircle, UploadCloud, Video } from "lucide-react";
 import { upsertTimelineEvent } from "@/app/actions";
 import type { TimelineEvent } from "@/lib/types";
 
 type State = { ok: boolean; message: string } | null;
+type UploadState = {
+  progress: number;
+  pending: boolean;
+  path: string;
+  message: string;
+  error: string;
+};
 
 export function EventForm({ event }: { event?: TimelineEvent }) {
   const [state, formAction, pending] = useActionState<State, FormData>(
@@ -13,11 +20,19 @@ export function EventForm({ event }: { event?: TimelineEvent }) {
     null,
   );
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [videoUpload, setVideoUpload] = useState<UploadState>({
+    progress: 0,
+    pending: false,
+    path: "",
+    message: "",
+    error: "",
+  });
   const previewSrc = imagePreview ?? event?.image_url ?? null;
 
   return (
     <form action={formAction} className="grid gap-5 rounded-lg border border-stone-200 bg-white p-5 shadow-sm">
       {event?.id ? <input type="hidden" name="id" defaultValue={event.id} /> : null}
+      <input type="hidden" name="video_uploaded_path" value={videoUpload.path} readOnly />
 
       <div className="grid gap-2">
         <label className="text-sm font-semibold text-stone-800" htmlFor="event_date">
@@ -105,10 +120,103 @@ export function EventForm({ event }: { event?: TimelineEvent }) {
           className="h-11 rounded-md border border-stone-300 px-3 outline-none focus:border-teal-700"
         />
         <label className="inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-md border border-stone-300 px-4 text-sm font-semibold text-stone-800 hover:bg-stone-50">
-          <UploadCloud className="h-4 w-4" />
-          Video lokal hochladen
-          <input name="video_file" type="file" accept="video/*" className="sr-only" />
+          {videoUpload.pending ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <UploadCloud className="h-4 w-4" />}
+          {videoUpload.pending ? "Video wird hochgeladen..." : "Video lokal hochladen"}
+          <input
+            name="video_file"
+            type="file"
+            accept="video/*"
+            className="sr-only"
+            onChange={(event) => {
+              const file = event.currentTarget.files?.[0];
+              if (!file) return;
+
+              const request = new XMLHttpRequest();
+              request.open("POST", "/api/uploads/video");
+              request.setRequestHeader("x-file-name", encodeURIComponent(file.name));
+
+              setVideoUpload({
+                progress: 0,
+                pending: true,
+                path: "",
+                message: "",
+                error: "",
+              });
+
+              request.upload.onprogress = (progressEvent) => {
+                if (!progressEvent.lengthComputable) return;
+                setVideoUpload((current) => ({
+                  ...current,
+                  progress: Math.round((progressEvent.loaded / progressEvent.total) * 100),
+                }));
+              };
+
+              request.onerror = () => {
+                setVideoUpload({
+                  progress: 0,
+                  pending: false,
+                  path: "",
+                  message: "",
+                  error: "Der Upload ist fehlgeschlagen. Bitte Verbindung und Dateigröße prüfen.",
+                });
+              };
+
+              request.onload = () => {
+                try {
+                  const response = JSON.parse(request.responseText) as {
+                    ok?: boolean;
+                    path?: string;
+                    message?: string;
+                  };
+
+                  if (request.status >= 200 && request.status < 300 && response.ok && response.path) {
+                    setVideoUpload({
+                      progress: 100,
+                      pending: false,
+                      path: response.path,
+                      message:
+                        response.message ||
+                        "Video vollständig hochgeladen. Falls es später nicht abspielt, liegt das meist am Format oder Codec. MP4 mit H.264/AAC ist am kompatibelsten.",
+                      error: "",
+                    });
+                    return;
+                  }
+                } catch {}
+
+                setVideoUpload({
+                  progress: 0,
+                  pending: false,
+                  path: "",
+                  message: "",
+                  error: "Das Video konnte nicht verarbeitet werden.",
+                });
+              };
+
+              request.send(file);
+            }}
+          />
         </label>
+        {videoUpload.pending ? (
+          <div className="grid gap-2 rounded-md border border-stone-200 bg-stone-50 p-3">
+            <div className="h-2 overflow-hidden rounded-full bg-stone-200">
+              <div
+                className="h-full rounded-full bg-teal-700 transition-[width] duration-150"
+                style={{ width: `${videoUpload.progress}%` }}
+              />
+            </div>
+            <p className="text-sm font-medium text-stone-700">{videoUpload.progress}% hochgeladen</p>
+          </div>
+        ) : null}
+        {videoUpload.message ? (
+          <p className="text-sm leading-6 text-teal-700">{videoUpload.message}</p>
+        ) : null}
+        {videoUpload.error ? <p className="text-sm leading-6 text-red-700">{videoUpload.error}</p> : null}
+        {(videoUpload.path || event?.video_url) && !videoUpload.pending ? (
+          <div className="inline-flex items-center gap-2 text-sm text-stone-600">
+            <Video className="h-4 w-4 text-teal-700" />
+            Aktuelles Video: {videoUpload.path || event?.video_url}
+          </div>
+        ) : null}
       </div>
 
       <UrlUploadField

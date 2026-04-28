@@ -1,7 +1,8 @@
 import fs from "node:fs";
 import path from "node:path";
 import Database from "better-sqlite3";
-import type { TimelineEvent, TimelineEventInput } from "@/lib/types";
+import { hashPassword } from "@/lib/passwords";
+import type { AdminUser, TimelineEvent, TimelineEventInput } from "@/lib/types";
 
 const dataDir = process.env.TIMELINE_DATA_DIR ?? path.join(process.cwd(), "data");
 const dbPath = process.env.TIMELINE_DATABASE_PATH ?? path.join(dataDir, "timeline.sqlite");
@@ -33,11 +34,27 @@ function getDb() {
         updated_at text not null default current_timestamp
       );
 
+      create table if not exists admin_users (
+        id text primary key,
+        email text not null unique,
+        password_hash text not null,
+        is_primary integer not null default 0,
+        created_at text not null default current_timestamp,
+        updated_at text not null default current_timestamp
+      );
+
       create trigger if not exists timeline_events_updated_at
       after update on timeline_events
       for each row
       begin
         update timeline_events set updated_at = current_timestamp where id = old.id;
+      end;
+
+      create trigger if not exists admin_users_updated_at
+      after update on admin_users
+      for each row
+      begin
+        update admin_users set updated_at = current_timestamp where id = old.id;
       end;
     `);
     migrateDatabase(database);
@@ -53,6 +70,7 @@ function migrateDatabase(db: Database.Database) {
   }
 
   db.prepare("create unique index if not exists timeline_events_slug_unique on timeline_events(slug)").run();
+  db.prepare("create unique index if not exists admin_users_email_unique on admin_users(email)").run();
 
   const eventsWithoutSlug = db
     .prepare("select id, event_date, title from timeline_events where slug is null or slug = ''")
@@ -64,6 +82,24 @@ function migrateDatabase(db: Database.Database) {
       event.id,
     );
   }
+}
+
+export function ensurePrimaryAdminUser() {
+  const db = getDb();
+  const count = db.prepare("select count(*) as count from admin_users").get() as { count: number };
+  if (count.count > 0) return;
+
+  const email = process.env.ADMIN_EMAIL?.trim();
+  const password = process.env.ADMIN_PASSWORD;
+  if (!email || !password) return;
+
+  const storedHash = getSetting("admin_password_hash")?.value;
+
+  db.prepare("insert into admin_users (id, email, password_hash, is_primary) values (?, ?, ?, 1)").run(
+    crypto.randomUUID(),
+    email.toLowerCase(),
+    storedHash || hashPassword(password),
+  );
 }
 
 export function listTimelineEvents() {
@@ -177,6 +213,77 @@ export function setSetting(key: string, value: string) {
        on conflict(key) do update set value = excluded.value, updated_at = current_timestamp`,
     )
     .run(key, value);
+}
+
+type AdminUserRow = AdminUser & { password_hash: string };
+
+export function listAdminUsers() {
+  ensurePrimaryAdminUser();
+
+  return getDb()
+    .prepare(
+      `select id, email, is_primary, created_at, updated_at
+       from admin_users
+       order by is_primary desc, email asc`,
+    )
+    .all() as AdminUser[];
+}
+
+export function getAdminUserById(id: string) {
+  ensurePrimaryAdminUser();
+
+  return getDb()
+    .prepare(
+      `select id, email, is_primary, created_at, updated_at
+       from admin_users
+       where id = ?`,
+    )
+    .get(id) as AdminUser | undefined;
+}
+
+export function getAdminUserWithPasswordByEmail(email: string) {
+  ensurePrimaryAdminUser();
+
+  return getDb()
+    .prepare(
+      `select id, email, password_hash, is_primary, created_at, updated_at
+       from admin_users
+       where lower(email) = lower(?)`,
+    )
+    .get(email) as AdminUserRow | undefined;
+}
+
+export function getAdminUserWithPasswordById(id: string) {
+  ensurePrimaryAdminUser();
+
+  return getDb()
+    .prepare(
+      `select id, email, password_hash, is_primary, created_at, updated_at
+       from admin_users
+       where id = ?`,
+    )
+    .get(id) as AdminUserRow | undefined;
+}
+
+export function createAdminUser(input: { email: string; passwordHash: string; isPrimary?: boolean }) {
+  ensurePrimaryAdminUser();
+
+  const id = crypto.randomUUID();
+  getDb()
+    .prepare("insert into admin_users (id, email, password_hash, is_primary) values (?, ?, ?, ?)")
+    .run(id, input.email.toLowerCase(), input.passwordHash, input.isPrimary ? 1 : 0);
+
+  return id;
+}
+
+export function updateAdminUserPassword(userId: string, passwordHash: string) {
+  ensurePrimaryAdminUser();
+  getDb().prepare("update admin_users set password_hash = ? where id = ?").run(passwordHash, userId);
+}
+
+export function deleteAdminUser(userId: string) {
+  ensurePrimaryAdminUser();
+  getDb().prepare("delete from admin_users where id = ? and is_primary = 0").run(userId);
 }
 
 function createUniqueSlug(db: Database.Database, title: string, date: string, ownId: string) {

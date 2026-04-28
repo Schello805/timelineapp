@@ -15,6 +15,17 @@ export function formatEventDate(date: string) {
   }).format(parsed);
 }
 
+export function formatEventDateNumeric(date: string) {
+  const parsed = new Date(date);
+  if (Number.isNaN(parsed.getTime())) return date;
+
+  return new Intl.DateTimeFormat("de-DE", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(parsed);
+}
+
 export function getVideoEmbedUrl(url: string | null) {
   if (!url) return null;
 

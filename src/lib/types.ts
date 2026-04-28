@@ -20,3 +20,11 @@ export type TimelineEventInput = {
   video_url?: string | null;
   pdf_url?: string | null;
 };
+
+export type AdminUser = {
+  id: string;
+  email: string;
+  is_primary: number;
+  created_at?: string;
+  updated_at?: string;
+};

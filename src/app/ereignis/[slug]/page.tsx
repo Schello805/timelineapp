@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { FileText, ImageIcon } from "lucide-react";
+import { FileText } from "lucide-react";
 import { VideoFrame } from "@/components/video-frame";
 import { getTimelineEventBySlug } from "@/lib/db";
 import { siteConfig } from "@/lib/env";
@@ -62,7 +62,23 @@ export default async function EventPage({ params }: Props) {
       <article className="mt-5 rounded-lg border border-stone-200 bg-white p-5 shadow-sm sm:p-7">
         <p className="text-sm font-semibold text-teal-700">{formatEventDate(event.event_date)}</p>
         <h1 className="mt-2 text-3xl font-semibold leading-tight text-stone-950 sm:text-5xl">{event.title}</h1>
-        <p className="mt-5 whitespace-pre-line leading-7 text-stone-700">{event.description}</p>
+        <div className="mt-5 whitespace-pre-wrap leading-7 text-stone-700">
+          {splitTextWithLinks(event.description).map((part, index) =>
+            part.type === "link" ? (
+              <a
+                key={`${part.value}-${index}`}
+                className="font-medium text-teal-700 underline decoration-teal-300 underline-offset-2 hover:text-teal-900"
+                href={part.value}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {part.value}
+              </a>
+            ) : (
+              <span key={`${part.value}-${index}`}>{part.value}</span>
+            ),
+          )}
+        </div>
 
         {event.image_url ? (
           <div className="mt-6 aspect-[4/3] overflow-hidden rounded-lg bg-stone-100">
@@ -70,11 +86,7 @@ export default async function EventPage({ params }: Props) {
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={event.image_url} alt={event.title} className="h-full w-full object-cover" />
           </div>
-        ) : (
-          <div className="mt-6 flex aspect-[4/3] items-center justify-center rounded-lg bg-stone-100 text-stone-400">
-            <ImageIcon className="h-10 w-10" />
-          </div>
-        )}
+        ) : null}
 
         {event.video_url ? (
           <div className="mt-6 aspect-video overflow-hidden rounded-lg bg-black">
@@ -101,4 +113,29 @@ export default async function EventPage({ params }: Props) {
 function shorten(value: string, length: number) {
   if (value.length <= length) return value;
   return `${value.slice(0, length - 3).trim()}...`;
+}
+
+function splitTextWithLinks(text: string) {
+  const matches = text.match(/https?:\/\/[^\s]+/g);
+  if (!matches) {
+    return [{ type: "text" as const, value: text }];
+  }
+
+  const parts: Array<{ type: "text" | "link"; value: string }> = [];
+  let remaining = text;
+
+  for (const match of matches) {
+    const index = remaining.indexOf(match);
+    if (index > 0) {
+      parts.push({ type: "text", value: remaining.slice(0, index) });
+    }
+    parts.push({ type: "link", value: match });
+    remaining = remaining.slice(index + match.length);
+  }
+
+  if (remaining) {
+    parts.push({ type: "text", value: remaining });
+  }
+
+  return parts;
 }

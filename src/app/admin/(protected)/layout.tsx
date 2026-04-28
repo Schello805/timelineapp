@@ -12,9 +12,9 @@ export default async function ProtectedAdminLayout({ children }: { children: Rea
         <div className="rounded-lg border border-amber-200 bg-amber-50 p-6 text-amber-950">
           <h1 className="text-2xl font-semibold">Admin-Zugang fehlt noch</h1>
           <p className="mt-3 leading-7">
-            Lege eine <code>.env.local</code> anhand von <code>.env.example</code> an und setze
+            Lege eine <code>.env.local</code> anhand von <code>.env.example</code> an und setze mindestens
             <code> ADMIN_EMAIL</code>, <code> ADMIN_PASSWORD</code> und <code> ADMIN_SESSION_SECRET</code>.
-            Danach ist der lokale Admin-Bereich aktiv.
+            Daraus wird der erste lokale Admin angelegt. Weitere Admins verwaltest du danach in den Einstellungen.
           </p>
           <Link
             className="mt-5 inline-flex h-11 items-center rounded-md bg-amber-950 px-4 text-sm font-semibold text-white"
@@ -38,7 +38,7 @@ export default async function ProtectedAdminLayout({ children }: { children: Rea
           <AppLogo compact />
           <h1 className="mt-2 text-3xl font-semibold text-stone-950">Adminbereich</h1>
           <p className="max-w-2xl text-sm leading-6 text-stone-600">
-            Verwaltung der Timeline-Inhalte und Einstellungen der App.
+            Verwaltung der Timeline-Inhalte, App-Einstellungen und lokaler Admin-Benutzer.
           </p>
         </div>
         <form action={signOut}>

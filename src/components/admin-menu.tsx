@@ -14,7 +14,7 @@ const menuItems = [
   {
     href: "/admin/einstellungen",
     label: "App-Einstellungen",
-    description: "Name und Darstellung",
+    description: "Name, Benutzer und Backups",
     icon: Settings,
   },
   {
@@ -68,4 +68,3 @@ export function AdminMenu() {
     </nav>
   );
 }
-
