@@ -36,14 +36,14 @@ export function AnnualMetricForm({
         </p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-3 md:grid-cols-2">
         <label className="grid min-w-0 gap-2 text-sm font-semibold text-stone-800">
           Jahr
           <select
             name="year"
             required
             defaultValue={metric?.year ?? ""}
-            className="h-11 rounded-md border border-stone-300 bg-white px-3 outline-none focus:border-teal-700"
+            className="h-11 w-full min-w-0 rounded-md border border-stone-300 bg-white px-3 outline-none focus:border-teal-700"
           >
             <option value="" disabled>
               Jahr auswählen
@@ -54,7 +54,6 @@ export function AnnualMetricForm({
               </option>
             ))}
           </select>
-          <p className="text-sm leading-6 text-stone-500">Es werden nur Jahre angeboten, zu denen bereits Ereignisse in der Timeline vorhanden sind.</p>
         </label>
 
         <label className="grid min-w-0 gap-2 text-sm font-semibold text-stone-800">
@@ -62,7 +61,7 @@ export function AnnualMetricForm({
           <select
             name="display_order"
             defaultValue={metric?.display_order ?? 0}
-            className="h-11 rounded-md border border-stone-300 bg-white px-3 outline-none focus:border-teal-700"
+            className="h-11 w-full min-w-0 rounded-md border border-stone-300 bg-white px-3 outline-none focus:border-teal-700"
           >
             {Array.from({ length: 10 }, (_, index) => (
               <option key={index} value={index}>
@@ -71,6 +70,9 @@ export function AnnualMetricForm({
             ))}
           </select>
         </label>
+        <p className="text-sm leading-6 text-stone-500 md:col-span-2">
+          Es werden nur Jahre angeboten, zu denen bereits Ereignisse in der Timeline vorhanden sind.
+        </p>
       </div>
 
       <label className="grid gap-2 text-sm font-semibold text-stone-800">
@@ -80,11 +82,11 @@ export function AnnualMetricForm({
           required
           defaultValue={metric?.label ?? ""}
           placeholder="Geflüchtete Ukrainer"
-          className="h-11 rounded-md border border-stone-300 px-3 outline-none focus:border-teal-700"
+          className="h-11 w-full min-w-0 rounded-md border border-stone-300 px-3 outline-none focus:border-teal-700"
         />
       </label>
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,0.8fr)]">
         <label className="grid min-w-0 gap-2 text-sm font-semibold text-stone-800">
           Hauptwert
           <input
@@ -94,7 +96,7 @@ export function AnnualMetricForm({
             required
             inputMode="decimal"
             defaultValue={metric?.value ?? ""}
-            className="h-11 rounded-md border border-stone-300 px-3 outline-none focus:border-teal-700"
+            className="h-11 w-full min-w-0 rounded-md border border-stone-300 px-3 outline-none focus:border-teal-700"
           />
         </label>
 
@@ -105,7 +107,7 @@ export function AnnualMetricForm({
             list="annual-metric-units"
             defaultValue={metric?.unit ?? ""}
             placeholder="Personen"
-            className="h-11 rounded-md border border-stone-300 px-3 outline-none focus:border-teal-700"
+            className="h-11 w-full min-w-0 rounded-md border border-stone-300 px-3 outline-none focus:border-teal-700"
           />
         </label>
       </div>
@@ -115,14 +117,14 @@ export function AnnualMetricForm({
         <p className="text-sm leading-6 text-stone-500">
           Wenn Hauptwert und Vergleichswert zusammengehören, berechnet die Timeline daraus automatisch den Anteil in Prozent.
         </p>
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-3 md:grid-cols-2">
           <label className="grid min-w-0 gap-2 text-sm font-semibold text-stone-800">
             Vergleichsbezeichnung
             <input
               name="comparison_label"
               defaultValue={metric?.comparison_label ?? ""}
               placeholder="davon berufstätig"
-              className="h-11 rounded-md border border-stone-300 bg-white px-3 outline-none focus:border-teal-700"
+              className="h-11 w-full min-w-0 rounded-md border border-stone-300 bg-white px-3 outline-none focus:border-teal-700"
             />
           </label>
 
@@ -134,12 +136,12 @@ export function AnnualMetricForm({
               step="0.01"
               inputMode="decimal"
               defaultValue={metric?.comparison_value ?? ""}
-              className="h-11 rounded-md border border-stone-300 bg-white px-3 outline-none focus:border-teal-700"
+              className="h-11 w-full min-w-0 rounded-md border border-stone-300 bg-white px-3 outline-none focus:border-teal-700"
             />
           </label>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-3 md:grid-cols-[minmax(0,0.8fr)_minmax(0,1fr)]">
           <label className="grid min-w-0 gap-2 text-sm font-semibold text-stone-800">
             Vergleichseinheit
             <input
@@ -147,10 +149,10 @@ export function AnnualMetricForm({
               list="annual-metric-units"
               defaultValue={metric?.comparison_unit ?? ""}
               placeholder="Personen"
-              className="h-11 rounded-md border border-stone-300 bg-white px-3 outline-none focus:border-teal-700"
+              className="h-11 w-full min-w-0 rounded-md border border-stone-300 bg-white px-3 outline-none focus:border-teal-700"
             />
           </label>
-          <div className="hidden sm:block" />
+          <div className="hidden md:block" />
         </div>
       </div>
 
@@ -161,7 +163,7 @@ export function AnnualMetricForm({
           rows={3}
           defaultValue={metric?.description ?? ""}
           placeholder="Optional: kurze Einordnung zur Kennzahl"
-          className="rounded-md border border-stone-300 px-3 py-2 outline-none focus:border-teal-700"
+          className="w-full min-w-0 rounded-md border border-stone-300 px-3 py-2 outline-none focus:border-teal-700"
         />
       </label>
 
