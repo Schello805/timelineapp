@@ -23,7 +23,7 @@ export function EventList({ events }: { events: TimelineEvent[] }) {
             <div className="grid min-w-0 gap-3">
               <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
                 <div className="min-w-0">
-                <h3 className="text-xl font-semibold leading-7 text-stone-950">{event.title}</h3>
+                  <h3 className="text-xl font-semibold leading-7 text-stone-950">{event.title}</h3>
                   <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold">
                     <span className={getImportanceClassName(event.importance)}>
                       {getImportanceLabel(event.importance)}
@@ -68,7 +68,7 @@ export function EventList({ events }: { events: TimelineEvent[] }) {
                 </div>
               </div>
 
-              <p className="text-sm leading-6 text-stone-600 lg:pr-60">{event.description}</p>
+              <p className="max-w-3xl text-sm leading-6 text-stone-600">{event.description}</p>
             </div>
           </div>
         ))}
