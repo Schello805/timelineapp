@@ -158,10 +158,7 @@ export function TimelineClient({
           <div className="mx-auto flex w-full max-w-7xl flex-col gap-1.5 px-3 py-1.5 sm:px-5 sm:py-2">
             <header className="flex items-center justify-between gap-3">
               <AppLogo compact label={`Timeline für ${ownerName}`} />
-              <div className="hidden items-center gap-2 md:flex">
-                <span className="rounded-full border border-stone-300 bg-white px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-stone-500">
-                  Sichtbar
-                </span>
+              <div className="hidden items-center md:flex">
                 <span className="rounded-full bg-stone-950 px-2.5 py-0.5 text-xs font-semibold text-white">{visibleYear}</span>
               </div>
             </header>
@@ -225,9 +222,6 @@ export function TimelineClient({
               <div className="flex items-center justify-between gap-2 sm:justify-end">
                 <span className="rounded-full bg-stone-100 px-2.5 py-0.5 text-[11px] font-medium text-stone-500 md:hidden">
                   {visibleYear}
-                </span>
-                <span className="rounded-full border border-stone-200 bg-stone-50 px-2.5 py-0.5 text-[11px] font-medium text-stone-500">
-                  Automatische Ansicht
                 </span>
               </div>
             </div>
