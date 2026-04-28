@@ -108,7 +108,7 @@ export function EventForm({ event }: { event?: TimelineEvent }) {
           Meilensteine werden in der Timeline stärker hervorgehoben und wirken als echte Jahresanker.
         </p>
         <p className="text-sm leading-6 text-stone-500">
-          `Wichtig` ist die mittlere Stufe für sichtbarere Ereignisse ohne volle Meilenstein-Wirkung.
+          `Standard` bleibt kompakt, `Wichtig` erhält die erweiterte Monatsansicht und `Meilenstein` die volle Detaildarstellung.
         </p>
       </div>
 

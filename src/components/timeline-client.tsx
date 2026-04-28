@@ -11,15 +11,15 @@ import {
   Search,
   Sparkles,
 } from "lucide-react";
-import { startTransition, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
+import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { AppLogo } from "@/components/app-logo";
 import { VideoFrame } from "@/components/video-frame";
 import type { AnnualMetric, TimelineEvent } from "@/lib/types";
 import { formatEventDate, formatEventDateNumeric, getYear } from "@/lib/timeline-format";
 
 type SortOrder = "asc" | "desc";
-type TimelineZoom = "compact" | "normal" | "detail";
 type EventWeight = "brief" | "standard" | "milestone";
+type EventViewMode = "compact" | "normal" | "detail";
 type TimelineMonth = {
   id: string;
   monthLabel: string;
@@ -32,12 +32,6 @@ type TimelineYear = {
   months: TimelineMonth[];
   metrics: AnnualMetric[];
 };
-
-const zoomLevels: Array<{ id: TimelineZoom; label: string; descriptionLength: number }> = [
-  { id: "compact", label: "Kompakt", descriptionLength: 110 },
-  { id: "normal", label: "Monate", descriptionLength: 220 },
-  { id: "detail", label: "Detail", descriptionLength: 520 },
-];
 
 export function TimelineClient({
   events,
@@ -53,11 +47,8 @@ export function TimelineClient({
   const [query, setQuery] = useState("");
   const deferredQuery = useDeferredValue(query);
   const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
-  const [timelineZoom, setTimelineZoom] = useState<TimelineZoom>("compact");
-  const [pinchScale, setPinchScale] = useState(1);
   const [activeYear, setActiveYear] = useState<string>("");
   const [showYearJump, setShowYearJump] = useState(false);
-  const pinchRef = useRef<{ distance: number } | null>(null);
 
   const allEvents = useMemo(
     () => [...events].sort((a, b) => getTime(a.event_date) - getTime(b.event_date)),
@@ -160,44 +151,6 @@ export function TimelineClient({
 
   const visibleYear = activeYear || yearNavigation[0]?.year || "";
 
-  function changeZoom(nextZoom: TimelineZoom) {
-    startTransition(() => setTimelineZoom(nextZoom));
-  }
-
-  function setZoomByDirection(direction: 1 | -1) {
-    const currentIndex = zoomLevels.findIndex((item) => item.id === timelineZoom);
-    const next = zoomLevels[Math.min(Math.max(currentIndex + direction, 0), zoomLevels.length - 1)];
-    changeZoom(next.id);
-  }
-
-  function handleTouchStart(event: React.TouchEvent<HTMLElement>) {
-    if (event.touches.length !== 2) return;
-    pinchRef.current = { distance: getTouchDistance(event.touches) };
-    setPinchScale(1);
-  }
-
-  function handleTouchMove(event: React.TouchEvent<HTMLElement>) {
-    const pinch = pinchRef.current;
-    if (!pinch || event.touches.length !== 2) return;
-
-    event.preventDefault();
-    const nextScale = getTouchDistance(event.touches) / pinch.distance;
-    setPinchScale(clamp(nextScale, 0.84, 1.18));
-  }
-
-  function handleTouchEnd() {
-    if (!pinchRef.current) return;
-
-    if (pinchScale >= 1.11) {
-      setZoomByDirection(1);
-    } else if (pinchScale <= 0.89) {
-      setZoomByDirection(-1);
-    }
-
-    pinchRef.current = null;
-    setPinchScale(1);
-  }
-
   return (
     <>
       <section className="min-h-[calc(100svh-4rem)] bg-[radial-gradient(circle_at_top,#fbfaf6_0%,#f6f3ee_45%,#efe7dc_100%)]">
@@ -273,36 +226,15 @@ export function TimelineClient({
                 <span className="rounded-full bg-stone-100 px-3 py-1 text-xs font-medium text-stone-500 md:hidden">
                   {visibleYear}
                 </span>
-                <div className="flex rounded-xl border border-stone-300 bg-stone-50 p-1">
-                  {zoomLevels.map((level) => (
-                    <button
-                      key={level.id}
-                      className={
-                        timelineZoom === level.id
-                          ? "h-9 rounded-lg bg-teal-700 px-3 text-xs font-semibold text-white"
-                          : "h-9 rounded-lg px-3 text-xs font-semibold text-stone-700 hover:bg-white"
-                      }
-                      onClick={() => changeZoom(level.id)}
-                    >
-                      {level.label}
-                    </button>
-                  ))}
-                </div>
+                <span className="rounded-full border border-stone-200 bg-stone-50 px-3 py-1 text-xs font-medium text-stone-500">
+                  Automatische Ansicht
+                </span>
               </div>
             </div>
           </div>
         </div>
 
-        <motion.div
-          className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-5 sm:py-8"
-          animate={{ scale: pinchScale }}
-          transition={{ type: "spring", stiffness: 260, damping: 28, mass: 0.9 }}
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
-          onTouchCancel={handleTouchEnd}
-          style={{ touchAction: "pan-y" }}
-        >
+        <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-5 sm:py-8">
           {sortedEvents.length === 0 ? (
             <div className="rounded-2xl border border-stone-200 bg-white p-6 text-sm font-semibold text-stone-700 shadow-sm">
               Keine Ereignisse für diese Suche gefunden.
@@ -313,14 +245,13 @@ export function TimelineClient({
                 <YearSection
                   key={yearGroup.id}
                   group={yearGroup}
-                  zoom={timelineZoom}
                   onOpenEvent={setSelectedEvent}
                   onOpenImage={setSelectedImage}
                 />
               ))}
             </div>
           )}
-        </motion.div>
+        </div>
       </section>
 
       <AnimatePresence>
@@ -421,12 +352,10 @@ export function TimelineClient({
 
 function YearSection({
   group,
-  zoom,
   onOpenEvent,
   onOpenImage,
 }: {
   group: TimelineYear;
-  zoom: TimelineZoom;
   onOpenEvent: (event: TimelineEvent) => void;
   onOpenImage: (event: TimelineEvent) => void;
 }) {
@@ -449,20 +378,19 @@ function YearSection({
         </div>
         <div className="grid gap-4">
           {group.metrics.length ? <AnnualMetricsPanel metrics={group.metrics} /> : null}
-          {zoom === "compact" ? (
-            <CompactYearCard events={group.events} onOpenEvent={onOpenEvent} />
-          ) : (
+          {hasExpandedEvents(group.events) ? (
             <div className="grid gap-4">
             {group.months.map((month) => (
               <MonthSection
                 key={month.id}
                 month={month}
-                zoom={zoom}
                 onOpenEvent={onOpenEvent}
                 onOpenImage={onOpenImage}
               />
             ))}
             </div>
+          ) : (
+            <CompactYearCard events={group.events} onOpenEvent={onOpenEvent} />
           )}
         </div>
       </div>
@@ -562,12 +490,10 @@ function AnnualMetricsPanel({ metrics }: { metrics: AnnualMetric[] }) {
 
 function MonthSection({
   month,
-  zoom,
   onOpenEvent,
   onOpenImage,
 }: {
   month: TimelineMonth;
-  zoom: TimelineZoom;
   onOpenEvent: (event: TimelineEvent) => void;
   onOpenImage: (event: TimelineEvent) => void;
 }) {
@@ -589,7 +515,6 @@ function MonthSection({
           <EventRow
             key={event.id}
             event={event}
-            zoom={zoom}
             onOpenEvent={onOpenEvent}
             onOpenImage={onOpenImage}
           />
@@ -601,30 +526,30 @@ function MonthSection({
 
 function EventRow({
   event,
-  zoom,
   onOpenEvent,
   onOpenImage,
 }: {
   event: TimelineEvent;
-  zoom: TimelineZoom;
   onOpenEvent: (event: TimelineEvent) => void;
   onOpenImage: (event: TimelineEvent) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
-  const zoomConfig = zoomLevels.find((item) => item.id === zoom) ?? zoomLevels[1];
+  const viewMode = getEventViewMode(event);
+  const zoomConfig = getViewConfig(viewMode);
   const isLongDescription = event.description.length > zoomConfig.descriptionLength;
   const description =
     expanded || !isLongDescription
       ? event.description
       : `${event.description.slice(0, zoomConfig.descriptionLength).trim()}...`;
-  const detail = zoom === "detail";
+  const detail = viewMode === "detail";
+  const compact = viewMode === "compact";
   const weight = getEventWeight(event);
 
   return (
     <motion.article
       layout
       data-event-id={event.id}
-      className="grid gap-2 sm:grid-cols-[7.5rem_minmax(0,1fr)] sm:gap-4"
+      className={compact ? "grid gap-2 sm:grid-cols-[7.5rem_minmax(0,1fr)] sm:gap-4" : "grid gap-2 sm:grid-cols-[7.5rem_minmax(0,1fr)] sm:gap-4"}
       transition={{ layout: { type: "spring", stiffness: 180, damping: 22 } }}
     >
       <button
@@ -638,6 +563,8 @@ function EventRow({
         className={
           weight === "milestone"
             ? "rounded-2xl border border-orange-200/90 bg-[linear-gradient(180deg,#fffdf8_0%,#fff6ea_100%)] p-5 shadow-[0_18px_45px_-34px_rgba(188,122,37,0.45)] sm:p-6"
+            : compact
+              ? "rounded-2xl border border-stone-200/90 bg-white/95 p-4 shadow-sm sm:p-4"
             : weight === "brief"
               ? "rounded-2xl border border-stone-200/90 bg-white/95 p-4 shadow-sm sm:p-4.5"
               : "rounded-2xl border border-stone-200/90 bg-white/95 p-4 shadow-[0_18px_40px_-32px_rgba(33,31,28,0.42)] sm:p-5"
@@ -656,12 +583,20 @@ function EventRow({
               </span>
             ) : null}
           </div>
-          <h2 className={detail || weight === "milestone" ? "mt-2 text-2xl font-semibold leading-tight text-stone-950" : "mt-1 text-xl font-semibold leading-tight text-stone-950"}>
+          <h2
+            className={
+              detail || weight === "milestone"
+                ? "mt-2 text-2xl font-semibold leading-tight text-stone-950"
+                : compact
+                  ? "mt-1 text-lg font-semibold leading-tight text-stone-950"
+                  : "mt-1 text-xl font-semibold leading-tight text-stone-950"
+            }
+          >
             {event.title}
           </h2>
         </button>
 
-        <div className="mt-3 text-sm leading-6 text-stone-700 sm:text-base sm:leading-7">
+        <div className={compact ? "mt-2 text-sm leading-6 text-stone-700" : "mt-3 text-sm leading-6 text-stone-700 sm:text-base sm:leading-7"}>
           <RichDescription text={description} />
         </div>
 
@@ -674,7 +609,7 @@ function EventRow({
           </button>
         ) : null}
 
-        {zoom === "detail" || weight === "milestone" ? (
+        {viewMode !== "compact" || weight === "milestone" ? (
           <EventMediaStack event={event} detail={detail || weight === "milestone"} onOpenImage={onOpenImage} />
         ) : (
           <div className="mt-4 flex flex-wrap gap-2 text-xs font-semibold">
@@ -949,12 +884,8 @@ function getEventWeight(event: TimelineEvent): EventWeight {
   return "standard";
 }
 
-function getTouchDistance(touches: React.TouchList) {
-  const first = touches.item(0);
-  const second = touches.item(1);
-  if (!first || !second) return 1;
-
-  return Math.hypot(first.clientX - second.clientX, first.clientY - second.clientY);
+function hasExpandedEvents(events: TimelineEvent[]) {
+  return events.some((event) => getEventViewMode(event) !== "compact");
 }
 
 function parseEventDate(date: string) {
@@ -970,11 +901,25 @@ function getTime(date: string) {
   return parseEventDate(date).getTime();
 }
 
-function clamp(value: number, min: number, max: number) {
-  return Math.min(Math.max(value, min), max);
+function getEventViewMode(event: TimelineEvent): EventViewMode {
+  if (event.importance === "milestone") return "detail";
+  if (event.importance === "important") return "normal";
+  return "compact";
 }
 
 function formatMetricValue(value: number, unit: string | null) {
   const formatted = new Intl.NumberFormat("de-DE", { maximumFractionDigits: 2 }).format(value);
   return unit ? `${formatted} ${unit}` : formatted;
+}
+
+function getViewConfig(viewMode: EventViewMode) {
+  if (viewMode === "detail") {
+    return { descriptionLength: 520 };
+  }
+
+  if (viewMode === "normal") {
+    return { descriptionLength: 220 };
+  }
+
+  return { descriptionLength: 110 };
 }
