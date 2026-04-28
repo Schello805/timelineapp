@@ -35,7 +35,7 @@ export function AdminMenu() {
   const pathname = usePathname();
 
   return (
-    <nav className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4" aria-label="Admin-Menü">
+    <nav className="grid gap-2 md:grid-cols-2 xl:grid-cols-5" aria-label="Admin-Menü">
       {menuItems.map((item) => {
         const Icon = item.icon;
         const active = pathname === item.href || (item.href !== "/admin" && pathname.startsWith(`${item.href}/`));
@@ -50,12 +50,9 @@ export function AdminMenu() {
             }
             href={item.href}
           >
-            <span className="flex items-center gap-2 text-sm font-semibold">
+            <span className="flex items-center gap-2 text-sm font-semibold whitespace-nowrap">
               <Icon className="h-4 w-4" />
               {item.label}
-            </span>
-            <span className={active ? "mt-1 block text-xs text-white/70" : "mt-1 block text-xs text-stone-500"}>
-              {item.description}
             </span>
           </Link>
         );
@@ -65,11 +62,10 @@ export function AdminMenu() {
         className="rounded-lg border border-stone-200 bg-white px-4 py-3 text-stone-850 shadow-sm hover:border-teal-700 hover:text-teal-800"
         href="/"
       >
-        <span className="flex items-center gap-2 text-sm font-semibold">
+        <span className="flex items-center gap-2 text-sm font-semibold whitespace-nowrap">
           <ExternalLink className="h-4 w-4" />
           Öffentliche Timeline
         </span>
-        <span className="mt-1 block text-xs text-stone-500">Ansicht prüfen</span>
       </Link>
     </nav>
   );
