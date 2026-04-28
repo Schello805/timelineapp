@@ -13,14 +13,14 @@ export function EventList({ events }: { events: TimelineEvent[] }) {
         {events.map((event) => (
           <div
             key={event.id}
-            className="grid gap-4 border-b border-stone-100 p-4 last:border-b-0 xl:grid-cols-[minmax(7rem,9rem)_minmax(0,1fr)]"
+            className="grid gap-3 border-b border-stone-100 p-4 last:border-b-0 xl:grid-cols-[minmax(7rem,9rem)_minmax(0,1fr)]"
           >
             <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 xl:block">
               <p className="text-sm font-semibold leading-6 text-teal-700">{formatEventDate(event.event_date)}</p>
               <p className="text-xs font-medium leading-5 text-stone-500">{event.slug}</p>
             </div>
 
-            <div className="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1fr)_auto]">
+            <div className="grid min-w-0 gap-3 lg:grid-cols-[minmax(0,1fr)_auto]">
               <div className="min-w-0">
                 <h3 className="text-xl font-semibold leading-7 text-stone-950">{event.title}</h3>
                 <p className="mt-2 line-clamp-3 max-w-3xl text-sm leading-6 text-stone-600">
@@ -36,29 +36,34 @@ export function EventList({ events }: { events: TimelineEvent[] }) {
                 </div>
               </div>
 
-              <div className="flex flex-wrap items-start gap-2 lg:max-w-72 lg:justify-end">
+              <div className="flex flex-wrap items-start gap-2 lg:max-w-56 lg:justify-end">
                 <QrCodeButton url={`${siteConfig.url}/ereignis/${event.slug}`} title={event.title} />
                 <a
-                  className="inline-flex h-10 items-center gap-2 rounded-md border border-stone-300 px-3 text-sm font-semibold text-stone-800 hover:bg-stone-50"
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-stone-300 text-stone-800 hover:bg-stone-50"
                   href={`/ereignis/${event.slug}`}
                   target="_blank"
                   rel="noopener noreferrer"
+                  title="Öffentliche Ansicht öffnen"
+                  aria-label={`${event.title} öffentlich öffnen`}
                 >
                   <ExternalLink className="h-4 w-4" />
-                  Öffnen
                 </a>
                 <a
-                  className="inline-flex h-10 items-center gap-2 rounded-md border border-stone-300 px-3 text-sm font-semibold text-stone-800 hover:bg-stone-50"
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-stone-300 text-stone-800 hover:bg-stone-50"
                   href={`/admin/events/${event.id}`}
+                  title="Ereignis bearbeiten"
+                  aria-label={`${event.title} bearbeiten`}
                 >
                   <Pencil className="h-4 w-4" />
-                  Bearbeiten
                 </a>
                 <form action={duplicateTimelineEvent}>
                   <input type="hidden" name="id" value={event.id} />
-                  <button className="inline-flex h-10 items-center gap-2 rounded-md border border-stone-300 px-3 text-sm font-semibold text-stone-800 hover:bg-stone-50">
+                  <button
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-stone-300 text-stone-800 hover:bg-stone-50"
+                    title="Ereignis duplizieren"
+                    aria-label={`${event.title} duplizieren`}
+                  >
                     <Copy className="h-4 w-4" />
-                    Duplizieren
                   </button>
                 </form>
                 <DeleteEventForm id={event.id} title={event.title} />

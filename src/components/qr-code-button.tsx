@@ -14,12 +14,13 @@ export function QrCodeButton({ url, title }: { url: string; title: string }) {
   return (
     <>
       <button
-        className="inline-flex h-10 items-center gap-2 rounded-md border border-stone-300 px-3 text-sm font-semibold text-stone-800 hover:bg-stone-50"
+        className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-stone-300 text-stone-800 hover:bg-stone-50"
         onClick={showQrCode}
         type="button"
+        title="QR-Code anzeigen"
+        aria-label={`QR-Code für ${title} anzeigen`}
       >
         <QrCode className="h-4 w-4" />
-        QR
       </button>
       {qrUrl ? (
         <div
