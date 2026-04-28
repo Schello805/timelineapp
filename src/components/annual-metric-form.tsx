@@ -23,6 +23,9 @@ export function AnnualMetricForm({ metric }: { metric?: AnnualMetric }) {
           Eine Kennzahl gehört immer zu genau einem Jahr. Optional kannst du einen zweiten Vergleichswert ergänzen,
           aus dem die Timeline automatisch die Quote berechnet.
         </p>
+        <p className="mt-2 text-sm leading-6 text-stone-500">
+          Beispiel: `Geflüchtete Ukrainer = 148 Personen` und `davon berufstätig = 61 Personen`.
+        </p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
@@ -86,6 +89,9 @@ export function AnnualMetricForm({ metric }: { metric?: AnnualMetric }) {
 
       <div className="grid gap-4 rounded-lg border border-stone-200 bg-stone-50 p-4">
         <p className="text-sm font-semibold text-stone-900">Optionaler Vergleichswert</p>
+        <p className="text-sm leading-6 text-stone-500">
+          Wenn Hauptwert und Vergleichswert zusammengehören, berechnet die Timeline daraus automatisch den Anteil in Prozent.
+        </p>
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="grid gap-2 text-sm font-semibold text-stone-800">
             Vergleichsbezeichnung

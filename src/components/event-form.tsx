@@ -107,6 +107,9 @@ export function EventForm({ event }: { event?: TimelineEvent }) {
         <p className="text-sm leading-6 text-stone-600">
           Meilensteine werden in der Timeline stärker hervorgehoben und wirken als echte Jahresanker.
         </p>
+        <p className="text-sm leading-6 text-stone-500">
+          `Wichtig` ist die mittlere Stufe für sichtbarere Ereignisse ohne volle Meilenstein-Wirkung.
+        </p>
       </div>
 
       <UrlUploadField
