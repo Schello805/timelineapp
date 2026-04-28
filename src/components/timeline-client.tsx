@@ -155,7 +155,7 @@ export function TimelineClient({
     <>
       <section className="min-h-[calc(100svh-4rem)] bg-[radial-gradient(circle_at_top,#fbfaf6_0%,#f6f3ee_45%,#efe7dc_100%)]">
         <div className="border-b border-stone-200/90 bg-[#f6f3ee]/92 backdrop-blur md:sticky md:top-0 md:z-30">
-          <div className="mx-auto flex w-full max-w-7xl flex-col gap-1.5 px-4 py-1.5 sm:px-5 sm:py-2">
+          <div className="mx-auto flex w-full max-w-7xl flex-col gap-1.5 px-3 py-1.5 sm:px-5 sm:py-2">
             <header className="flex items-center justify-between gap-3">
               <AppLogo compact label={`Timeline für ${ownerName}`} />
               <div className="hidden items-center gap-2 md:flex">
@@ -234,7 +234,7 @@ export function TimelineClient({
           </div>
         </div>
 
-        <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-5 sm:py-8">
+        <div className="mx-auto w-full max-w-6xl px-3 py-6 sm:px-5 sm:py-8">
           {sortedEvents.length === 0 ? (
             <div className="rounded-2xl border border-stone-200 bg-white p-6 text-sm font-semibold text-stone-700 shadow-sm">
               Keine Ereignisse für diese Suche gefunden.
@@ -366,7 +366,7 @@ function YearSection({
       className="grid gap-4"
       transition={{ layout: { type: "spring", stiffness: 180, damping: 22 } }}
     >
-      <div className="grid grid-cols-[3.4rem_1.25rem_minmax(0,1fr)] gap-2 sm:grid-cols-[7rem_2rem_minmax(0,1fr)] sm:gap-4">
+      <div className="grid grid-cols-[3.2rem_1rem_minmax(0,1fr)] gap-2 sm:grid-cols-[7rem_2rem_minmax(0,1fr)] sm:gap-4">
         <div className={hasExpandedEvents(group.events) ? "hidden pt-2 text-right sm:block" : "pt-2 text-right"}>
           <p className="text-xl font-semibold leading-none text-stone-950 sm:text-3xl">{group.year}</p>
         </div>
@@ -503,7 +503,7 @@ function MonthSection({
   return (
     <motion.div
       layout
-      className="grid grid-cols-[3.4rem_1.25rem_minmax(0,1fr)] gap-2 sm:grid-cols-[7rem_2rem_minmax(0,1fr)] sm:gap-4"
+      className="grid grid-cols-[3.2rem_1rem_minmax(0,1fr)] gap-2 sm:grid-cols-[7rem_2rem_minmax(0,1fr)] sm:gap-4"
       transition={{ layout: { type: "spring", stiffness: 180, damping: 22 } }}
     >
       <div className="pt-1 text-right">
@@ -516,7 +516,7 @@ function MonthSection({
         <div className="absolute bottom-[-1rem] top-0 w-px bg-stone-300" />
         <span className="relative mt-1 h-3 w-3 rounded-full bg-teal-700 ring-4 ring-[#f6f3ee] sm:h-3.5 sm:w-3.5" />
       </div>
-      <div className="grid gap-3">
+      <div className="grid min-w-0 gap-3">
         {month.events.map((event) => (
           <EventRow
             key={event.id}
@@ -555,11 +555,11 @@ function EventRow({
     <motion.article
       layout
       data-event-id={event.id}
-      className={compact ? "grid gap-2 sm:grid-cols-[7.5rem_minmax(0,1fr)] sm:gap-4" : "grid gap-2 sm:grid-cols-[7.5rem_minmax(0,1fr)] sm:gap-4"}
+      className="grid w-full min-w-0 gap-2 sm:grid-cols-[7.5rem_minmax(0,1fr)] sm:gap-4"
       transition={{ layout: { type: "spring", stiffness: 180, damping: 22 } }}
     >
       <button
-        className="inline-flex h-fit items-center justify-start rounded-md px-0 py-2 text-left text-sm font-semibold text-stone-500 hover:text-teal-700"
+        className="inline-flex h-fit w-fit max-w-full items-center justify-start rounded-md px-0 py-1.5 text-left text-sm font-semibold text-stone-500 hover:text-teal-700"
         onClick={() => onOpenEvent(event)}
       >
         {formatEventDateNumeric(event.event_date)}-
@@ -568,15 +568,15 @@ function EventRow({
       <div
         className={
           weight === "milestone"
-            ? "rounded-2xl border border-orange-200/90 bg-[linear-gradient(180deg,#fffdf8_0%,#fff6ea_100%)] p-5 shadow-[0_18px_45px_-34px_rgba(188,122,37,0.45)] sm:p-6"
+            ? "w-full min-w-0 rounded-2xl border border-orange-200/90 bg-[linear-gradient(180deg,#fffdf8_0%,#fff6ea_100%)] p-5 shadow-[0_18px_45px_-34px_rgba(188,122,37,0.45)] sm:p-6"
             : compact
-              ? "rounded-2xl border border-stone-200/90 bg-white/95 p-4 shadow-sm sm:p-4"
+              ? "w-full min-w-0 rounded-2xl border border-stone-200/90 bg-white/95 p-4 shadow-sm sm:p-4"
             : weight === "brief"
-              ? "rounded-2xl border border-stone-200/90 bg-white/95 p-4 shadow-sm sm:p-4.5"
-              : "rounded-2xl border border-stone-200/90 bg-white/95 p-4 shadow-[0_18px_40px_-32px_rgba(33,31,28,0.42)] sm:p-5"
+              ? "w-full min-w-0 rounded-2xl border border-stone-200/90 bg-white/95 p-4 shadow-sm sm:p-4.5"
+              : "w-full min-w-0 rounded-2xl border border-stone-200/90 bg-white/95 p-4 shadow-[0_18px_40px_-32px_rgba(33,31,28,0.42)] sm:p-5"
         }
       >
-        <button className="w-full text-left" onClick={() => onOpenEvent(event)}>
+        <button className="w-full min-w-0 text-left" onClick={() => onOpenEvent(event)}>
           <div className="flex flex-wrap items-center gap-2">
             {weight === "milestone" ? (
               <span className="inline-flex items-center gap-1 rounded-full bg-orange-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-orange-800">
