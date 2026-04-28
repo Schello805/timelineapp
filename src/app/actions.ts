@@ -115,7 +115,11 @@ export async function upsertTimelineEvent(formData: FormData) {
     title: String(formData.get("title") ?? ""),
     description: String(formData.get("description") ?? ""),
     importance: String(formData.get("importance") ?? "standard"),
-    image_url: uploadedImage ?? cleanOptionalText(formData.get("image_url")) ?? "",
+    image_url:
+      cleanOptionalText(formData.get("image_uploaded_path")) ??
+      uploadedImage ??
+      cleanOptionalText(formData.get("image_url")) ??
+      "",
     video_url:
       cleanOptionalText(formData.get("video_uploaded_path")) ??
       uploadedVideo ??
@@ -126,7 +130,11 @@ export async function upsertTimelineEvent(formData: FormData) {
       uploadedAudio ??
       cleanOptionalText(formData.get("audio_url")) ??
       "",
-    pdf_url: uploadedPdf ?? cleanOptionalText(formData.get("pdf_url")) ?? "",
+    pdf_url:
+      cleanOptionalText(formData.get("pdf_uploaded_path")) ??
+      uploadedPdf ??
+      cleanOptionalText(formData.get("pdf_url")) ??
+      "",
   });
 
   if (!parsed.success) {

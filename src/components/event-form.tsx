@@ -1,17 +1,22 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { LoaderCircle, UploadCloud, Video } from "lucide-react";
+import { FileAudio, FileImage, FileText, LoaderCircle, UploadCloud, Video } from "lucide-react";
 import { upsertTimelineEvent } from "@/app/actions";
 import type { TimelineEvent } from "@/lib/types";
 
 type State = { ok: boolean; message: string } | null;
-type UploadState = {
+type UploadProgressState = {
   progress: number;
   pending: boolean;
-  path: string;
   message: string;
   error: string;
+};
+type UploadedMediaPaths = {
+  image: string;
+  video: string;
+  audio: string;
+  pdf: string;
 };
 
 export function EventForm({ event }: { event?: TimelineEvent }) {
@@ -20,27 +25,27 @@ export function EventForm({ event }: { event?: TimelineEvent }) {
     null,
   );
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [videoUpload, setVideoUpload] = useState<UploadState>({
+  const [uploadedPaths, setUploadedPaths] = useState<UploadedMediaPaths>({
+    image: "",
+    video: "",
+    audio: "",
+    pdf: "",
+  });
+  const [mediaUpload, setMediaUpload] = useState<UploadProgressState>({
     progress: 0,
     pending: false,
-    path: "",
     message: "",
     error: "",
   });
-  const [audioUpload, setAudioUpload] = useState<UploadState>({
-    progress: 0,
-    pending: false,
-    path: "",
-    message: "",
-    error: "",
-  });
-  const previewSrc = imagePreview ?? event?.image_url ?? null;
+  const previewSrc = imagePreview ?? uploadedPaths.image ?? event?.image_url ?? null;
 
   return (
     <form action={formAction} className="grid gap-5 rounded-lg border border-stone-200 bg-white p-5 shadow-sm">
       {event?.id ? <input type="hidden" name="id" defaultValue={event.id} /> : null}
-      <input type="hidden" name="video_uploaded_path" value={videoUpload.path} readOnly />
-      <input type="hidden" name="audio_uploaded_path" value={audioUpload.path} readOnly />
+      <input type="hidden" name="image_uploaded_path" value={uploadedPaths.image} readOnly />
+      <input type="hidden" name="video_uploaded_path" value={uploadedPaths.video} readOnly />
+      <input type="hidden" name="audio_uploaded_path" value={uploadedPaths.audio} readOnly />
+      <input type="hidden" name="pdf_uploaded_path" value={uploadedPaths.pdf} readOnly />
 
       <div className="grid gap-2">
         <label className="text-sm font-semibold text-stone-800" htmlFor="event_date">
@@ -120,13 +125,151 @@ export function EventForm({ event }: { event?: TimelineEvent }) {
         </p>
       </div>
 
+      <div className="grid gap-3 rounded-lg border border-stone-200 bg-stone-50 p-4">
+        <div>
+          <h3 className="text-sm font-semibold text-stone-900">Medien-Datei hochladen</h3>
+          <p className="mt-1 text-sm leading-6 text-stone-600">
+            Ein einziges Uploadfeld für Bild, Video, Audio oder PDF. Das System erkennt den Dateityp automatisch und ordnet ihn passend zu.
+          </p>
+        </div>
+        <label className="inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-md border border-stone-300 bg-white px-4 text-sm font-semibold text-stone-800 hover:bg-stone-50">
+          {mediaUpload.pending ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <UploadCloud className="h-4 w-4" />}
+          {mediaUpload.pending ? "Datei wird hochgeladen..." : "Datei auswählen"}
+          <input
+            type="file"
+            accept="image/*,video/*,audio/*,application/pdf"
+            className="sr-only"
+            onChange={(event) => {
+              const file = event.currentTarget.files?.[0];
+              if (!file) return;
+
+              const request = new XMLHttpRequest();
+              request.open("POST", "/api/uploads/media");
+              request.setRequestHeader("x-file-name", encodeURIComponent(file.name));
+              if (file.type) {
+                request.setRequestHeader("Content-Type", file.type);
+              }
+
+              setMediaUpload({
+                progress: 0,
+                pending: true,
+                message: "",
+                error: "",
+              });
+
+              request.upload.onprogress = (progressEvent) => {
+                if (!progressEvent.lengthComputable) return;
+                setMediaUpload((current) => ({
+                  ...current,
+                  progress: Math.round((progressEvent.loaded / progressEvent.total) * 100),
+                }));
+              };
+
+              request.onerror = () => {
+                setMediaUpload({
+                  progress: 0,
+                  pending: false,
+                  message: "",
+                  error: "Der Upload ist fehlgeschlagen. Bitte Verbindung und Dateigröße prüfen.",
+                });
+              };
+
+              request.onload = () => {
+                try {
+                  const response = JSON.parse(request.responseText) as {
+                    ok?: boolean;
+                    mediaType?: "image" | "video" | "audio" | "pdf";
+                    path?: string;
+                    message?: string;
+                  };
+
+                  if (request.status >= 200 && request.status < 300 && response.ok && response.path && response.mediaType) {
+                    const mediaType = response.mediaType;
+                    setUploadedPaths((current) => ({
+                      ...current,
+                      [mediaType]: response.path,
+                    }));
+
+                    if (mediaType === "image") {
+                      setImagePreview(response.path);
+                    }
+
+                    const mediaTypeLabel =
+                      mediaType === "image"
+                        ? "Bild"
+                        : mediaType === "video"
+                          ? "Video"
+                          : mediaType === "audio"
+                            ? "Audio"
+                            : "PDF";
+
+                    setMediaUpload({
+                      progress: 100,
+                      pending: false,
+                      message: `${mediaTypeLabel} vollständig hochgeladen und automatisch zugeordnet.`,
+                      error: "",
+                    });
+                    return;
+                  }
+                } catch {}
+
+                setMediaUpload({
+                  progress: 0,
+                  pending: false,
+                  message: "",
+                  error: "Die Datei konnte nicht verarbeitet werden.",
+                });
+              };
+
+              request.send(file);
+            }}
+          />
+        </label>
+        {mediaUpload.pending ? (
+          <div className="grid gap-2 rounded-md border border-stone-200 bg-white p-3">
+            <div className="h-2 overflow-hidden rounded-full bg-stone-200">
+              <div
+                className="h-full rounded-full bg-teal-700 transition-[width] duration-150"
+                style={{ width: `${mediaUpload.progress}%` }}
+              />
+            </div>
+            <p className="text-sm font-medium text-stone-700">{mediaUpload.progress}% hochgeladen</p>
+          </div>
+        ) : null}
+        {mediaUpload.message ? <p className="text-sm leading-6 text-teal-700">{mediaUpload.message}</p> : null}
+        {mediaUpload.error ? <p className="text-sm leading-6 text-red-700">{mediaUpload.error}</p> : null}
+        <div className="flex flex-wrap gap-2 text-xs font-semibold">
+          {(uploadedPaths.image || event?.image_url) && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-3 py-1 text-blue-700">
+              <FileImage className="h-3.5 w-3.5" />
+              Bild zugeordnet
+            </span>
+          )}
+          {(uploadedPaths.video || event?.video_url) && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-orange-50 px-3 py-1 text-orange-700">
+              <Video className="h-3.5 w-3.5" />
+              Video zugeordnet
+            </span>
+          )}
+          {(uploadedPaths.audio || event?.audio_url) && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-violet-50 px-3 py-1 text-violet-700">
+              <FileAudio className="h-3.5 w-3.5" />
+              Audio zugeordnet
+            </span>
+          )}
+          {(uploadedPaths.pdf || event?.pdf_url) && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-teal-50 px-3 py-1 text-teal-700">
+              <FileText className="h-3.5 w-3.5" />
+              PDF zugeordnet
+            </span>
+          )}
+        </div>
+      </div>
+
       <UrlUploadField
         name="image_url"
-        fileName="image_file"
         label="Bild"
         defaultValue={event?.image_url ?? ""}
-        accept="image/*"
-        onFilePreview={setImagePreview}
       />
 
       {previewSrc ? (
@@ -152,102 +295,10 @@ export function EventForm({ event }: { event?: TimelineEvent }) {
         <p className="text-sm leading-6 text-stone-600">
           Empfohlen für lokale Uploads: MP4 mit H.264/AAC. Große Dateien sind möglich, laden aber je nach Verbindung und Proxy langsamer.
         </p>
-        <label className="inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-md border border-stone-300 px-4 text-sm font-semibold text-stone-800 hover:bg-stone-50">
-          {videoUpload.pending ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <UploadCloud className="h-4 w-4" />}
-          {videoUpload.pending ? "Video wird hochgeladen..." : "Video lokal hochladen"}
-          <input
-            name="video_file"
-            type="file"
-            accept="video/*"
-            className="sr-only"
-            onChange={(event) => {
-              const file = event.currentTarget.files?.[0];
-              if (!file) return;
-
-              const request = new XMLHttpRequest();
-              request.open("POST", "/api/uploads/video");
-              request.setRequestHeader("x-file-name", encodeURIComponent(file.name));
-
-              setVideoUpload({
-                progress: 0,
-                pending: true,
-                path: "",
-                message: "",
-                error: "",
-              });
-
-              request.upload.onprogress = (progressEvent) => {
-                if (!progressEvent.lengthComputable) return;
-                setVideoUpload((current) => ({
-                  ...current,
-                  progress: Math.round((progressEvent.loaded / progressEvent.total) * 100),
-                }));
-              };
-
-              request.onerror = () => {
-                setVideoUpload({
-                  progress: 0,
-                  pending: false,
-                  path: "",
-                  message: "",
-                  error: "Der Upload ist fehlgeschlagen. Bitte Verbindung und Dateigröße prüfen.",
-                });
-              };
-
-              request.onload = () => {
-                try {
-                  const response = JSON.parse(request.responseText) as {
-                    ok?: boolean;
-                    path?: string;
-                    message?: string;
-                  };
-
-                  if (request.status >= 200 && request.status < 300 && response.ok && response.path) {
-                    setVideoUpload({
-                      progress: 100,
-                      pending: false,
-                      path: response.path,
-                      message:
-                        response.message ||
-                        "Video vollständig hochgeladen. Falls es später nicht abspielt, liegt das meist am Format oder Codec. MP4 mit H.264/AAC ist am kompatibelsten.",
-                      error: "",
-                    });
-                    return;
-                  }
-                } catch {}
-
-                setVideoUpload({
-                  progress: 0,
-                  pending: false,
-                  path: "",
-                  message: "",
-                  error: "Das Video konnte nicht verarbeitet werden.",
-                });
-              };
-
-              request.send(file);
-            }}
-          />
-        </label>
-        {videoUpload.pending ? (
-          <div className="grid gap-2 rounded-md border border-stone-200 bg-stone-50 p-3">
-            <div className="h-2 overflow-hidden rounded-full bg-stone-200">
-              <div
-                className="h-full rounded-full bg-teal-700 transition-[width] duration-150"
-                style={{ width: `${videoUpload.progress}%` }}
-              />
-            </div>
-            <p className="text-sm font-medium text-stone-700">{videoUpload.progress}% hochgeladen</p>
-          </div>
-        ) : null}
-        {videoUpload.message ? (
-          <p className="text-sm leading-6 text-teal-700">{videoUpload.message}</p>
-        ) : null}
-        {videoUpload.error ? <p className="text-sm leading-6 text-red-700">{videoUpload.error}</p> : null}
-        {(videoUpload.path || event?.video_url) && !videoUpload.pending ? (
+        {(uploadedPaths.video || event?.video_url) ? (
           <div className="inline-flex items-center gap-2 text-sm text-stone-600">
             <Video className="h-4 w-4 text-teal-700" />
-            Aktuelles Video: {videoUpload.path || event?.video_url}
+            Aktuelles Video: {uploadedPaths.video || event?.video_url}
           </div>
         ) : null}
       </div>
@@ -267,109 +318,18 @@ export function EventForm({ event }: { event?: TimelineEvent }) {
         <p className="text-sm leading-6 text-stone-600">
           Empfohlen für breite Kompatibilität: MP3. Alternativ funktionieren meist auch WAV, OGG oder M4A.
         </p>
-        <label className="inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-md border border-stone-300 px-4 text-sm font-semibold text-stone-800 hover:bg-stone-50">
-          {audioUpload.pending ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <UploadCloud className="h-4 w-4" />}
-          {audioUpload.pending ? "Audio wird hochgeladen..." : "Audio lokal hochladen"}
-          <input
-            name="audio_file"
-            type="file"
-            accept="audio/*"
-            className="sr-only"
-            onChange={(event) => {
-              const file = event.currentTarget.files?.[0];
-              if (!file) return;
-
-              const request = new XMLHttpRequest();
-              request.open("POST", "/api/uploads/audio");
-              request.setRequestHeader("x-file-name", encodeURIComponent(file.name));
-
-              setAudioUpload({
-                progress: 0,
-                pending: true,
-                path: "",
-                message: "",
-                error: "",
-              });
-
-              request.upload.onprogress = (progressEvent) => {
-                if (!progressEvent.lengthComputable) return;
-                setAudioUpload((current) => ({
-                  ...current,
-                  progress: Math.round((progressEvent.loaded / progressEvent.total) * 100),
-                }));
-              };
-
-              request.onerror = () => {
-                setAudioUpload({
-                  progress: 0,
-                  pending: false,
-                  path: "",
-                  message: "",
-                  error: "Der Upload ist fehlgeschlagen. Bitte Verbindung und Dateigröße prüfen.",
-                });
-              };
-
-              request.onload = () => {
-                try {
-                  const response = JSON.parse(request.responseText) as {
-                    ok?: boolean;
-                    path?: string;
-                    message?: string;
-                  };
-
-                  if (request.status >= 200 && request.status < 300 && response.ok && response.path) {
-                    setAudioUpload({
-                      progress: 100,
-                      pending: false,
-                      path: response.path,
-                      message:
-                        response.message ||
-                        "Audio vollständig hochgeladen. Für beste Kompatibilität empfehlen wir MP3.",
-                      error: "",
-                    });
-                    return;
-                  }
-                } catch {}
-
-                setAudioUpload({
-                  progress: 0,
-                  pending: false,
-                  path: "",
-                  message: "",
-                  error: "Das Audio konnte nicht verarbeitet werden.",
-                });
-              };
-
-              request.send(file);
-            }}
-          />
-        </label>
-        {audioUpload.pending ? (
-          <div className="grid gap-2 rounded-md border border-stone-200 bg-stone-50 p-3">
-            <div className="h-2 overflow-hidden rounded-full bg-stone-200">
-              <div
-                className="h-full rounded-full bg-teal-700 transition-[width] duration-150"
-                style={{ width: `${audioUpload.progress}%` }}
-              />
-            </div>
-            <p className="text-sm font-medium text-stone-700">{audioUpload.progress}% hochgeladen</p>
-          </div>
-        ) : null}
-        {audioUpload.message ? <p className="text-sm leading-6 text-teal-700">{audioUpload.message}</p> : null}
-        {audioUpload.error ? <p className="text-sm leading-6 text-red-700">{audioUpload.error}</p> : null}
-        {(audioUpload.path || event?.audio_url) && !audioUpload.pending ? (
+        {(uploadedPaths.audio || event?.audio_url) ? (
           <div className="inline-flex items-center gap-2 text-sm text-stone-600">
-            Aktuelles Audio: {audioUpload.path || event?.audio_url}
+            <FileAudio className="h-4 w-4 text-violet-700" />
+            Aktuelles Audio: {uploadedPaths.audio || event?.audio_url}
           </div>
         ) : null}
       </div>
 
       <UrlUploadField
         name="pdf_url"
-        fileName="pdf_file"
         label="PDF"
         defaultValue={event?.pdf_url ?? ""}
-        accept="application/pdf"
       />
 
       {state?.message ? (
@@ -390,18 +350,12 @@ export function EventForm({ event }: { event?: TimelineEvent }) {
 
 function UrlUploadField({
   name,
-  fileName,
   label,
   defaultValue,
-  accept,
-  onFilePreview,
 }: {
   name: string;
-  fileName: string;
   label: string;
   defaultValue: string;
-  accept: string;
-  onFilePreview?: (url: string | null) => void;
 }) {
   return (
     <div className="grid gap-2">
@@ -426,21 +380,6 @@ function UrlUploadField({
           PDFs werden in der öffentlichen Timeline als direkter Dokument-Link geöffnet.
         </p>
       ) : null}
-      <label className="inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-md border border-stone-300 px-4 text-sm font-semibold text-stone-800 hover:bg-stone-50">
-        <UploadCloud className="h-4 w-4" />
-        Datei lokal hochladen
-        <input
-          name={fileName}
-          type="file"
-          accept={accept}
-          className="sr-only"
-          onChange={(event) => {
-            const file = event.currentTarget.files?.[0];
-            if (!file || !onFilePreview) return;
-            onFilePreview(URL.createObjectURL(file));
-          }}
-        />
-      </label>
     </div>
   );
 }
