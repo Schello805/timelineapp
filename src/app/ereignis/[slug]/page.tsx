@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { FileText } from "lucide-react";
+import { AudioPlayer } from "@/components/audio-player";
 import { VideoFrame } from "@/components/video-frame";
 import { getTimelineEventBySlug } from "@/lib/db";
 import { siteConfig } from "@/lib/env";
@@ -91,6 +92,12 @@ export default async function EventPage({ params }: Props) {
         {event.video_url ? (
           <div className="mt-6 aspect-video overflow-hidden rounded-lg bg-black">
             <VideoFrame url={event.video_url} title={event.title} />
+          </div>
+        ) : null}
+
+        {event.audio_url ? (
+          <div className="mt-6">
+            <AudioPlayer url={event.audio_url} title={event.title} />
           </div>
         ) : null}
 

@@ -7,6 +7,7 @@ export type TimelineEvent = {
   importance?: "standard" | "important" | "milestone";
   image_url: string | null;
   video_url: string | null;
+  audio_url: string | null;
   pdf_url: string | null;
   created_at?: string;
   updated_at?: string;
@@ -20,6 +21,7 @@ export type TimelineEventInput = {
   importance?: "standard" | "important" | "milestone";
   image_url?: string | null;
   video_url?: string | null;
+  audio_url?: string | null;
   pdf_url?: string | null;
 };
 

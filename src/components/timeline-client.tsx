@@ -12,6 +12,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
+import { AudioPlayer } from "@/components/audio-player";
 import { AppLogo } from "@/components/app-logo";
 import { VideoFrame } from "@/components/video-frame";
 import type { AnnualMetric, TimelineEvent } from "@/lib/types";
@@ -632,6 +633,7 @@ function EventRow({
           <div className="mt-4 flex flex-wrap gap-2 text-xs font-semibold">
             {event.image_url ? <span className="rounded-full bg-blue-50 px-3 py-1 text-blue-700">Bild</span> : null}
             {event.video_url ? <span className="rounded-full bg-orange-50 px-3 py-1 text-orange-700">Video</span> : null}
+            {event.audio_url ? <span className="rounded-full bg-violet-50 px-3 py-1 text-violet-700">Audio</span> : null}
             {event.pdf_url ? <span className="rounded-full bg-teal-50 px-3 py-1 text-teal-700">PDF</span> : null}
           </div>
         )}
@@ -652,6 +654,15 @@ function EventRow({
             >
               <Play className="h-4 w-4 fill-current" />
               Video ansehen
+            </button>
+          ) : null}
+          {event.audio_url ? (
+            <button
+              className="inline-flex h-11 items-center gap-2 rounded-xl border border-stone-300 px-4 text-sm font-semibold text-stone-900 hover:bg-stone-50"
+              onClick={() => onOpenEvent(event)}
+            >
+              <Play className="h-4 w-4 fill-current" />
+              Audio anhören
             </button>
           ) : null}
           {event.pdf_url ? (
@@ -680,7 +691,7 @@ function EventMediaStack({
   detail?: boolean;
   onOpenImage: (event: TimelineEvent) => void;
 }) {
-  if (!event.image_url && !event.video_url) return null;
+  if (!event.image_url && !event.video_url && !event.audio_url) return null;
 
   return (
     <div className={detail ? "mt-5 grid gap-4" : "mt-4 grid gap-3"}>
@@ -706,6 +717,8 @@ function EventMediaStack({
           <VideoFrame url={event.video_url} title={event.title} />
         </div>
       ) : null}
+
+      {event.audio_url ? <AudioPlayer url={event.audio_url} title={event.title} /> : null}
     </div>
   );
 }
@@ -889,15 +902,15 @@ function getEventWeight(event: TimelineEvent): EventWeight {
   if (event.importance === "milestone") return "milestone";
   if (event.importance === "important") return "standard";
   if (event.importance === "standard") {
-    const mediaCount = [event.image_url, event.video_url, event.pdf_url].filter(Boolean).length;
-    if (event.video_url || mediaCount >= 2 || event.description.length > 520) return "milestone";
-    if (event.description.length < 120 && !event.image_url && !event.video_url) return "brief";
+    const mediaCount = [event.image_url, event.video_url, event.audio_url, event.pdf_url].filter(Boolean).length;
+    if (event.video_url || event.audio_url || mediaCount >= 2 || event.description.length > 520) return "milestone";
+    if (event.description.length < 120 && !event.image_url && !event.video_url && !event.audio_url) return "brief";
     return "standard";
   }
 
-  const mediaCount = [event.image_url, event.video_url, event.pdf_url].filter(Boolean).length;
-  if (event.video_url || mediaCount >= 2 || event.description.length > 520) return "milestone";
-  if (event.description.length < 120 && !event.image_url && !event.video_url) return "brief";
+  const mediaCount = [event.image_url, event.video_url, event.audio_url, event.pdf_url].filter(Boolean).length;
+  if (event.video_url || event.audio_url || mediaCount >= 2 || event.description.length > 520) return "milestone";
+  if (event.description.length < 120 && !event.image_url && !event.video_url && !event.audio_url) return "brief";
   return "standard";
 }
 

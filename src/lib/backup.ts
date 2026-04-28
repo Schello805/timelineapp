@@ -18,6 +18,7 @@ const eventSchema = z.object({
   importance: z.enum(["standard", "important", "milestone"]).optional(),
   image_url: z.string().nullable().optional(),
   video_url: z.string().nullable().optional(),
+  audio_url: z.string().nullable().optional(),
   pdf_url: z.string().nullable().optional(),
   created_at: z.string().optional(),
   updated_at: z.string().optional(),
@@ -114,6 +115,7 @@ function normalizeEvent(event: z.infer<typeof eventSchema>): TimelineEvent {
     importance: event.importance ?? "standard",
     image_url: event.image_url ?? null,
     video_url: event.video_url ?? null,
+    audio_url: event.audio_url ?? null,
     pdf_url: event.pdf_url ?? null,
     created_at: event.created_at,
     updated_at: event.updated_at,
@@ -141,7 +143,7 @@ async function collectLocalFiles(events: TimelineEvent[]) {
   const paths = new Set<string>();
 
   for (const event of events) {
-    for (const url of [event.image_url, event.video_url, event.pdf_url]) {
+    for (const url of [event.image_url, event.video_url, event.audio_url, event.pdf_url]) {
       if (url?.startsWith("/uploads/")) paths.add(url);
     }
   }
@@ -195,5 +197,9 @@ function guessMime(publicPath: string) {
   if (extension === "mp4") return "video/mp4";
   if (extension === "webm") return "video/webm";
   if (extension === "mov") return "video/quicktime";
+  if (extension === "mp3") return "audio/mpeg";
+  if (extension === "wav") return "audio/wav";
+  if (extension === "ogg") return "audio/ogg";
+  if (extension === "m4a") return "audio/mp4";
   return "application/octet-stream";
 }

@@ -42,6 +42,7 @@ const eventSchema = z.object({
   importance: z.enum(["standard", "important", "milestone"]),
   image_url: mediaUrlSchema,
   video_url: mediaUrlSchema,
+  audio_url: mediaUrlSchema,
   pdf_url: mediaUrlSchema,
 });
 
@@ -104,6 +105,7 @@ export async function upsertTimelineEvent(formData: FormData) {
 
   const uploadedImage = await saveUpload(formData.get("image_file") as File | null, "images");
   const uploadedVideo = await saveUpload(formData.get("video_file") as File | null, "videos");
+  const uploadedAudio = await saveUpload(formData.get("audio_file") as File | null, "audios");
   const uploadedPdf = await saveUpload(formData.get("pdf_file") as File | null, "pdfs");
 
   const parsed = eventSchema.safeParse({
@@ -118,6 +120,11 @@ export async function upsertTimelineEvent(formData: FormData) {
       cleanOptionalText(formData.get("video_uploaded_path")) ??
       uploadedVideo ??
       cleanOptionalText(formData.get("video_url")) ??
+      "",
+    audio_url:
+      cleanOptionalText(formData.get("audio_uploaded_path")) ??
+      uploadedAudio ??
+      cleanOptionalText(formData.get("audio_url")) ??
       "",
     pdf_url: uploadedPdf ?? cleanOptionalText(formData.get("pdf_url")) ?? "",
   });
@@ -138,6 +145,7 @@ export async function upsertTimelineEvent(formData: FormData) {
     importance: parsed.data.importance,
     image_url: parsed.data.image_url || null,
     video_url: parsed.data.video_url || null,
+    audio_url: parsed.data.audio_url || null,
     pdf_url: parsed.data.pdf_url || null,
   });
 
@@ -200,6 +208,7 @@ export async function duplicateTimelineEvent(formData: FormData) {
     importance: event.importance,
     image_url: event.image_url,
     video_url: event.video_url,
+    audio_url: event.audio_url,
     pdf_url: event.pdf_url,
   });
 

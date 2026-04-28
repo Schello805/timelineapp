@@ -12,7 +12,7 @@ export function createUploadFileName(fileName: string, extension: string) {
   return `${crypto.randomUUID()}-${sanitizeUploadBase(fileName)}.${extension}`;
 }
 
-export async function saveUpload(file: File | null, folder: "images" | "videos" | "pdfs") {
+export async function saveUpload(file: File | null, folder: "images" | "videos" | "audios" | "pdfs") {
   if (!file || file.size === 0) return null;
 
   const bytes = Buffer.from(await file.arrayBuffer());

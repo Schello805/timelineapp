@@ -27,12 +27,20 @@ export function EventForm({ event }: { event?: TimelineEvent }) {
     message: "",
     error: "",
   });
+  const [audioUpload, setAudioUpload] = useState<UploadState>({
+    progress: 0,
+    pending: false,
+    path: "",
+    message: "",
+    error: "",
+  });
   const previewSrc = imagePreview ?? event?.image_url ?? null;
 
   return (
     <form action={formAction} className="grid gap-5 rounded-lg border border-stone-200 bg-white p-5 shadow-sm">
       {event?.id ? <input type="hidden" name="id" defaultValue={event.id} /> : null}
       <input type="hidden" name="video_uploaded_path" value={videoUpload.path} readOnly />
+      <input type="hidden" name="audio_uploaded_path" value={audioUpload.path} readOnly />
 
       <div className="grid gap-2">
         <label className="text-sm font-semibold text-stone-800" htmlFor="event_date">
@@ -240,6 +248,118 @@ export function EventForm({ event }: { event?: TimelineEvent }) {
           <div className="inline-flex items-center gap-2 text-sm text-stone-600">
             <Video className="h-4 w-4 text-teal-700" />
             Aktuelles Video: {videoUpload.path || event?.video_url}
+          </div>
+        ) : null}
+      </div>
+
+      <div className="grid gap-2">
+        <label className="text-sm font-semibold text-stone-800" htmlFor="audio_url">
+          Audio-Link
+        </label>
+        <input
+          id="audio_url"
+          name="audio_url"
+          type="text"
+          placeholder="MP3-, WAV-, OGG-URL oder lokaler Upload-Pfad"
+          defaultValue={event?.audio_url ?? ""}
+          className="h-11 rounded-md border border-stone-300 px-3 outline-none focus:border-teal-700"
+        />
+        <p className="text-sm leading-6 text-stone-600">
+          Empfohlen für breite Kompatibilität: MP3. Alternativ funktionieren meist auch WAV, OGG oder M4A.
+        </p>
+        <label className="inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-md border border-stone-300 px-4 text-sm font-semibold text-stone-800 hover:bg-stone-50">
+          {audioUpload.pending ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <UploadCloud className="h-4 w-4" />}
+          {audioUpload.pending ? "Audio wird hochgeladen..." : "Audio lokal hochladen"}
+          <input
+            name="audio_file"
+            type="file"
+            accept="audio/*"
+            className="sr-only"
+            onChange={(event) => {
+              const file = event.currentTarget.files?.[0];
+              if (!file) return;
+
+              const request = new XMLHttpRequest();
+              request.open("POST", "/api/uploads/audio");
+              request.setRequestHeader("x-file-name", encodeURIComponent(file.name));
+
+              setAudioUpload({
+                progress: 0,
+                pending: true,
+                path: "",
+                message: "",
+                error: "",
+              });
+
+              request.upload.onprogress = (progressEvent) => {
+                if (!progressEvent.lengthComputable) return;
+                setAudioUpload((current) => ({
+                  ...current,
+                  progress: Math.round((progressEvent.loaded / progressEvent.total) * 100),
+                }));
+              };
+
+              request.onerror = () => {
+                setAudioUpload({
+                  progress: 0,
+                  pending: false,
+                  path: "",
+                  message: "",
+                  error: "Der Upload ist fehlgeschlagen. Bitte Verbindung und Dateigröße prüfen.",
+                });
+              };
+
+              request.onload = () => {
+                try {
+                  const response = JSON.parse(request.responseText) as {
+                    ok?: boolean;
+                    path?: string;
+                    message?: string;
+                  };
+
+                  if (request.status >= 200 && request.status < 300 && response.ok && response.path) {
+                    setAudioUpload({
+                      progress: 100,
+                      pending: false,
+                      path: response.path,
+                      message:
+                        response.message ||
+                        "Audio vollständig hochgeladen. Für beste Kompatibilität empfehlen wir MP3.",
+                      error: "",
+                    });
+                    return;
+                  }
+                } catch {}
+
+                setAudioUpload({
+                  progress: 0,
+                  pending: false,
+                  path: "",
+                  message: "",
+                  error: "Das Audio konnte nicht verarbeitet werden.",
+                });
+              };
+
+              request.send(file);
+            }}
+          />
+        </label>
+        {audioUpload.pending ? (
+          <div className="grid gap-2 rounded-md border border-stone-200 bg-stone-50 p-3">
+            <div className="h-2 overflow-hidden rounded-full bg-stone-200">
+              <div
+                className="h-full rounded-full bg-teal-700 transition-[width] duration-150"
+                style={{ width: `${audioUpload.progress}%` }}
+              />
+            </div>
+            <p className="text-sm font-medium text-stone-700">{audioUpload.progress}% hochgeladen</p>
+          </div>
+        ) : null}
+        {audioUpload.message ? <p className="text-sm leading-6 text-teal-700">{audioUpload.message}</p> : null}
+        {audioUpload.error ? <p className="text-sm leading-6 text-red-700">{audioUpload.error}</p> : null}
+        {(audioUpload.path || event?.audio_url) && !audioUpload.pending ? (
+          <div className="inline-flex items-center gap-2 text-sm text-stone-600">
+            Aktuelles Audio: {audioUpload.path || event?.audio_url}
           </div>
         ) : null}
       </div>

@@ -24,6 +24,7 @@ function getDb() {
         importance text not null default 'standard',
         image_url text,
         video_url text,
+        audio_url text,
         pdf_url text,
         created_at text not null default current_timestamp,
         updated_at text not null default current_timestamp
@@ -94,6 +95,9 @@ function migrateDatabase(db: Database.Database) {
   if (!columns.some((column) => column.name === "importance")) {
     db.prepare("alter table timeline_events add column importance text not null default 'standard'").run();
   }
+  if (!columns.some((column) => column.name === "audio_url")) {
+    db.prepare("alter table timeline_events add column audio_url text").run();
+  }
 
   db.prepare("create unique index if not exists timeline_events_slug_unique on timeline_events(slug)").run();
   db.prepare("create unique index if not exists admin_users_email_unique on admin_users(email)").run();
@@ -131,7 +135,7 @@ export function ensurePrimaryAdminUser() {
 export function listTimelineEvents() {
   return getDb()
     .prepare(
-      `select id, slug, event_date, title, description, image_url, video_url, pdf_url, created_at, updated_at
+      `select id, slug, event_date, title, description, image_url, video_url, audio_url, pdf_url, created_at, updated_at
        , importance
        from timeline_events
        order by event_date asc`,
@@ -146,8 +150,8 @@ export function upsertEvent(input: TimelineEventInput & { id?: string }) {
 
   db
     .prepare(
-      `insert into timeline_events (id, slug, event_date, title, description, importance, image_url, video_url, pdf_url)
-       values (@id, @slug, @event_date, @title, @description, @importance, @image_url, @video_url, @pdf_url)
+      `insert into timeline_events (id, slug, event_date, title, description, importance, image_url, video_url, audio_url, pdf_url)
+       values (@id, @slug, @event_date, @title, @description, @importance, @image_url, @video_url, @audio_url, @pdf_url)
        on conflict(id) do update set
          slug = excluded.slug,
          event_date = excluded.event_date,
@@ -156,6 +160,7 @@ export function upsertEvent(input: TimelineEventInput & { id?: string }) {
          importance = excluded.importance,
          image_url = excluded.image_url,
          video_url = excluded.video_url,
+         audio_url = excluded.audio_url,
          pdf_url = excluded.pdf_url`,
     )
     .run({
@@ -167,6 +172,7 @@ export function upsertEvent(input: TimelineEventInput & { id?: string }) {
       importance: input.importance ?? "standard",
       image_url: input.image_url ?? null,
       video_url: input.video_url ?? null,
+      audio_url: input.audio_url ?? null,
       pdf_url: input.pdf_url ?? null,
     });
 
@@ -176,7 +182,7 @@ export function upsertEvent(input: TimelineEventInput & { id?: string }) {
 export function getTimelineEventBySlug(slug: string) {
   return getDb()
     .prepare(
-      `select id, slug, event_date, title, description, importance, image_url, video_url, pdf_url, created_at, updated_at
+      `select id, slug, event_date, title, description, importance, image_url, video_url, audio_url, pdf_url, created_at, updated_at
        from timeline_events
        where slug = ?`,
     )
@@ -186,7 +192,7 @@ export function getTimelineEventBySlug(slug: string) {
 export function getTimelineEventById(id: string) {
   return getDb()
     .prepare(
-      `select id, slug, event_date, title, description, importance, image_url, video_url, pdf_url, created_at, updated_at
+      `select id, slug, event_date, title, description, importance, image_url, video_url, audio_url, pdf_url, created_at, updated_at
        from timeline_events
        where id = ?`,
     )
@@ -204,8 +210,8 @@ export function replaceTimelineEvents(events: TimelineEvent[]) {
 
     const insert = db.prepare(
       `insert into timeline_events
-       (id, slug, event_date, title, description, importance, image_url, video_url, pdf_url, created_at, updated_at)
-       values (@id, @slug, @event_date, @title, @description, @importance, @image_url, @video_url, @pdf_url, @created_at, @updated_at)`,
+       (id, slug, event_date, title, description, importance, image_url, video_url, audio_url, pdf_url, created_at, updated_at)
+       values (@id, @slug, @event_date, @title, @description, @importance, @image_url, @video_url, @audio_url, @pdf_url, @created_at, @updated_at)`,
     );
 
     for (const item of items) {
@@ -219,6 +225,7 @@ export function replaceTimelineEvents(events: TimelineEvent[]) {
         importance: item.importance ?? "standard",
         image_url: item.image_url ?? null,
         video_url: item.video_url ?? null,
+        audio_url: item.audio_url ?? null,
         pdf_url: item.pdf_url ?? null,
         created_at: item.created_at ?? new Date().toISOString(),
         updated_at: item.updated_at ?? new Date().toISOString(),
