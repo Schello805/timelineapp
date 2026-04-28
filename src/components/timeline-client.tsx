@@ -155,22 +155,22 @@ export function TimelineClient({
     <>
       <section className="min-h-[calc(100svh-4rem)] bg-[radial-gradient(circle_at_top,#fbfaf6_0%,#f6f3ee_45%,#efe7dc_100%)]">
         <div className="border-b border-stone-200/90 bg-[#f6f3ee]/92 backdrop-blur md:sticky md:top-0 md:z-30">
-          <div className="mx-auto flex w-full max-w-7xl flex-col gap-2 px-4 py-2 sm:px-5 sm:py-3">
+          <div className="mx-auto flex w-full max-w-7xl flex-col gap-1.5 px-4 py-1.5 sm:px-5 sm:py-2">
             <header className="flex items-center justify-between gap-3">
               <AppLogo compact label={`Timeline für ${ownerName}`} />
               <div className="hidden items-center gap-2 md:flex">
-                <span className="rounded-full border border-stone-300 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-stone-500">
+                <span className="rounded-full border border-stone-300 bg-white px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-stone-500">
                   Sichtbar
                 </span>
-                <span className="rounded-full bg-stone-950 px-3 py-1 text-sm font-semibold text-white">{visibleYear}</span>
+                <span className="rounded-full bg-stone-950 px-2.5 py-0.5 text-xs font-semibold text-white">{visibleYear}</span>
               </div>
             </header>
 
-            <div className="grid gap-2 rounded-2xl border border-stone-200/90 bg-white/95 p-2 shadow-[0_18px_50px_-28px_rgba(37,35,32,0.38)] md:grid-cols-[minmax(0,1fr)_auto]">
+            <div className="grid gap-1.5 rounded-xl border border-stone-200/90 bg-white/95 p-1.5 shadow-[0_16px_40px_-30px_rgba(37,35,32,0.32)] md:grid-cols-[minmax(0,1fr)_auto]">
               <label className="relative block">
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
                 <input
-                  className="h-11 w-full rounded-xl border border-stone-300 bg-white pl-9 pr-3 text-sm outline-none transition focus:border-teal-700"
+                  className="h-10 w-full rounded-lg border border-stone-300 bg-white pl-9 pr-3 text-sm outline-none transition focus:border-teal-700"
                   placeholder="Titel, Beschreibung oder Datum suchen"
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
@@ -185,8 +185,8 @@ export function TimelineClient({
                     key={id}
                     className={
                       sortOrder === id
-                        ? "h-11 shrink-0 rounded-xl bg-stone-950 px-4 text-sm font-semibold text-white"
-                        : "h-11 shrink-0 rounded-xl border border-stone-300 bg-white px-4 text-sm font-semibold text-stone-700 hover:border-teal-700 hover:text-teal-700"
+                        ? "h-10 shrink-0 rounded-lg bg-stone-950 px-3.5 text-sm font-semibold text-white"
+                        : "h-10 shrink-0 rounded-lg border border-stone-300 bg-white px-3.5 text-sm font-semibold text-stone-700 hover:border-teal-700 hover:text-teal-700"
                     }
                     onClick={() => setSortOrder(id as SortOrder)}
                   >
@@ -196,15 +196,15 @@ export function TimelineClient({
               </div>
             </div>
 
-            <div className="grid gap-2 rounded-2xl border border-stone-200/90 bg-white/90 px-2 py-2 shadow-sm md:grid-cols-[1fr_auto] md:items-center">
+            <div className="grid gap-1.5 rounded-xl border border-stone-200/90 bg-white/90 px-1.5 py-1.5 shadow-sm md:grid-cols-[1fr_auto] md:items-center">
               <div className="flex gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 {yearNavigation.map((item) => (
                   <button
                     key={item.year}
                     className={
                       visibleYear === item.year
-                        ? "h-9 shrink-0 rounded-xl bg-[#0f766e] px-3 text-sm font-semibold text-white shadow-sm"
-                        : "h-9 shrink-0 rounded-xl border border-stone-300 bg-white px-3 text-sm font-semibold text-stone-700 hover:border-teal-700 hover:text-teal-700"
+                        ? "h-8 shrink-0 rounded-lg bg-[#0f766e] px-2.5 text-sm font-semibold text-white shadow-sm"
+                        : "h-8 shrink-0 rounded-lg border border-stone-300 bg-white px-2.5 text-sm font-semibold text-stone-700 hover:border-teal-700 hover:text-teal-700"
                     }
                     onClick={() => selectYear(item.year)}
                     aria-label={`Zum Jahr ${item.year} springen`}
@@ -223,10 +223,10 @@ export function TimelineClient({
                 ))}
               </div>
               <div className="flex items-center justify-between gap-2 sm:justify-end">
-                <span className="rounded-full bg-stone-100 px-3 py-1 text-xs font-medium text-stone-500 md:hidden">
+                <span className="rounded-full bg-stone-100 px-2.5 py-0.5 text-[11px] font-medium text-stone-500 md:hidden">
                   {visibleYear}
                 </span>
-                <span className="rounded-full border border-stone-200 bg-stone-50 px-3 py-1 text-xs font-medium text-stone-500">
+                <span className="rounded-full border border-stone-200 bg-stone-50 px-2.5 py-0.5 text-[11px] font-medium text-stone-500">
                   Automatische Ansicht
                 </span>
               </div>
