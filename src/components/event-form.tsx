@@ -273,10 +273,10 @@ export function EventForm({ event }: { event?: TimelineEvent }) {
       />
 
       {previewSrc ? (
-        <div className="aspect-video overflow-hidden rounded-lg border border-stone-200 bg-stone-100">
+        <div className="flex min-h-[220px] items-center justify-center overflow-hidden rounded-lg border border-stone-200 bg-stone-100 p-2">
           {/* Admin previews may use arbitrary external URLs or local upload paths. */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={previewSrc} alt="Bildvorschau" className="h-full w-full object-cover" />
+          <img src={previewSrc} alt="Bildvorschau" className="max-h-[320px] w-full object-contain" />
         </div>
       ) : null}
 

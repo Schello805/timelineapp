@@ -697,14 +697,14 @@ function EventMediaStack({
     <div className={detail ? "mt-5 grid gap-4" : "mt-4 grid gap-3"}>
       {event.image_url ? (
         <button
-          className="group relative aspect-[4/3] w-full overflow-hidden rounded-2xl bg-stone-100"
+          className="group relative flex min-h-[220px] w-full items-center justify-center overflow-hidden rounded-2xl bg-stone-100 p-2 md:min-h-[280px] md:max-h-[500px]"
           onClick={() => onOpenImage(event)}
           aria-label={`${event.title} als grosses Bild öffnen`}
         >
           <EventImage
             src={event.image_url}
             alt={event.title}
-            className="object-cover transition duration-300 group-hover:scale-[1.03]"
+            className="max-h-[320px] w-full object-contain transition duration-300 group-hover:scale-[1.01] md:max-h-[500px]"
           />
           <span className="absolute right-3 top-3 rounded-full bg-white/92 p-2 text-stone-900 shadow-sm">
             <ImageIcon className="h-5 w-5" />

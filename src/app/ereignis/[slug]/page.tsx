@@ -82,10 +82,10 @@ export default async function EventPage({ params }: Props) {
         </div>
 
         {event.image_url ? (
-          <div className="mt-6 aspect-[4/3] overflow-hidden rounded-lg bg-stone-100">
+          <div className="mt-6 flex min-h-[220px] items-center justify-center overflow-hidden rounded-lg bg-stone-100 p-2 md:min-h-[280px] md:max-h-[500px]">
             {/* Event images may come from arbitrary external URLs. */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={event.image_url} alt={event.title} className="h-full w-full object-cover" />
+            <img src={event.image_url} alt={event.title} className="max-h-[320px] w-full object-contain md:max-h-[500px]" />
           </div>
         ) : null}
 
