@@ -457,7 +457,7 @@ function CompactYearCard({
 
 function AnnualMetricsPanel({ metrics }: { metrics: AnnualMetric[] }) {
   return (
-    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+    <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
       {metrics.map((metric) => {
         const hasComparison = metric.comparison_label && metric.comparison_value !== null && metric.value > 0;
         const ratio = hasComparison ? Math.min((metric.comparison_value! / metric.value) * 100, 999) : null;
@@ -465,23 +465,23 @@ function AnnualMetricsPanel({ metrics }: { metrics: AnnualMetric[] }) {
         return (
           <article
             key={metric.id}
-            className="rounded-2xl border border-stone-200/90 bg-[linear-gradient(180deg,#ffffff_0%,#f8f7f4_100%)] p-4 shadow-[0_16px_36px_-30px_rgba(33,31,28,0.42)]"
+            className="rounded-xl border border-stone-200/80 bg-white/78 p-3 shadow-[0_10px_24px_-24px_rgba(33,31,28,0.35)] backdrop-blur-sm"
           >
-            <p className="text-sm font-semibold text-stone-600">{metric.label}</p>
-            <p className="mt-2 text-2xl font-semibold leading-none text-stone-950">
+            <p className="text-xs font-semibold uppercase tracking-[0.08em] text-stone-500">{metric.label}</p>
+            <p className="mt-1.5 text-xl font-semibold leading-none text-stone-800">
               {formatMetricValue(metric.value, metric.unit)}
             </p>
             {hasComparison ? (
               <>
-                <p className="mt-3 text-sm leading-6 text-stone-600">
+                <p className="mt-2 text-sm leading-5 text-stone-500">
                   {metric.comparison_label}: {formatMetricValue(metric.comparison_value!, metric.comparison_unit)}
                 </p>
-                <p className="mt-1 text-sm font-semibold text-teal-700">
+                <p className="mt-1 text-sm font-semibold text-teal-700/90">
                   {new Intl.NumberFormat("de-DE", { maximumFractionDigits: 1 }).format(ratio!)} %
                 </p>
               </>
             ) : null}
-            {metric.description ? <p className="mt-3 text-sm leading-6 text-stone-500">{metric.description}</p> : null}
+            {metric.description ? <p className="mt-2 text-sm leading-5 text-stone-400">{metric.description}</p> : null}
           </article>
         );
       })}
