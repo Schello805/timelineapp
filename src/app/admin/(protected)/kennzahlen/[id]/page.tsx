@@ -13,8 +13,8 @@ export default async function EditAnnualMetricPage({ params }: { params: Promise
 
   return (
     <section className="mx-auto max-w-2xl">
-      <Link className="text-sm font-semibold text-teal-700 hover:text-teal-900" href="/admin">
-        Zurück zur Übersicht
+      <Link className="text-sm font-semibold text-teal-700 hover:text-teal-900" href="/admin/kennzahlen">
+        Zurück zu den Kennzahlen
       </Link>
       <h2 className="mb-4 mt-3 text-2xl font-semibold text-stone-950">Jahreskennzahl bearbeiten</h2>
       <AnnualMetricForm metric={metric} />

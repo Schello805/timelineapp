@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ExternalLink, Settings, Shield, TableProperties } from "lucide-react";
+import { BarChart3, ExternalLink, Settings, Shield, TableProperties } from "lucide-react";
 
 const menuItems = [
   {
@@ -10,6 +10,12 @@ const menuItems = [
     label: "Verwaltung",
     description: "Ereignisse und Medien",
     icon: TableProperties,
+  },
+  {
+    href: "/admin/kennzahlen",
+    label: "Kennzahlen",
+    description: "Jahreswerte und Quoten",
+    icon: BarChart3,
   },
   {
     href: "/admin/einstellungen",
@@ -32,7 +38,7 @@ export function AdminMenu() {
     <nav className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4" aria-label="Admin-Menü">
       {menuItems.map((item) => {
         const Icon = item.icon;
-        const active = pathname === item.href;
+        const active = pathname === item.href || (item.href !== "/admin" && pathname.startsWith(`${item.href}/`));
 
         return (
           <Link
