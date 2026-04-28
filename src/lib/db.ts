@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import Database from "better-sqlite3";
 import { hashPassword } from "@/lib/passwords";
-import type { AdminUser, TimelineEvent, TimelineEventInput } from "@/lib/types";
+import type { AdminUser, AnnualMetric, TimelineEvent, TimelineEventInput } from "@/lib/types";
 
 const dataDir = process.env.TIMELINE_DATA_DIR ?? path.join(process.cwd(), "data");
 const dbPath = process.env.TIMELINE_DATABASE_PATH ?? path.join(dataDir, "timeline.sqlite");
@@ -21,6 +21,7 @@ function getDb() {
         event_date text not null,
         title text not null,
         description text not null,
+        importance text not null default 'standard',
         image_url text,
         video_url text,
         pdf_url text,
@@ -43,6 +44,21 @@ function getDb() {
         updated_at text not null default current_timestamp
       );
 
+      create table if not exists annual_metrics (
+        id text primary key,
+        year text not null,
+        label text not null,
+        value real not null,
+        unit text,
+        comparison_label text,
+        comparison_value real,
+        comparison_unit text,
+        description text,
+        display_order integer not null default 0,
+        created_at text not null default current_timestamp,
+        updated_at text not null default current_timestamp
+      );
+
       create trigger if not exists timeline_events_updated_at
       after update on timeline_events
       for each row
@@ -56,6 +72,13 @@ function getDb() {
       begin
         update admin_users set updated_at = current_timestamp where id = old.id;
       end;
+
+      create trigger if not exists annual_metrics_updated_at
+      after update on annual_metrics
+      for each row
+      begin
+        update annual_metrics set updated_at = current_timestamp where id = old.id;
+      end;
     `);
     migrateDatabase(database);
   }
@@ -67,6 +90,9 @@ function migrateDatabase(db: Database.Database) {
   const columns = db.prepare("pragma table_info(timeline_events)").all() as Array<{ name: string }>;
   if (!columns.some((column) => column.name === "slug")) {
     db.prepare("alter table timeline_events add column slug text").run();
+  }
+  if (!columns.some((column) => column.name === "importance")) {
+    db.prepare("alter table timeline_events add column importance text not null default 'standard'").run();
   }
 
   db.prepare("create unique index if not exists timeline_events_slug_unique on timeline_events(slug)").run();
@@ -106,6 +132,7 @@ export function listTimelineEvents() {
   return getDb()
     .prepare(
       `select id, slug, event_date, title, description, image_url, video_url, pdf_url, created_at, updated_at
+       , importance
        from timeline_events
        order by event_date asc`,
     )
@@ -119,13 +146,14 @@ export function upsertEvent(input: TimelineEventInput & { id?: string }) {
 
   db
     .prepare(
-      `insert into timeline_events (id, slug, event_date, title, description, image_url, video_url, pdf_url)
-       values (@id, @slug, @event_date, @title, @description, @image_url, @video_url, @pdf_url)
+      `insert into timeline_events (id, slug, event_date, title, description, importance, image_url, video_url, pdf_url)
+       values (@id, @slug, @event_date, @title, @description, @importance, @image_url, @video_url, @pdf_url)
        on conflict(id) do update set
          slug = excluded.slug,
          event_date = excluded.event_date,
          title = excluded.title,
          description = excluded.description,
+         importance = excluded.importance,
          image_url = excluded.image_url,
          video_url = excluded.video_url,
          pdf_url = excluded.pdf_url`,
@@ -136,6 +164,7 @@ export function upsertEvent(input: TimelineEventInput & { id?: string }) {
       event_date: input.event_date,
       title: input.title,
       description: input.description,
+      importance: input.importance ?? "standard",
       image_url: input.image_url ?? null,
       video_url: input.video_url ?? null,
       pdf_url: input.pdf_url ?? null,
@@ -147,7 +176,7 @@ export function upsertEvent(input: TimelineEventInput & { id?: string }) {
 export function getTimelineEventBySlug(slug: string) {
   return getDb()
     .prepare(
-      `select id, slug, event_date, title, description, image_url, video_url, pdf_url, created_at, updated_at
+      `select id, slug, event_date, title, description, importance, image_url, video_url, pdf_url, created_at, updated_at
        from timeline_events
        where slug = ?`,
     )
@@ -157,7 +186,7 @@ export function getTimelineEventBySlug(slug: string) {
 export function getTimelineEventById(id: string) {
   return getDb()
     .prepare(
-      `select id, slug, event_date, title, description, image_url, video_url, pdf_url, created_at, updated_at
+      `select id, slug, event_date, title, description, importance, image_url, video_url, pdf_url, created_at, updated_at
        from timeline_events
        where id = ?`,
     )
@@ -175,8 +204,8 @@ export function replaceTimelineEvents(events: TimelineEvent[]) {
 
     const insert = db.prepare(
       `insert into timeline_events
-       (id, slug, event_date, title, description, image_url, video_url, pdf_url, created_at, updated_at)
-       values (@id, @slug, @event_date, @title, @description, @image_url, @video_url, @pdf_url, @created_at, @updated_at)`,
+       (id, slug, event_date, title, description, importance, image_url, video_url, pdf_url, created_at, updated_at)
+       values (@id, @slug, @event_date, @title, @description, @importance, @image_url, @video_url, @pdf_url, @created_at, @updated_at)`,
     );
 
     for (const item of items) {
@@ -187,6 +216,7 @@ export function replaceTimelineEvents(events: TimelineEvent[]) {
         event_date: item.event_date,
         title: item.title,
         description: item.description,
+        importance: item.importance ?? "standard",
         image_url: item.image_url ?? null,
         video_url: item.video_url ?? null,
         pdf_url: item.pdf_url ?? null,
@@ -284,6 +314,96 @@ export function updateAdminUserPassword(userId: string, passwordHash: string) {
 export function deleteAdminUser(userId: string) {
   ensurePrimaryAdminUser();
   getDb().prepare("delete from admin_users where id = ? and is_primary = 0").run(userId);
+}
+
+export function listAnnualMetrics() {
+  return getDb()
+    .prepare(
+      `select id, year, label, value, unit, comparison_label, comparison_value, comparison_unit, description, display_order, created_at, updated_at
+       from annual_metrics
+       order by year asc, display_order asc, label asc`,
+    )
+    .all() as AnnualMetric[];
+}
+
+export function getAnnualMetricById(id: string) {
+  return getDb()
+    .prepare(
+      `select id, year, label, value, unit, comparison_label, comparison_value, comparison_unit, description, display_order, created_at, updated_at
+       from annual_metrics
+       where id = ?`,
+    )
+    .get(id) as AnnualMetric | undefined;
+}
+
+export function upsertAnnualMetric(input: Omit<AnnualMetric, "id" | "created_at" | "updated_at"> & { id?: string }) {
+  const id = input.id || crypto.randomUUID();
+  getDb()
+    .prepare(
+      `insert into annual_metrics
+       (id, year, label, value, unit, comparison_label, comparison_value, comparison_unit, description, display_order)
+       values (@id, @year, @label, @value, @unit, @comparison_label, @comparison_value, @comparison_unit, @description, @display_order)
+       on conflict(id) do update set
+         year = excluded.year,
+         label = excluded.label,
+         value = excluded.value,
+         unit = excluded.unit,
+         comparison_label = excluded.comparison_label,
+         comparison_value = excluded.comparison_value,
+         comparison_unit = excluded.comparison_unit,
+         description = excluded.description,
+         display_order = excluded.display_order`,
+    )
+    .run({
+      id,
+      year: input.year,
+      label: input.label,
+      value: input.value,
+      unit: input.unit ?? null,
+      comparison_label: input.comparison_label ?? null,
+      comparison_value: input.comparison_value ?? null,
+      comparison_unit: input.comparison_unit ?? null,
+      description: input.description ?? null,
+      display_order: input.display_order ?? 0,
+    });
+
+  return id;
+}
+
+export function deleteAnnualMetric(id: string) {
+  getDb().prepare("delete from annual_metrics where id = ?").run(id);
+}
+
+export function replaceAnnualMetrics(metrics: AnnualMetric[]) {
+  const db = getDb();
+  const replace = db.transaction((items: AnnualMetric[]) => {
+    db.prepare("delete from annual_metrics").run();
+
+    const insert = db.prepare(
+      `insert into annual_metrics
+       (id, year, label, value, unit, comparison_label, comparison_value, comparison_unit, description, display_order, created_at, updated_at)
+       values (@id, @year, @label, @value, @unit, @comparison_label, @comparison_value, @comparison_unit, @description, @display_order, @created_at, @updated_at)`,
+    );
+
+    for (const item of items) {
+      insert.run({
+        id: item.id || crypto.randomUUID(),
+        year: item.year,
+        label: item.label,
+        value: item.value,
+        unit: item.unit ?? null,
+        comparison_label: item.comparison_label ?? null,
+        comparison_value: item.comparison_value ?? null,
+        comparison_unit: item.comparison_unit ?? null,
+        description: item.description ?? null,
+        display_order: item.display_order ?? 0,
+        created_at: item.created_at ?? new Date().toISOString(),
+        updated_at: item.updated_at ?? new Date().toISOString(),
+      });
+    }
+  });
+
+  replace(metrics);
 }
 
 function createUniqueSlug(db: Database.Database, title: string, date: string, ownId: string) {

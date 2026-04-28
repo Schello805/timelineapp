@@ -1,9 +1,9 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { z } from "zod";
-import { listTimelineEvents, replaceTimelineEvents } from "@/lib/db";
+import { listAnnualMetrics, listTimelineEvents, replaceAnnualMetrics, replaceTimelineEvents } from "@/lib/db";
 import { listPublicSettings, setTimelineOwnerName } from "@/lib/settings";
-import type { TimelineEvent } from "@/lib/types";
+import type { AnnualMetric, TimelineEvent } from "@/lib/types";
 
 const uploadRoot = path.join(process.cwd(), "public", "uploads");
 const backupRoot = path.join(process.cwd(), "data", "backups");
@@ -15,9 +15,25 @@ const eventSchema = z.object({
   event_date: z.string().min(1),
   title: z.string().min(1),
   description: z.string().min(1),
+  importance: z.enum(["standard", "important", "milestone"]).optional(),
   image_url: z.string().nullable().optional(),
   video_url: z.string().nullable().optional(),
   pdf_url: z.string().nullable().optional(),
+  created_at: z.string().optional(),
+  updated_at: z.string().optional(),
+});
+
+const annualMetricSchema = z.object({
+  id: z.string().min(1),
+  year: z.string().min(4),
+  label: z.string().min(1),
+  value: z.number(),
+  unit: z.string().nullable().optional(),
+  comparison_label: z.string().nullable().optional(),
+  comparison_value: z.number().nullable().optional(),
+  comparison_unit: z.string().nullable().optional(),
+  description: z.string().nullable().optional(),
+  display_order: z.number().int().optional(),
   created_at: z.string().optional(),
   updated_at: z.string().optional(),
 });
@@ -32,6 +48,7 @@ const backupSchema = z.object({
     })
     .optional(),
   events: z.array(eventSchema),
+  annual_metrics: z.array(annualMetricSchema).optional(),
   files: z
     .array(
       z.object({
@@ -47,6 +64,7 @@ export type TimelineBackup = z.infer<typeof backupSchema>;
 
 export async function createTimelineBackup(): Promise<TimelineBackup> {
   const events = listTimelineEvents();
+  const annualMetrics = listAnnualMetrics();
   const files = await collectLocalFiles(events);
 
   return {
@@ -55,6 +73,7 @@ export async function createTimelineBackup(): Promise<TimelineBackup> {
     exported_at: new Date().toISOString(),
     settings: listPublicSettings(),
     events,
+    annual_metrics: annualMetrics,
     files,
   };
 }
@@ -77,6 +96,7 @@ export async function restoreTimelineBackup(rawJson: string) {
 
   await restoreLocalFiles(backup.files ?? []);
   replaceTimelineEvents(backup.events.map(normalizeEvent));
+  replaceAnnualMetrics((backup.annual_metrics ?? []).map(normalizeAnnualMetric));
   if (backup.settings?.timeline_owner_name) {
     setTimelineOwnerName(backup.settings.timeline_owner_name);
   }
@@ -91,11 +111,29 @@ function normalizeEvent(event: z.infer<typeof eventSchema>): TimelineEvent {
     event_date: event.event_date,
     title: event.title,
     description: event.description,
+    importance: event.importance ?? "standard",
     image_url: event.image_url ?? null,
     video_url: event.video_url ?? null,
     pdf_url: event.pdf_url ?? null,
     created_at: event.created_at,
     updated_at: event.updated_at,
+  };
+}
+
+function normalizeAnnualMetric(metric: z.infer<typeof annualMetricSchema>): AnnualMetric {
+  return {
+    id: metric.id,
+    year: metric.year,
+    label: metric.label,
+    value: metric.value,
+    unit: metric.unit ?? null,
+    comparison_label: metric.comparison_label ?? null,
+    comparison_value: metric.comparison_value ?? null,
+    comparison_unit: metric.comparison_unit ?? null,
+    description: metric.description ?? null,
+    display_order: metric.display_order ?? 0,
+    created_at: metric.created_at,
+    updated_at: metric.updated_at,
   };
 }
 

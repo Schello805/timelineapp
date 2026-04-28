@@ -11,7 +11,15 @@ import {
   verifyAdminCredentials,
 } from "@/lib/auth";
 import { restoreTimelineBackup, writeSafetyBackup } from "@/lib/backup";
-import { createAdminUser, deleteAdminUser, deleteEvent, getTimelineEventById, upsertEvent } from "@/lib/db";
+import {
+  createAdminUser,
+  deleteAdminUser,
+  deleteAnnualMetric,
+  deleteEvent,
+  getTimelineEventById,
+  upsertAnnualMetric,
+  upsertEvent,
+} from "@/lib/db";
 import { hashPassword } from "@/lib/passwords";
 import { setTimelineOwnerName } from "@/lib/settings";
 import { saveUpload } from "@/lib/uploads";
@@ -31,6 +39,7 @@ const eventSchema = z.object({
   event_date: z.string().min(1, "Bitte ein Datum eintragen."),
   title: z.string().min(2, "Bitte einen Titel eintragen.").max(160),
   description: z.string().min(10, "Bitte eine aussagekräftige Beschreibung eintragen."),
+  importance: z.enum(["standard", "important", "milestone"]),
   image_url: mediaUrlSchema,
   video_url: mediaUrlSchema,
   pdf_url: mediaUrlSchema,
@@ -43,6 +52,24 @@ const settingsSchema = z.object({
 const adminUserSchema = z.object({
   email: z.email("Bitte eine gültige E-Mail-Adresse eintragen.").trim().max(190),
   password: z.string().min(12, "Das Passwort muss mindestens 12 Zeichen lang sein."),
+});
+
+const annualMetricSchema = z.object({
+  id: z.string().optional(),
+  year: z
+    .string()
+    .trim()
+    .regex(/^\d{4}$/, "Bitte ein Jahr im Format JJJJ eintragen."),
+  label: z.string().trim().min(2, "Bitte eine Bezeichnung eintragen.").max(120),
+  value: z.coerce.number().finite("Bitte einen gültigen Hauptwert eintragen."),
+  unit: z.string().trim().max(40).optional().or(z.literal("")),
+  comparison_label: z.string().trim().max(120).optional().or(z.literal("")),
+  comparison_value: z
+    .union([z.literal(""), z.coerce.number().finite("Bitte einen gültigen Vergleichswert eintragen.")])
+    .optional(),
+  comparison_unit: z.string().trim().max(40).optional().or(z.literal("")),
+  description: z.string().trim().max(280).optional().or(z.literal("")),
+  display_order: z.coerce.number().int().min(0).max(999).default(0),
 });
 
 function cleanOptionalText(value: FormDataEntryValue | null) {
@@ -85,6 +112,7 @@ export async function upsertTimelineEvent(formData: FormData) {
     event_date: String(formData.get("event_date") ?? ""),
     title: String(formData.get("title") ?? ""),
     description: String(formData.get("description") ?? ""),
+    importance: String(formData.get("importance") ?? "standard"),
     image_url: uploadedImage ?? cleanOptionalText(formData.get("image_url")) ?? "",
     video_url:
       cleanOptionalText(formData.get("video_uploaded_path")) ??
@@ -107,6 +135,7 @@ export async function upsertTimelineEvent(formData: FormData) {
     event_date: parsed.data.event_date,
     title: parsed.data.title,
     description: parsed.data.description,
+    importance: parsed.data.importance,
     image_url: parsed.data.image_url || null,
     video_url: parsed.data.video_url || null,
     pdf_url: parsed.data.pdf_url || null,
@@ -168,11 +197,74 @@ export async function duplicateTimelineEvent(formData: FormData) {
     event_date: event.event_date,
     title: `${event.title} Kopie`,
     description: event.description,
+    importance: event.importance,
     image_url: event.image_url,
     video_url: event.video_url,
     pdf_url: event.pdf_url,
   });
 
+  revalidatePath("/");
+  revalidatePath("/admin");
+}
+
+export async function upsertAnnualMetricAction(
+  _previousState: { ok: boolean; message: string } | null,
+  formData: FormData,
+) {
+  await requireAdmin();
+
+  const parsed = annualMetricSchema.safeParse({
+    id: cleanOptionalText(formData.get("id")) ?? undefined,
+    year: String(formData.get("year") ?? ""),
+    label: String(formData.get("label") ?? ""),
+    value: formData.get("value"),
+    unit: String(formData.get("unit") ?? ""),
+    comparison_label: String(formData.get("comparison_label") ?? ""),
+    comparison_value: formData.get("comparison_value"),
+    comparison_unit: String(formData.get("comparison_unit") ?? ""),
+    description: String(formData.get("description") ?? ""),
+    display_order: formData.get("display_order"),
+  });
+
+  if (!parsed.success) {
+    return { ok: false, message: parsed.error.issues.at(0)?.message ?? "Bitte prüfe die Eingaben." };
+  }
+
+  const data = parsed.data;
+  const hasComparisonLabel = Boolean(data.comparison_label);
+  const hasComparisonValue = data.comparison_value !== "" && data.comparison_value !== undefined;
+
+  if (hasComparisonLabel !== hasComparisonValue) {
+    return { ok: false, message: "Vergleichsbezeichnung und Vergleichswert bitte gemeinsam ausfüllen." };
+  }
+
+  upsertAnnualMetric({
+    id: data.id,
+    year: data.year,
+    label: data.label,
+    value: data.value,
+    unit: data.unit || null,
+    comparison_label: data.comparison_label || null,
+    comparison_value: hasComparisonValue ? Number(data.comparison_value) : null,
+    comparison_unit: data.comparison_unit || null,
+    description: data.description || null,
+    display_order: data.display_order,
+  });
+
+  revalidatePath("/");
+  revalidatePath("/admin");
+  return { ok: true, message: "Jahreskennzahl gespeichert." };
+}
+
+export async function deleteAnnualMetricAction(formData: FormData) {
+  await requireAdmin();
+
+  const id = String(formData.get("id") ?? "");
+  if (!id) {
+    throw new Error("Keine Kennzahlen-ID gefunden.");
+  }
+
+  deleteAnnualMetric(id);
   revalidatePath("/");
   revalidatePath("/admin");
 }

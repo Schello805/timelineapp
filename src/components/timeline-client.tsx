@@ -14,7 +14,7 @@ import {
 import { startTransition, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { AppLogo } from "@/components/app-logo";
 import { VideoFrame } from "@/components/video-frame";
-import type { TimelineEvent } from "@/lib/types";
+import type { AnnualMetric, TimelineEvent } from "@/lib/types";
 import { formatEventDate, formatEventDateNumeric, getYear } from "@/lib/timeline-format";
 
 type SortOrder = "asc" | "desc";
@@ -30,6 +30,7 @@ type TimelineYear = {
   year: string;
   events: TimelineEvent[];
   months: TimelineMonth[];
+  metrics: AnnualMetric[];
 };
 
 const zoomLevels: Array<{ id: TimelineZoom; label: string; descriptionLength: number }> = [
@@ -38,7 +39,15 @@ const zoomLevels: Array<{ id: TimelineZoom; label: string; descriptionLength: nu
   { id: "detail", label: "Detail", descriptionLength: 520 },
 ];
 
-export function TimelineClient({ events, ownerName }: { events: TimelineEvent[]; ownerName: string }) {
+export function TimelineClient({
+  events,
+  annualMetrics,
+  ownerName,
+}: {
+  events: TimelineEvent[];
+  annualMetrics: AnnualMetric[];
+  ownerName: string;
+}) {
   const [selectedEvent, setSelectedEvent] = useState<TimelineEvent | null>(null);
   const [selectedImage, setSelectedImage] = useState<TimelineEvent | null>(null);
   const [query, setQuery] = useState("");
@@ -75,7 +84,7 @@ export function TimelineClient({ events, ownerName }: { events: TimelineEvent[];
     allEvents,
     sortedEvents,
   ]);
-  const timelineYears = useMemo(() => buildTimelineYears(sortedEvents), [sortedEvents]);
+  const timelineYears = useMemo(() => buildTimelineYears(sortedEvents, annualMetrics), [annualMetrics, sortedEvents]);
 
   useEffect(() => {
     const selectFromHash = () => {
@@ -438,10 +447,12 @@ function YearSection({
             <CalendarDays className="h-4 w-4" />
           </span>
         </div>
-        {zoom === "compact" ? (
-          <CompactYearCard events={group.events} onOpenEvent={onOpenEvent} />
-        ) : (
-          <div className="grid gap-4">
+        <div className="grid gap-4">
+          {group.metrics.length ? <AnnualMetricsPanel metrics={group.metrics} /> : null}
+          {zoom === "compact" ? (
+            <CompactYearCard events={group.events} onOpenEvent={onOpenEvent} />
+          ) : (
+            <div className="grid gap-4">
             {group.months.map((month) => (
               <MonthSection
                 key={month.id}
@@ -451,8 +462,9 @@ function YearSection({
                 onOpenImage={onOpenImage}
               />
             ))}
-          </div>
-        )}
+            </div>
+          )}
+        </div>
       </div>
     </motion.section>
   );
@@ -473,6 +485,9 @@ function CompactYearCard({
       <p className="text-sm font-semibold text-stone-950">
         {events.length} {events.length === 1 ? "Ereignis" : "Ereignisse"}
       </p>
+      {events.length === 0 ? (
+        <p className="mt-3 text-sm leading-6 text-stone-500">Für dieses Jahr sind aktuell nur Kennzahlen hinterlegt.</p>
+      ) : null}
       <div className="mt-3 grid gap-2">
         {events.map((event) => {
           const weight = getEventWeight(event);
@@ -488,6 +503,18 @@ function CompactYearCard({
               }
               onClick={() => onOpenEvent(event)}
             >
+              <div className="flex flex-wrap items-center gap-2">
+                {event.importance === "milestone" ? (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-orange-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-orange-800">
+                    <Sparkles className="h-3 w-3" />
+                    Meilenstein
+                  </span>
+                ) : event.importance === "important" ? (
+                  <span className="inline-flex rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-amber-800">
+                    Wichtig
+                  </span>
+                ) : null}
+              </div>
               <span className="text-sm font-semibold text-teal-700">{formatEventDateNumeric(event.event_date)}</span>
               <span className="text-base font-semibold leading-tight text-stone-950">{event.title}</span>
               <span className="line-clamp-2 text-sm leading-6 text-stone-600">{event.description}</span>
@@ -496,6 +523,40 @@ function CompactYearCard({
         })}
       </div>
     </motion.article>
+  );
+}
+
+function AnnualMetricsPanel({ metrics }: { metrics: AnnualMetric[] }) {
+  return (
+    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+      {metrics.map((metric) => {
+        const hasComparison = metric.comparison_label && metric.comparison_value !== null && metric.value > 0;
+        const ratio = hasComparison ? Math.min((metric.comparison_value! / metric.value) * 100, 999) : null;
+
+        return (
+          <article
+            key={metric.id}
+            className="rounded-2xl border border-stone-200/90 bg-[linear-gradient(180deg,#ffffff_0%,#f8f7f4_100%)] p-4 shadow-[0_16px_36px_-30px_rgba(33,31,28,0.42)]"
+          >
+            <p className="text-sm font-semibold text-stone-600">{metric.label}</p>
+            <p className="mt-2 text-2xl font-semibold leading-none text-stone-950">
+              {formatMetricValue(metric.value, metric.unit)}
+            </p>
+            {hasComparison ? (
+              <>
+                <p className="mt-3 text-sm leading-6 text-stone-600">
+                  {metric.comparison_label}: {formatMetricValue(metric.comparison_value!, metric.comparison_unit)}
+                </p>
+                <p className="mt-1 text-sm font-semibold text-teal-700">
+                  {new Intl.NumberFormat("de-DE", { maximumFractionDigits: 1 }).format(ratio!)} %
+                </p>
+              </>
+            ) : null}
+            {metric.description ? <p className="mt-3 text-sm leading-6 text-stone-500">{metric.description}</p> : null}
+          </article>
+        );
+      })}
+    </div>
   );
 }
 
@@ -588,6 +649,10 @@ function EventRow({
               <span className="inline-flex items-center gap-1 rounded-full bg-orange-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-orange-800">
                 <Sparkles className="h-3 w-3" />
                 Meilenstein
+              </span>
+            ) : event.importance === "important" ? (
+              <span className="inline-flex rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-amber-800">
+                Wichtig
               </span>
             ) : null}
           </div>
@@ -803,8 +868,18 @@ function buildYearNavigation(events: TimelineEvent[]) {
   return [...years.values()];
 }
 
-function buildTimelineYears(events: TimelineEvent[]) {
+function buildTimelineYears(events: TimelineEvent[], annualMetrics: AnnualMetric[]) {
   const years = new Map<string, TimelineYear>();
+  const metricsByYear = new Map<string, AnnualMetric[]>();
+
+  for (const metric of annualMetrics) {
+    const existing = metricsByYear.get(metric.year);
+    if (existing) {
+      existing.push(metric);
+    } else {
+      metricsByYear.set(metric.year, [metric]);
+    }
+  }
 
   for (const event of events) {
     const date = parseEventDate(event.event_date);
@@ -818,6 +893,7 @@ function buildTimelineYears(events: TimelineEvent[]) {
         id: year,
         year,
         events: [event],
+        metrics: metricsByYear.get(year) ?? [],
         months: [
           {
             id: monthId,
@@ -842,10 +918,31 @@ function buildTimelineYears(events: TimelineEvent[]) {
     }
   }
 
-  return [...years.values()];
+  for (const [year, metrics] of metricsByYear) {
+    if (years.has(year)) continue;
+
+    years.set(year, {
+      id: year,
+      year,
+      events: [],
+      metrics,
+      months: [],
+    });
+  }
+
+  return [...years.values()].sort((a, b) => Number(a.year) - Number(b.year));
 }
 
 function getEventWeight(event: TimelineEvent): EventWeight {
+  if (event.importance === "milestone") return "milestone";
+  if (event.importance === "important") return "standard";
+  if (event.importance === "standard") {
+    const mediaCount = [event.image_url, event.video_url, event.pdf_url].filter(Boolean).length;
+    if (event.video_url || mediaCount >= 2 || event.description.length > 520) return "milestone";
+    if (event.description.length < 120 && !event.image_url && !event.video_url) return "brief";
+    return "standard";
+  }
+
   const mediaCount = [event.image_url, event.video_url, event.pdf_url].filter(Boolean).length;
   if (event.video_url || mediaCount >= 2 || event.description.length > 520) return "milestone";
   if (event.description.length < 120 && !event.image_url && !event.video_url) return "brief";
@@ -875,4 +972,9 @@ function getTime(date: string) {
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
+}
+
+function formatMetricValue(value: number, unit: string | null) {
+  const formatted = new Intl.NumberFormat("de-DE", { maximumFractionDigits: 2 }).format(value);
+  return unit ? `${formatted} ${unit}` : formatted;
 }

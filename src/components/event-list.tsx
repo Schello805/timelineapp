@@ -27,6 +27,9 @@ export function EventList({ events }: { events: TimelineEvent[] }) {
                   {event.description}
                 </p>
                 <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold">
+                  <span className={getImportanceClassName(event.importance)}>
+                    {getImportanceLabel(event.importance)}
+                  </span>
                   {event.image_url ? <span className="rounded bg-blue-50 px-2 py-1 text-blue-700">Bild</span> : null}
                   {event.video_url ? <span className="rounded bg-orange-50 px-2 py-1 text-orange-700">Video</span> : null}
                   {event.pdf_url ? <span className="rounded bg-teal-50 px-2 py-1 text-teal-700">PDF</span> : null}
@@ -66,4 +69,16 @@ export function EventList({ events }: { events: TimelineEvent[] }) {
       </div>
     </div>
   );
+}
+
+function getImportanceLabel(importance: TimelineEvent["importance"]) {
+  if (importance === "milestone") return "Meilenstein";
+  if (importance === "important") return "Wichtig";
+  return "Standard";
+}
+
+function getImportanceClassName(importance: TimelineEvent["importance"]) {
+  if (importance === "milestone") return "rounded bg-orange-100 px-2 py-1 text-orange-800";
+  if (importance === "important") return "rounded bg-amber-100 px-2 py-1 text-amber-800";
+  return "rounded bg-stone-100 px-2 py-1 text-stone-700";
 }

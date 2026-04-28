@@ -90,6 +90,25 @@ export function EventForm({ event }: { event?: TimelineEvent }) {
         />
       </div>
 
+      <div className="grid gap-2">
+        <label className="text-sm font-semibold text-stone-800" htmlFor="importance">
+          Stufe
+        </label>
+        <select
+          id="importance"
+          name="importance"
+          defaultValue={event?.importance ?? "standard"}
+          className="h-11 rounded-md border border-stone-300 bg-white px-3 outline-none focus:border-teal-700"
+        >
+          <option value="standard">Standard</option>
+          <option value="important">Wichtig</option>
+          <option value="milestone">Meilenstein</option>
+        </select>
+        <p className="text-sm leading-6 text-stone-600">
+          Meilensteine werden in der Timeline stärker hervorgehoben und wirken als echte Jahresanker.
+        </p>
+      </div>
+
       <UrlUploadField
         name="image_url"
         fileName="image_file"
