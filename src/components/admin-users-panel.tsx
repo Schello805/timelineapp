@@ -21,10 +21,7 @@ export function AdminUsersPanel({ users }: { users: AdminUser[] }) {
 
       <div className="grid gap-3 rounded-lg border border-stone-100 bg-stone-50 p-4">
         {users.map((user) => (
-          <div
-            key={user.id}
-            className="flex flex-col gap-3 rounded-md border border-stone-200 bg-white p-3 sm:flex-row sm:items-center sm:justify-between"
-          >
+          <div key={user.id} className="flex flex-col gap-3 rounded-md border border-stone-200 bg-white p-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-sm font-semibold text-stone-950">{user.email}</p>
               <p className="mt-1 text-xs text-stone-500">
@@ -33,13 +30,13 @@ export function AdminUsersPanel({ users }: { users: AdminUser[] }) {
             </div>
 
             {user.is_primary ? (
-              <span className="inline-flex h-10 items-center rounded-md border border-stone-200 px-3 text-sm font-semibold text-stone-500">
+              <span className="inline-flex h-9 items-center rounded-md border border-stone-200 px-3 text-sm font-semibold text-stone-500">
                 Nicht löschbar
               </span>
             ) : (
               <form action={deleteAdminUserAction}>
                 <input type="hidden" name="user_id" value={user.id} />
-                <button className="inline-flex h-10 items-center gap-2 rounded-md border border-red-200 px-3 text-sm font-semibold text-red-700 hover:bg-red-50">
+                <button className="inline-flex h-9 items-center gap-2 rounded-md border border-red-200 px-3 text-sm font-semibold text-red-700 hover:bg-red-50">
                   <Trash2 className="h-4 w-4" />
                   Entfernen
                 </button>
