@@ -366,14 +366,14 @@ function YearSection({
       className="grid gap-4"
       transition={{ layout: { type: "spring", stiffness: 180, damping: 22 } }}
     >
-      <div className="grid grid-cols-[minmax(4.5rem,5.5rem)_1.75rem_minmax(0,1fr)] gap-3 sm:grid-cols-[7rem_2rem_minmax(0,1fr)] sm:gap-4">
+      <div className="grid grid-cols-[3.4rem_1.25rem_minmax(0,1fr)] gap-2 sm:grid-cols-[7rem_2rem_minmax(0,1fr)] sm:gap-4">
         <div className="pt-2 text-right">
-          <p className="text-2xl font-semibold leading-none text-stone-950 sm:text-3xl">{group.year}</p>
+          <p className="text-xl font-semibold leading-none text-stone-950 sm:text-3xl">{group.year}</p>
         </div>
         <div className="relative flex justify-center">
           <div className="absolute bottom-[-0.75rem] top-0 w-px bg-gradient-to-b from-blue-700 via-teal-600 to-orange-500" />
-          <span className="relative mt-1 flex h-7 w-7 items-center justify-center rounded-full bg-stone-950 text-white ring-4 ring-[#f6f3ee]">
-            <CalendarDays className="h-4 w-4" />
+          <span className="relative mt-1 flex h-6 w-6 items-center justify-center rounded-full bg-stone-950 text-white ring-4 ring-[#f6f3ee] sm:h-7 sm:w-7">
+            <CalendarDays className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
           </span>
         </div>
         <div className="grid gap-4">
@@ -500,15 +500,17 @@ function MonthSection({
   return (
     <motion.div
       layout
-      className="grid grid-cols-[minmax(4.5rem,5.5rem)_1.75rem_minmax(0,1fr)] gap-3 sm:grid-cols-[7rem_2rem_minmax(0,1fr)] sm:gap-4"
+      className="grid grid-cols-[3.4rem_1.25rem_minmax(0,1fr)] gap-2 sm:grid-cols-[7rem_2rem_minmax(0,1fr)] sm:gap-4"
       transition={{ layout: { type: "spring", stiffness: 180, damping: 22 } }}
     >
-      <div className="pt-2 text-right">
-        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-teal-700 sm:text-sm">{month.monthLabel}</p>
+      <div className="pt-1.5 text-right">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-teal-700 sm:text-sm sm:tracking-[0.16em]">
+          {month.monthLabel}
+        </p>
       </div>
       <div className="relative flex justify-center">
         <div className="absolute bottom-[-1rem] top-0 w-px bg-stone-300" />
-        <span className="relative mt-1 h-3.5 w-3.5 rounded-full bg-teal-700 ring-4 ring-[#f6f3ee]" />
+        <span className="relative mt-1 h-3 w-3 rounded-full bg-teal-700 ring-4 ring-[#f6f3ee] sm:h-3.5 sm:w-3.5" />
       </div>
       <div className="grid gap-3">
         {month.events.map((event) => (
