@@ -415,7 +415,7 @@ function CompactYearCard({
   return (
     <motion.article
       layout
-      className="rounded-2xl border border-stone-200/90 bg-white/95 p-4 shadow-[0_18px_40px_-32px_rgba(33,31,28,0.45)]"
+      className="w-[calc(100vw-6.35rem)] max-w-full rounded-2xl border border-stone-200/90 bg-white/95 p-4 shadow-[0_18px_40px_-32px_rgba(33,31,28,0.45)] md:w-full"
     >
       <p className="text-sm font-semibold text-stone-950">
         {events.length} {events.length === 1 ? "Ereignis" : "Ereignisse"}
@@ -433,8 +433,8 @@ function CompactYearCard({
               data-event-id={event.id}
               className={
                 weight === "milestone"
-                  ? "grid gap-1 rounded-xl border border-orange-200 bg-[linear-gradient(135deg,#fffdf8_0%,#fff3e2_100%)] px-3 py-3 text-left shadow-sm transition hover:border-orange-400"
-                  : "grid gap-1 rounded-xl border border-stone-200 bg-stone-50 px-3 py-3 text-left transition hover:border-teal-700 hover:bg-white"
+                  ? "grid w-full gap-1 rounded-xl border border-orange-200 bg-[linear-gradient(135deg,#fffdf8_0%,#fff3e2_100%)] px-3 py-3 text-left shadow-sm transition hover:border-orange-400"
+                  : "grid w-full gap-1 rounded-xl border border-stone-200 bg-stone-50 px-3 py-3 text-left transition hover:border-teal-700 hover:bg-white"
               }
               onClick={() => onOpenEvent(event)}
             >
@@ -578,12 +578,12 @@ function EventRow({
       <div
         className={
           weight === "milestone"
-            ? "w-full min-w-0 rounded-2xl border border-orange-200/90 bg-[linear-gradient(180deg,#fffdf8_0%,#fff6ea_100%)] p-5 shadow-[0_18px_45px_-34px_rgba(188,122,37,0.45)] md:p-6"
+            ? "w-[calc(100vw-6.35rem)] min-w-0 max-w-full rounded-2xl border border-orange-200/90 bg-[linear-gradient(180deg,#fffdf8_0%,#fff6ea_100%)] p-5 shadow-[0_18px_45px_-34px_rgba(188,122,37,0.45)] md:w-full md:p-6"
             : compact
-              ? "w-full min-w-0 rounded-2xl border border-stone-200/90 bg-white/95 p-4 shadow-sm md:p-4"
+              ? "w-[calc(100vw-6.35rem)] min-w-0 max-w-full rounded-2xl border border-stone-200/90 bg-white/95 p-4 shadow-sm md:w-full md:p-4"
             : weight === "brief"
-              ? "w-full min-w-0 rounded-2xl border border-stone-200/90 bg-white/95 p-4 shadow-sm md:p-4.5"
-              : "w-full min-w-0 rounded-2xl border border-stone-200/90 bg-white/95 p-4 shadow-[0_18px_40px_-32px_rgba(33,31,28,0.42)] md:p-5"
+              ? "w-[calc(100vw-6.35rem)] min-w-0 max-w-full rounded-2xl border border-stone-200/90 bg-white/95 p-4 shadow-sm md:w-full md:p-4.5"
+              : "w-[calc(100vw-6.35rem)] min-w-0 max-w-full rounded-2xl border border-stone-200/90 bg-white/95 p-4 shadow-[0_18px_40px_-32px_rgba(33,31,28,0.42)] md:w-full md:p-5"
         }
       >
         <button className="w-full min-w-0 text-left" onClick={() => onOpenEvent(event)}>
