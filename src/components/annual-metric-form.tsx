@@ -37,7 +37,7 @@ export function AnnualMetricForm({
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <label className="grid gap-2 text-sm font-semibold text-stone-800">
+        <label className="grid min-w-0 gap-2 text-sm font-semibold text-stone-800">
           Jahr
           <select
             name="year"
@@ -54,10 +54,10 @@ export function AnnualMetricForm({
               </option>
             ))}
           </select>
-          <p className="text-sm leading-6 text-stone-500">Die Auswahl richtet sich nach deinen vorhandenen Timeline-Jahren und den naheliegenden Jahren rund um heute.</p>
+          <p className="text-sm leading-6 text-stone-500">Es werden nur Jahre angeboten, zu denen bereits Ereignisse in der Timeline vorhanden sind.</p>
         </label>
 
-        <label className="grid gap-2 text-sm font-semibold text-stone-800">
+        <label className="grid min-w-0 gap-2 text-sm font-semibold text-stone-800">
           Reihenfolge
           <select
             name="display_order"
@@ -84,8 +84,8 @@ export function AnnualMetricForm({
         />
       </label>
 
-      <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_8rem]">
-        <label className="grid gap-2 text-sm font-semibold text-stone-800">
+      <div className="grid gap-4 sm:grid-cols-2">
+        <label className="grid min-w-0 gap-2 text-sm font-semibold text-stone-800">
           Hauptwert
           <input
             name="value"
@@ -98,7 +98,7 @@ export function AnnualMetricForm({
           />
         </label>
 
-        <label className="grid gap-2 text-sm font-semibold text-stone-800">
+        <label className="grid min-w-0 gap-2 text-sm font-semibold text-stone-800">
           Einheit
           <input
             name="unit"
@@ -116,7 +116,7 @@ export function AnnualMetricForm({
           Wenn Hauptwert und Vergleichswert zusammengehören, berechnet die Timeline daraus automatisch den Anteil in Prozent.
         </p>
         <div className="grid gap-4 sm:grid-cols-2">
-          <label className="grid gap-2 text-sm font-semibold text-stone-800">
+          <label className="grid min-w-0 gap-2 text-sm font-semibold text-stone-800">
             Vergleichsbezeichnung
             <input
               name="comparison_label"
@@ -126,7 +126,7 @@ export function AnnualMetricForm({
             />
           </label>
 
-          <label className="grid gap-2 text-sm font-semibold text-stone-800">
+          <label className="grid min-w-0 gap-2 text-sm font-semibold text-stone-800">
             Vergleichswert
             <input
               name="comparison_value"
@@ -139,16 +139,19 @@ export function AnnualMetricForm({
           </label>
         </div>
 
-        <label className="grid gap-2 text-sm font-semibold text-stone-800 sm:max-w-[12rem]">
-          Vergleichseinheit
-          <input
-            name="comparison_unit"
-            list="annual-metric-units"
-            defaultValue={metric?.comparison_unit ?? ""}
-            placeholder="Personen"
-            className="h-11 rounded-md border border-stone-300 bg-white px-3 outline-none focus:border-teal-700"
-          />
-        </label>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <label className="grid min-w-0 gap-2 text-sm font-semibold text-stone-800">
+            Vergleichseinheit
+            <input
+              name="comparison_unit"
+              list="annual-metric-units"
+              defaultValue={metric?.comparison_unit ?? ""}
+              placeholder="Personen"
+              className="h-11 rounded-md border border-stone-300 bg-white px-3 outline-none focus:border-teal-700"
+            />
+          </label>
+          <div className="hidden sm:block" />
+        </div>
       </div>
 
       <label className="grid gap-2 text-sm font-semibold text-stone-800">

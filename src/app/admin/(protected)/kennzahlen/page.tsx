@@ -5,7 +5,7 @@ import { getAnnualMetrics, getTimelineEvents } from "@/lib/timeline";
 export default async function AdminMetricsPage() {
   const annualMetrics = await getAnnualMetrics();
   const events = await getTimelineEvents();
-  const yearOptions = buildYearOptions(events.map((event) => event.event_date.slice(0, 4)), annualMetrics.map((metric) => metric.year));
+  const yearOptions = buildYearOptions(events.map((event) => event.event_date.slice(0, 4)));
 
   return (
     <section className="grid gap-8 lg:grid-cols-[420px_1fr]">
@@ -27,15 +27,10 @@ export default async function AdminMetricsPage() {
   );
 }
 
-function buildYearOptions(eventYears: string[], metricYears: string[]) {
-  const currentYear = new Date().getFullYear();
+function buildYearOptions(eventYears: string[]) {
   const years = new Set<string>();
 
-  for (let year = currentYear - 5; year <= currentYear + 5; year += 1) {
-    years.add(String(year));
-  }
-
-  for (const year of [...eventYears, ...metricYears]) {
+  for (const year of eventYears) {
     if (year) years.add(year);
   }
 
