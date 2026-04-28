@@ -468,34 +468,40 @@ function MetricTimelineRow({ year, metrics }: { year: string; metrics: AnnualMet
       className="grid w-full min-w-0 gap-2"
       transition={{ layout: { type: "spring", stiffness: 180, damping: 22 } }}
     >
-      <div className="w-[calc(100vw-6.35rem)] min-w-0 max-w-full border-l-2 border-dashed border-stone-200/80 px-3 py-1.5 md:w-full md:px-4 md:py-2">
-        <div className="flex flex-wrap items-center gap-2 text-left">
+      <div className="w-[calc(100vw-6.35rem)] min-w-0 max-w-full rounded-2xl border border-stone-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.78),rgba(248,246,241,0.92))] px-4 py-3 shadow-[0_14px_28px_-28px_rgba(33,31,28,0.4)] md:w-full md:px-5 md:py-4">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-stone-200/70 pb-2 text-left">
           <span className="text-sm font-semibold text-stone-500">{`01.01.${year}`}</span>
-          <span className="rounded-full border border-stone-200/80 bg-transparent px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-stone-400">
+          <span className="rounded-full bg-stone-100 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-stone-500">
             Kennzahlen
           </span>
         </div>
 
-        <div className="mt-2 grid gap-2">
+        <div className="mt-3 grid gap-3">
           {metrics.map((metric) => {
             const hasComparison = metric.comparison_label && metric.comparison_value !== null && metric.value > 0;
             const ratio = hasComparison ? Math.min((metric.comparison_value! / metric.value) * 100, 999) : null;
+            const valueParts = formatMetricParts(metric.value, metric.unit);
 
             return (
-              <article key={metric.id} className="grid gap-0.5 pl-2">
+              <article key={metric.id} className="grid gap-1 rounded-xl bg-white/65 px-3 py-3 ring-1 ring-stone-200/70">
                 <p className="text-sm font-semibold leading-6 text-stone-700">{metric.label}</p>
-                <p className="text-sm leading-6 text-stone-600">{formatMetricValue(metric.value, metric.unit)}</p>
-                {hasComparison ? (
-                  <>
-                    <p className="text-sm leading-5 text-stone-500">
-                      {metric.comparison_label}: {formatMetricValue(metric.comparison_value!, metric.comparison_unit)}
-                    </p>
-                    <p className="text-sm font-semibold text-teal-700/75">
+                <div className="flex flex-wrap items-end gap-x-2 gap-y-1">
+                  <span className="text-[1.55rem] font-semibold leading-none text-stone-900">{valueParts.value}</span>
+                  {valueParts.unit ? (
+                    <span className="pb-0.5 text-sm font-medium leading-none text-stone-500">{valueParts.unit}</span>
+                  ) : null}
+                  {hasComparison ? (
+                    <span className="ml-auto rounded-full bg-teal-50 px-2.5 py-1 text-xs font-semibold text-teal-700">
                       {new Intl.NumberFormat("de-DE", { maximumFractionDigits: 1 }).format(ratio!)} %
-                    </p>
-                  </>
+                    </span>
+                  ) : null}
+                </div>
+                {hasComparison ? (
+                  <p className="text-sm leading-5 text-stone-500">
+                    {metric.comparison_label}: {formatMetricValue(metric.comparison_value!, metric.comparison_unit)}
+                  </p>
                 ) : null}
-                {metric.description ? <p className="text-sm leading-6 text-stone-400/90">{metric.description}</p> : null}
+                {metric.description ? <p className="text-sm leading-5 text-stone-400">{metric.description}</p> : null}
               </article>
             );
           })}
@@ -940,6 +946,13 @@ function getEventViewMode(event: TimelineEvent): EventViewMode {
 function formatMetricValue(value: number, unit: string | null) {
   const formatted = new Intl.NumberFormat("de-DE", { maximumFractionDigits: 2 }).format(value);
   return unit ? `${formatted} ${unit}` : formatted;
+}
+
+function formatMetricParts(value: number, unit: string | null) {
+  return {
+    value: new Intl.NumberFormat("de-DE", { maximumFractionDigits: 2 }).format(value),
+    unit: unit ?? null,
+  };
 }
 
 function getViewConfig(viewMode: EventViewMode) {
