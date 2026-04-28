@@ -2,14 +2,19 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AnnualMetricForm } from "@/components/annual-metric-form";
 import { getAnnualMetricById } from "@/lib/db";
+import { getAnnualMetrics, getTimelineEvents } from "@/lib/timeline";
 
 export default async function EditAnnualMetricPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const metric = getAnnualMetricById(id);
+  const annualMetrics = await getAnnualMetrics();
+  const events = await getTimelineEvents();
 
   if (!metric) {
     notFound();
   }
+
+  const yearOptions = buildYearOptions(events.map((event) => event.event_date.slice(0, 4)), annualMetrics.map((item) => item.year));
 
   return (
     <section className="mx-auto max-w-2xl">
@@ -17,7 +22,22 @@ export default async function EditAnnualMetricPage({ params }: { params: Promise
         Zurück zu den Kennzahlen
       </Link>
       <h2 className="mb-4 mt-3 text-2xl font-semibold text-stone-950">Jahreskennzahl bearbeiten</h2>
-      <AnnualMetricForm metric={metric} />
+      <AnnualMetricForm metric={metric} yearOptions={yearOptions} />
     </section>
   );
+}
+
+function buildYearOptions(eventYears: string[], metricYears: string[]) {
+  const currentYear = new Date().getFullYear();
+  const years = new Set<string>();
+
+  for (let year = currentYear - 5; year <= currentYear + 5; year += 1) {
+    years.add(String(year));
+  }
+
+  for (const year of [...eventYears, ...metricYears]) {
+    if (year) years.add(year);
+  }
+
+  return [...years].sort((a, b) => Number(a) - Number(b));
 }

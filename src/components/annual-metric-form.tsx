@@ -7,7 +7,15 @@ import type { AnnualMetric } from "@/lib/types";
 
 type State = { ok: boolean; message: string } | null;
 
-export function AnnualMetricForm({ metric }: { metric?: AnnualMetric }) {
+const unitSuggestions = ["Personen", "%", "EUR", "Tage", "Stück"];
+
+export function AnnualMetricForm({
+  metric,
+  yearOptions,
+}: {
+  metric?: AnnualMetric;
+  yearOptions: string[];
+}) {
   const [state, formAction, pending] = useActionState<State, FormData>(upsertAnnualMetricAction, null);
 
   return (
@@ -31,24 +39,37 @@ export function AnnualMetricForm({ metric }: { metric?: AnnualMetric }) {
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="grid gap-2 text-sm font-semibold text-stone-800">
           Jahr
-          <input
+          <select
             name="year"
             required
             defaultValue={metric?.year ?? ""}
-            placeholder="2026"
-            className="h-11 rounded-md border border-stone-300 px-3 outline-none focus:border-teal-700"
-          />
+            className="h-11 rounded-md border border-stone-300 bg-white px-3 outline-none focus:border-teal-700"
+          >
+            <option value="" disabled>
+              Jahr auswählen
+            </option>
+            {yearOptions.map((year) => (
+              <option key={year} value={year}>
+                {year}
+              </option>
+            ))}
+          </select>
+          <p className="text-sm leading-6 text-stone-500">Die Auswahl richtet sich nach deinen vorhandenen Timeline-Jahren und den naheliegenden Jahren rund um heute.</p>
         </label>
 
         <label className="grid gap-2 text-sm font-semibold text-stone-800">
           Reihenfolge
-          <input
+          <select
             name="display_order"
-            type="number"
-            min="0"
             defaultValue={metric?.display_order ?? 0}
-            className="h-11 rounded-md border border-stone-300 px-3 outline-none focus:border-teal-700"
-          />
+            className="h-11 rounded-md border border-stone-300 bg-white px-3 outline-none focus:border-teal-700"
+          >
+            {Array.from({ length: 10 }, (_, index) => (
+              <option key={index} value={index}>
+                {index === 0 ? "0 - ganz oben" : index}
+              </option>
+            ))}
+          </select>
         </label>
       </div>
 
@@ -71,6 +92,7 @@ export function AnnualMetricForm({ metric }: { metric?: AnnualMetric }) {
             type="number"
             step="0.01"
             required
+            inputMode="decimal"
             defaultValue={metric?.value ?? ""}
             className="h-11 rounded-md border border-stone-300 px-3 outline-none focus:border-teal-700"
           />
@@ -80,6 +102,7 @@ export function AnnualMetricForm({ metric }: { metric?: AnnualMetric }) {
           Einheit
           <input
             name="unit"
+            list="annual-metric-units"
             defaultValue={metric?.unit ?? ""}
             placeholder="Personen"
             className="h-11 rounded-md border border-stone-300 px-3 outline-none focus:border-teal-700"
@@ -109,6 +132,7 @@ export function AnnualMetricForm({ metric }: { metric?: AnnualMetric }) {
               name="comparison_value"
               type="number"
               step="0.01"
+              inputMode="decimal"
               defaultValue={metric?.comparison_value ?? ""}
               className="h-11 rounded-md border border-stone-300 bg-white px-3 outline-none focus:border-teal-700"
             />
@@ -119,6 +143,7 @@ export function AnnualMetricForm({ metric }: { metric?: AnnualMetric }) {
           Vergleichseinheit
           <input
             name="comparison_unit"
+            list="annual-metric-units"
             defaultValue={metric?.comparison_unit ?? ""}
             placeholder="Personen"
             className="h-11 rounded-md border border-stone-300 bg-white px-3 outline-none focus:border-teal-700"
@@ -149,6 +174,12 @@ export function AnnualMetricForm({ metric }: { metric?: AnnualMetric }) {
       >
         {pending ? "Speichert..." : metric ? "Jahreskennzahl aktualisieren" : "Jahreskennzahl erstellen"}
       </button>
+
+      <datalist id="annual-metric-units">
+        {unitSuggestions.map((unit) => (
+          <option key={unit} value={unit} />
+        ))}
+      </datalist>
     </form>
   );
 }
