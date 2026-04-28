@@ -368,7 +368,9 @@ function YearSection({
               : "relative pt-2 pr-4 text-right md:pr-10"
           }
         >
-          <p className="text-xl font-semibold leading-none text-stone-950 md:text-3xl">{group.year}</p>
+          <p className="relative z-10 inline-block bg-[#f6f3ee] pr-1 text-xl font-semibold leading-none text-stone-950 md:pr-2 md:text-3xl">
+            {group.year}
+          </p>
           <div className="absolute right-0.5 top-0 flex h-full justify-center md:right-1">
             <div className="absolute bottom-[-0.75rem] top-2 w-px bg-gradient-to-b from-blue-700 via-teal-600 to-orange-500" />
             <span className="relative mt-1 flex h-6 w-6 items-center justify-center rounded-full bg-stone-950 text-white ring-4 ring-[#f6f3ee] md:h-7 md:w-7">
