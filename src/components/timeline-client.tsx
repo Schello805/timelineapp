@@ -357,7 +357,7 @@ function YearSection({
     <motion.section
       layout
       data-year-anchor={group.year}
-      className="grid gap-4"
+      className="grid gap-3"
       transition={{ layout: { type: "spring", stiffness: 180, damping: 22 } }}
     >
       <div className="grid grid-cols-[5rem_minmax(0,1fr)] gap-2 md:grid-cols-[9rem_minmax(0,1fr)] md:gap-5">
@@ -378,9 +378,9 @@ function YearSection({
             </span>
           </div>
         </div>
-        <div className="grid gap-4">
+        <div className="grid gap-3">
           {hasExpandedEvents(group.events) ? (
-            <div className="grid gap-4">
+            <div className="grid gap-3">
             {group.metrics.length ? <MetricTimelineRow year={group.year} metrics={group.metrics} /> : null}
             {group.months.map((month) => (
               <MonthSection
@@ -393,7 +393,7 @@ function YearSection({
             ))}
             </div>
           ) : (
-            <div className="grid gap-4">
+            <div className="grid gap-3">
               {group.metrics.length ? <MetricTimelineRow year={group.year} metrics={group.metrics} /> : null}
               <CompactYearCard events={group.events} onOpenEvent={onOpenEvent} />
             </div>
@@ -467,26 +467,26 @@ function MetricTimelineRow({ year, metrics }: { year: string; metrics: AnnualMet
       className="grid w-full min-w-0 gap-2"
       transition={{ layout: { type: "spring", stiffness: 180, damping: 22 } }}
     >
-      <div className="w-[calc(100vw-6.35rem)] min-w-0 max-w-full rounded-2xl border border-dashed border-stone-200/90 bg-stone-50/70 px-4 py-3 md:w-full md:px-5 md:py-4">
+      <div className="w-[calc(100vw-6.35rem)] min-w-0 max-w-full border-l-2 border-dashed border-stone-200/80 px-3 py-1.5 md:w-full md:px-4 md:py-2">
         <div className="flex flex-wrap items-center gap-2 text-left">
-          <span className="text-sm font-semibold text-stone-500">{`01.01.${year}-`}</span>
-          <span className="rounded-full border border-stone-200 bg-white/80 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-stone-500">
+          <span className="text-sm font-semibold text-stone-500">{`01.01.${year}`}</span>
+          <span className="rounded-full border border-stone-200/80 bg-transparent px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-stone-400">
             Kennzahlen
           </span>
         </div>
 
-        <div className="mt-3 grid gap-3">
+        <div className="mt-2 grid gap-2">
           {metrics.map((metric) => {
             const hasComparison = metric.comparison_label && metric.comparison_value !== null && metric.value > 0;
             const ratio = hasComparison ? Math.min((metric.comparison_value! / metric.value) * 100, 999) : null;
 
             return (
-              <article key={metric.id} className="grid gap-1 border-l-2 border-stone-200/80 pl-3">
+              <article key={metric.id} className="grid gap-0.5 pl-2">
                 <p className="text-sm font-semibold leading-6 text-stone-700">{metric.label}</p>
                 <p className="text-sm leading-6 text-stone-600">{formatMetricValue(metric.value, metric.unit)}</p>
                 {hasComparison ? (
                   <>
-                    <p className="text-sm leading-6 text-stone-500">
+                    <p className="text-sm leading-5 text-stone-500">
                       {metric.comparison_label}: {formatMetricValue(metric.comparison_value!, metric.comparison_unit)}
                     </p>
                     <p className="text-sm font-semibold text-teal-700/75">
@@ -518,7 +518,7 @@ function MonthSection({
   return (
     <motion.div
       layout
-      className="grid grid-cols-[4.1rem_minmax(0,1fr)] gap-2 md:grid-cols-[8rem_minmax(0,1fr)] md:gap-5"
+      className="grid grid-cols-[4.1rem_minmax(0,1fr)] gap-2 md:grid-cols-[8rem_minmax(0,1fr)] md:gap-4"
       transition={{ layout: { type: "spring", stiffness: 180, damping: 22 } }}
     >
       <div className="relative pr-2 pt-1 text-right md:pr-4">
@@ -533,7 +533,7 @@ function MonthSection({
           <span className="relative mt-1 h-3 w-3 rounded-full bg-teal-700 ring-4 ring-[#f6f3ee] md:h-3.5 md:w-3.5" />
         </div>
       </div>
-      <div className="grid min-w-0 gap-3">
+      <div className="grid min-w-0 gap-2.5">
         {month.events.map((event) => (
           <EventRow
             key={event.id}
@@ -587,7 +587,7 @@ function EventRow({
         }
       >
         <button className="w-full min-w-0 text-left" onClick={() => onOpenEvent(event)}>
-          <span className="text-sm font-semibold text-stone-500">{formatEventDateNumeric(event.event_date)}-</span>
+          <span className="text-sm font-semibold text-stone-500">{formatEventDateNumeric(event.event_date)}</span>
           <div className="flex flex-wrap items-center gap-2">
             {weight === "milestone" ? (
               <span className="inline-flex items-center gap-1 rounded-full bg-orange-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-orange-800">
