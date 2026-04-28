@@ -1,6 +1,6 @@
 {
   "name": "timeline-app",
-  "version": "0.43",
+  "version": "0.44",
   "description": "Mobile-first media timeline with a local SQLite-powered admin dashboard.",
   "license": "PolyForm-Noncommercial-1.0.0",
   "private": false,

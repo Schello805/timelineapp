@@ -366,10 +366,16 @@ function YearSection({
       className="grid gap-4"
       transition={{ layout: { type: "spring", stiffness: 180, damping: 22 } }}
     >
-      <div className="grid grid-cols-[4.1rem_minmax(0,1fr)] gap-2 md:grid-cols-[8rem_minmax(0,1fr)] md:gap-5">
-        <div className={hasExpandedEvents(group.events) ? "relative hidden pt-2 text-right md:block" : "relative pt-2 text-right"}>
+      <div className="grid grid-cols-[4.1rem_minmax(0,1fr)] gap-2 md:grid-cols-[9rem_minmax(0,1fr)] md:gap-5">
+        <div
+          className={
+            hasExpandedEvents(group.events)
+              ? "relative hidden pt-2 pr-2 text-right md:block md:pr-10"
+              : "relative pt-2 pr-2 text-right md:pr-10"
+          }
+        >
           <p className="text-xl font-semibold leading-none text-stone-950 md:text-3xl">{group.year}</p>
-          <div className="absolute right-0 top-0 flex h-full justify-center">
+          <div className="absolute right-0 top-0 flex h-full justify-center md:right-1">
             <div className="absolute bottom-[-0.75rem] top-2 w-px bg-gradient-to-b from-blue-700 via-teal-600 to-orange-500" />
             <span className="relative mt-1 flex h-6 w-6 items-center justify-center rounded-full bg-stone-950 text-white ring-4 ring-[#f6f3ee] md:h-7 md:w-7">
               <CalendarDays className="h-3.5 w-3.5 md:h-4 md:w-4" />
