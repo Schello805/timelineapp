@@ -109,7 +109,7 @@ export default async function EventPage({ params }: Props) {
             rel="noopener noreferrer"
           >
             <FileText className="h-4 w-4" />
-            Dokument öffnen
+            PDF öffnen
           </a>
         ) : null}
       </article>

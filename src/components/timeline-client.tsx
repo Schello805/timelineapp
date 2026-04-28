@@ -298,7 +298,7 @@ export function TimelineClient({
                     rel="noopener noreferrer"
                   >
                     <FileText className="h-4 w-4" />
-                    Dokument öffnen
+                    PDF öffnen
                   </a>
                 ) : null}
               </div>
@@ -673,7 +673,7 @@ function EventRow({
               rel="noopener noreferrer"
             >
               <FileText className="h-4 w-4" />
-              Dokument öffnen
+              PDF öffnen
             </a>
           ) : null}
         </div>
