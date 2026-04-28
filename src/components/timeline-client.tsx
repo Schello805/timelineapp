@@ -248,6 +248,15 @@ export function TimelineClient({ events, ownerName }: { events: TimelineEvent[];
                     aria-label={`Zum Jahr ${item.year} springen`}
                   >
                     {item.year}
+                    <span
+                      className={
+                        visibleYear === item.year
+                          ? "ml-1.5 text-xs italic text-white/75"
+                          : "ml-1.5 text-xs italic text-stone-400"
+                      }
+                    >
+                      ({item.count})
+                    </span>
                   </button>
                 ))}
               </div>
@@ -778,12 +787,16 @@ function splitTextWithLinks(text: string) {
 }
 
 function buildYearNavigation(events: TimelineEvent[]) {
-  const years = new Map<string, { year: string; firstEvent: TimelineEvent }>();
+  const years = new Map<string, { year: string; firstEvent: TimelineEvent; count: number }>();
 
   for (const event of events) {
     const year = getYear(event.event_date);
-    if (!years.has(year)) {
-      years.set(year, { year, firstEvent: event });
+    const existing = years.get(year);
+
+    if (existing) {
+      existing.count += 1;
+    } else {
+      years.set(year, { year, firstEvent: event, count: 1 });
     }
   }
 
