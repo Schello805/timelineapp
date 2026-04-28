@@ -379,9 +379,9 @@ function YearSection({
           </div>
         </div>
         <div className="grid gap-4">
-          {group.metrics.length ? <AnnualMetricsPanel metrics={group.metrics} /> : null}
           {hasExpandedEvents(group.events) ? (
             <div className="grid gap-4">
+            {group.metrics.length ? <MetricTimelineRow year={group.year} metrics={group.metrics} /> : null}
             {group.months.map((month) => (
               <MonthSection
                 key={month.id}
@@ -393,7 +393,10 @@ function YearSection({
             ))}
             </div>
           ) : (
-            <CompactYearCard events={group.events} onOpenEvent={onOpenEvent} />
+            <div className="grid gap-4">
+              {group.metrics.length ? <MetricTimelineRow year={group.year} metrics={group.metrics} /> : null}
+              <CompactYearCard events={group.events} onOpenEvent={onOpenEvent} />
+            </div>
           )}
         </div>
       </div>
@@ -457,37 +460,47 @@ function CompactYearCard({
   );
 }
 
-function AnnualMetricsPanel({ metrics }: { metrics: AnnualMetric[] }) {
+function MetricTimelineRow({ year, metrics }: { year: string; metrics: AnnualMetric[] }) {
   return (
-    <div className="grid gap-1.5 sm:grid-cols-2 xl:grid-cols-3">
-      {metrics.map((metric) => {
-        const hasComparison = metric.comparison_label && metric.comparison_value !== null && metric.value > 0;
-        const ratio = hasComparison ? Math.min((metric.comparison_value! / metric.value) * 100, 999) : null;
+    <motion.article
+      layout
+      className="grid w-full min-w-0 gap-2"
+      transition={{ layout: { type: "spring", stiffness: 180, damping: 22 } }}
+    >
+      <div className="w-[calc(100vw-6.35rem)] min-w-0 max-w-full rounded-2xl border border-dashed border-stone-200/90 bg-stone-50/70 px-4 py-3 md:w-full md:px-5 md:py-4">
+        <div className="flex flex-wrap items-center gap-2 text-left">
+          <span className="text-sm font-semibold text-stone-500">{`01.01.${year}-`}</span>
+          <span className="rounded-full border border-stone-200 bg-white/80 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-stone-500">
+            Kennzahlen
+          </span>
+        </div>
 
-        return (
-          <article
-            key={metric.id}
-            className="rounded-lg border-l-2 border-stone-200/80 bg-transparent px-3 py-2"
-          >
-            <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-stone-400">{metric.label}</p>
-            <p className="mt-1 text-lg font-semibold leading-none text-stone-700">
-              {formatMetricValue(metric.value, metric.unit)}
-            </p>
-            {hasComparison ? (
-              <>
-                <p className="mt-1.5 text-sm leading-5 text-stone-400">
-                  {metric.comparison_label}: {formatMetricValue(metric.comparison_value!, metric.comparison_unit)}
-                </p>
-                <p className="mt-1 text-sm font-semibold text-teal-700/75">
-                  {new Intl.NumberFormat("de-DE", { maximumFractionDigits: 1 }).format(ratio!)} %
-                </p>
-              </>
-            ) : null}
-            {metric.description ? <p className="mt-1.5 text-sm leading-5 text-stone-400/80">{metric.description}</p> : null}
-          </article>
-        );
-      })}
-    </div>
+        <div className="mt-3 grid gap-3">
+          {metrics.map((metric) => {
+            const hasComparison = metric.comparison_label && metric.comparison_value !== null && metric.value > 0;
+            const ratio = hasComparison ? Math.min((metric.comparison_value! / metric.value) * 100, 999) : null;
+
+            return (
+              <article key={metric.id} className="grid gap-1 border-l-2 border-stone-200/80 pl-3">
+                <p className="text-sm font-semibold leading-6 text-stone-700">{metric.label}</p>
+                <p className="text-sm leading-6 text-stone-600">{formatMetricValue(metric.value, metric.unit)}</p>
+                {hasComparison ? (
+                  <>
+                    <p className="text-sm leading-6 text-stone-500">
+                      {metric.comparison_label}: {formatMetricValue(metric.comparison_value!, metric.comparison_unit)}
+                    </p>
+                    <p className="text-sm font-semibold text-teal-700/75">
+                      {new Intl.NumberFormat("de-DE", { maximumFractionDigits: 1 }).format(ratio!)} %
+                    </p>
+                  </>
+                ) : null}
+                {metric.description ? <p className="text-sm leading-6 text-stone-400/90">{metric.description}</p> : null}
+              </article>
+            );
+          })}
+        </div>
+      </div>
+    </motion.article>
   );
 }
 
@@ -509,7 +522,9 @@ function MonthSection({
       transition={{ layout: { type: "spring", stiffness: 180, damping: 22 } }}
     >
       <div className="relative pr-2 pt-1 text-right md:pr-4">
-        <p className="text-xl font-semibold leading-none text-stone-950 md:hidden">{year}</p>
+        <p className="relative z-10 inline-block bg-[#f6f3ee] pr-1 text-xl font-semibold leading-none text-stone-950 md:hidden">
+          {year}
+        </p>
         <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-teal-700 md:mt-2 md:text-sm md:tracking-[0.16em]">
           {month.monthLabel}
         </p>
