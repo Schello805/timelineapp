@@ -366,23 +366,17 @@ function YearSection({
       className="grid gap-4"
       transition={{ layout: { type: "spring", stiffness: 180, damping: 22 } }}
     >
-      <div className="grid grid-cols-[4.1rem_minmax(0,1fr)] gap-2 md:grid-cols-[7rem_2rem_minmax(0,1fr)] md:gap-4">
+      <div className="grid grid-cols-[4.1rem_minmax(0,1fr)] gap-2 md:grid-cols-[8rem_minmax(0,1fr)] md:gap-5">
         <div className={hasExpandedEvents(group.events) ? "relative hidden pt-2 text-right md:block" : "relative pt-2 text-right"}>
           <p className="text-xl font-semibold leading-none text-stone-950 md:text-3xl">{group.year}</p>
-          <div className="absolute right-0 top-0 flex h-full justify-center md:hidden">
+          <div className="absolute right-0 top-0 flex h-full justify-center">
             <div className="absolute bottom-[-0.75rem] top-2 w-px bg-gradient-to-b from-blue-700 via-teal-600 to-orange-500" />
-            <span className="relative mt-1 flex h-6 w-6 items-center justify-center rounded-full bg-stone-950 text-white ring-4 ring-[#f6f3ee]">
-              <CalendarDays className="h-3.5 w-3.5" />
+            <span className="relative mt-1 flex h-6 w-6 items-center justify-center rounded-full bg-stone-950 text-white ring-4 ring-[#f6f3ee] md:h-7 md:w-7">
+              <CalendarDays className="h-3.5 w-3.5 md:h-4 md:w-4" />
             </span>
           </div>
         </div>
-        <div className={hasExpandedEvents(group.events) ? "hidden relative justify-center md:flex" : "relative hidden justify-center md:flex"}>
-          <div className="absolute bottom-[-0.75rem] top-0 w-px bg-gradient-to-b from-blue-700 via-teal-600 to-orange-500" />
-          <span className="relative mt-1 flex h-7 w-7 items-center justify-center rounded-full bg-stone-950 text-white ring-4 ring-[#f6f3ee]">
-            <CalendarDays className="h-4 w-4" />
-          </span>
-        </div>
-        <div className="grid gap-4 md:col-start-3">
+        <div className="grid gap-4">
           {group.metrics.length ? <AnnualMetricsPanel metrics={group.metrics} /> : null}
           {hasExpandedEvents(group.events) ? (
             <div className="grid gap-4">
@@ -509,24 +503,20 @@ function MonthSection({
   return (
     <motion.div
       layout
-      className="grid grid-cols-[4.1rem_minmax(0,1fr)] gap-2 md:grid-cols-[7rem_2rem_minmax(0,1fr)] md:gap-4"
+      className="grid grid-cols-[4.1rem_minmax(0,1fr)] gap-2 md:grid-cols-[8rem_minmax(0,1fr)] md:gap-5"
       transition={{ layout: { type: "spring", stiffness: 180, damping: 22 } }}
     >
-      <div className="relative pr-2 pt-1 text-right md:pr-0">
+      <div className="relative pr-2 pt-1 text-right md:pr-4">
         <p className="text-xl font-semibold leading-none text-stone-950 md:hidden">{year}</p>
-        <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-teal-700 md:mt-0 md:text-sm md:tracking-[0.16em]">
+        <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-teal-700 md:mt-2 md:text-sm md:tracking-[0.16em]">
           {month.monthLabel}
         </p>
-        <div className="absolute right-0 top-0 flex h-full justify-center md:hidden">
+        <div className="absolute right-0 top-0 flex h-full justify-center">
           <div className="absolute bottom-[-1rem] top-2 w-px bg-stone-300" />
-          <span className="relative mt-1 h-3 w-3 rounded-full bg-teal-700 ring-4 ring-[#f6f3ee]" />
+          <span className="relative mt-1 h-3 w-3 rounded-full bg-teal-700 ring-4 ring-[#f6f3ee] md:h-3.5 md:w-3.5" />
         </div>
       </div>
-      <div className="relative hidden justify-center md:flex">
-        <div className="absolute bottom-[-1rem] top-0 w-px bg-stone-300" />
-        <span className="relative mt-1 h-3 w-3 rounded-full bg-teal-700 ring-4 ring-[#f6f3ee] md:h-3.5 md:w-3.5" />
-      </div>
-      <div className="grid min-w-0 gap-3 md:col-start-3">
+      <div className="grid min-w-0 gap-3">
         {month.events.map((event) => (
           <EventRow
             key={event.id}
@@ -565,16 +555,9 @@ function EventRow({
     <motion.article
       layout
       data-event-id={event.id}
-      className="grid w-full min-w-0 gap-2 md:grid-cols-[7.5rem_minmax(0,1fr)] md:gap-4"
+      className="grid w-full min-w-0 gap-2"
       transition={{ layout: { type: "spring", stiffness: 180, damping: 22 } }}
     >
-      <button
-        className="hidden h-fit w-fit max-w-full items-center justify-start rounded-md px-0 py-1.5 text-left text-sm font-semibold text-stone-500 hover:text-teal-700 md:inline-flex"
-        onClick={() => onOpenEvent(event)}
-      >
-        {formatEventDateNumeric(event.event_date)}-
-      </button>
-
       <div
         className={
           weight === "milestone"
@@ -587,7 +570,7 @@ function EventRow({
         }
       >
         <button className="w-full min-w-0 text-left" onClick={() => onOpenEvent(event)}>
-          <span className="text-sm font-semibold text-stone-500 md:hidden">{formatEventDateNumeric(event.event_date)}-</span>
+          <span className="text-sm font-semibold text-stone-500">{formatEventDateNumeric(event.event_date)}-</span>
           <div className="flex flex-wrap items-center gap-2">
             {weight === "milestone" ? (
               <span className="inline-flex items-center gap-1 rounded-full bg-orange-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-orange-800">
