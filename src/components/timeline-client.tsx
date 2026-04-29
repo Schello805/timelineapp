@@ -471,7 +471,7 @@ function MetricTimelineRow({ year, metrics }: { year: string; metrics: AnnualMet
     >
       <div className="w-[calc(100vw-6.35rem)] min-w-0 max-w-full rounded-2xl border border-dashed border-stone-200/90 bg-[#f8f5ef]/85 px-4 py-3 md:w-full md:px-5 md:py-3.5">
         <div className="flex flex-wrap items-center gap-2 text-left">
-          <span className="text-sm font-semibold text-stone-500">{`01.01.${year}`}</span>
+          <span className="text-sm font-semibold text-stone-500">{year}</span>
           <span className="rounded-full border border-stone-200 bg-white/75 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-stone-400">
             Kennzahlen
           </span>
