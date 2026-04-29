@@ -375,7 +375,7 @@ function YearSection({
       className="grid gap-3"
       transition={{ layout: { type: "spring", stiffness: 180, damping: 22 } }}
     >
-      <div className="grid grid-cols-[5rem_minmax(0,1fr)] gap-2 md:grid-cols-[9rem_minmax(0,1fr)] md:gap-5">
+      <div className="grid grid-cols-[5rem_minmax(0,1fr)] gap-2 md:grid-cols-[11.5rem_minmax(0,1fr)] md:gap-5">
         <div
           className={
             hasExpandedEvents(group.events)
