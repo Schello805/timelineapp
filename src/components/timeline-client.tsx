@@ -6,7 +6,6 @@ import {
   ChevronRight,
   FileText,
   ImageIcon,
-  Play,
   Search,
   Sparkles,
 } from "lucide-react";
@@ -798,15 +797,6 @@ function EventRow({
             <ChevronRight className="h-4 w-4" />
             Bericht öffnen
           </button>
-          {event.video_url ? (
-            <button
-              className="inline-flex h-11 items-center gap-2 rounded-xl border border-stone-300 px-4 text-sm font-semibold text-stone-900 hover:bg-stone-50"
-              onClick={() => onOpenEvent(event)}
-            >
-              <Play className="h-4 w-4 fill-current" />
-              Video ansehen
-            </button>
-          ) : null}
           {event.pdf_url ? (
             <a
               className="inline-flex h-11 items-center gap-2 rounded-xl border border-stone-300 px-4 text-sm font-semibold text-stone-900 hover:bg-stone-50"
