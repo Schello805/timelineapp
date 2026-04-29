@@ -1,5 +1,8 @@
-import { Copy, ExternalLink, Pencil } from "lucide-react";
-import { duplicateTimelineEvent } from "@/app/actions";
+"use client";
+
+import { useActionState, useMemo, useState } from "react";
+import { Copy, ExternalLink, Pencil, Save, Search, SlidersHorizontal } from "lucide-react";
+import { duplicateTimelineEvent, quickUpdateTimelineEvent } from "@/app/actions";
 import { DeleteEventForm } from "@/components/delete-event-form";
 import { QrCodeButton } from "@/components/qr-code-button";
 import { siteConfig } from "@/lib/env";
@@ -7,10 +10,63 @@ import { formatEventDate } from "@/lib/timeline-format";
 import type { TimelineEvent } from "@/lib/types";
 
 export function EventList({ events }: { events: TimelineEvent[] }) {
+  const [query, setQuery] = useState("");
+  const [importanceFilter, setImportanceFilter] = useState<"all" | "standard" | "important" | "milestone">("all");
+  const filteredEvents = useMemo(() => {
+    const normalizedQuery = query.trim().toLowerCase();
+
+    return events.filter((event) => {
+      const matchesQuery =
+        !normalizedQuery ||
+        event.title.toLowerCase().includes(normalizedQuery) ||
+        event.description.toLowerCase().includes(normalizedQuery) ||
+        event.slug.toLowerCase().includes(normalizedQuery) ||
+        event.event_date.includes(normalizedQuery);
+      const matchesImportance = importanceFilter === "all" || (event.importance ?? "standard") === importanceFilter;
+      return matchesQuery && matchesImportance;
+    });
+  }, [events, importanceFilter, query]);
+
   return (
     <div className="overflow-hidden rounded-lg border border-stone-200 bg-white shadow-sm">
+      <div className="border-b border-stone-200 bg-stone-50/80 p-4">
+        <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+          <label className="relative block">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
+            <input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Titel, Beschreibung, Datum oder Slug suchen"
+              className="h-10 w-full rounded-lg border border-stone-300 bg-white pl-9 pr-3 text-sm outline-none focus:border-teal-700"
+            />
+          </label>
+          <div className="flex flex-wrap gap-2">
+            {[
+              ["all", "Alle"],
+              ["standard", "Standard"],
+              ["important", "Wichtig"],
+              ["milestone", "Meilensteine"],
+            ].map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                className={
+                  importanceFilter === value
+                    ? "inline-flex h-10 items-center gap-2 rounded-lg bg-stone-950 px-3 text-sm font-semibold text-white"
+                    : "inline-flex h-10 items-center gap-2 rounded-lg border border-stone-300 bg-white px-3 text-sm font-semibold text-stone-700 hover:border-teal-700 hover:text-teal-700"
+                }
+                onClick={() => setImportanceFilter(value as typeof importanceFilter)}
+              >
+                <SlidersHorizontal className="h-4 w-4" />
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
       <div className="grid gap-0">
-        {events.map((event) => (
+        {filteredEvents.map((event) => (
           <div
             key={event.id}
             className="grid gap-3 border-b border-stone-100 p-4 last:border-b-0 xl:grid-cols-[minmax(7rem,9rem)_minmax(0,1fr)]"
@@ -70,10 +126,83 @@ export function EventList({ events }: { events: TimelineEvent[] }) {
               </div>
 
               <p className="max-w-3xl text-sm leading-6 text-stone-600">{event.description}</p>
+
+              <QuickEditRow event={event} />
             </div>
           </div>
         ))}
+
+        {filteredEvents.length === 0 ? (
+          <div className="p-5 text-sm leading-6 text-stone-500">Keine Ereignisse für diese Suche oder Filter gefunden.</div>
+        ) : null}
       </div>
+    </div>
+  );
+}
+
+function QuickEditRow({ event }: { event: TimelineEvent }) {
+  const [open, setOpen] = useState(false);
+  const [state, formAction, pending] = useActionState<{ ok: boolean; message: string } | null, FormData>(
+    quickUpdateTimelineEvent,
+    null,
+  );
+
+  return (
+    <div className="rounded-xl border border-dashed border-stone-200 bg-stone-50/80 p-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p className="text-sm font-semibold text-stone-800">Schnellbearbeitung</p>
+          <p className="text-xs leading-5 text-stone-500">Datum, Titel und Stufe direkt in der Liste ändern.</p>
+        </div>
+        <button
+          type="button"
+          className="rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm font-semibold text-stone-700 hover:bg-stone-50"
+          onClick={() => setOpen((current) => !current)}
+        >
+          {open ? "Schließen" : "Öffnen"}
+        </button>
+      </div>
+
+      {open ? (
+        <form action={formAction} className="mt-3 grid gap-3">
+          <input type="hidden" name="id" value={event.id} />
+          <div className="grid gap-3 lg:grid-cols-[11rem_minmax(0,1fr)_12rem_auto]">
+            <input
+              type="date"
+              name="event_date"
+              defaultValue={event.event_date}
+              className="h-10 rounded-lg border border-stone-300 bg-white px-3 text-sm outline-none focus:border-teal-700"
+            />
+            <input
+              type="text"
+              name="title"
+              defaultValue={event.title}
+              className="h-10 rounded-lg border border-stone-300 bg-white px-3 text-sm outline-none focus:border-teal-700"
+            />
+            <select
+              name="importance"
+              defaultValue={event.importance ?? "standard"}
+              className="h-10 rounded-lg border border-stone-300 bg-white px-3 text-sm outline-none focus:border-teal-700"
+            >
+              <option value="standard">Standard</option>
+              <option value="important">Wichtig</option>
+              <option value="milestone">Meilenstein</option>
+            </select>
+            <button
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-stone-950 px-4 text-sm font-semibold text-white hover:bg-stone-800 disabled:opacity-60"
+              disabled={pending}
+            >
+              <Save className="h-4 w-4" />
+              {pending ? "Speichert..." : "Speichern"}
+            </button>
+          </div>
+          {state?.message ? (
+            <p className={state.ok ? "text-sm font-medium text-teal-700" : "text-sm font-medium text-red-700"}>
+              {state.message}
+            </p>
+          ) : null}
+        </form>
+      ) : null}
     </div>
   );
 }

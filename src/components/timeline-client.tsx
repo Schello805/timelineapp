@@ -397,19 +397,21 @@ function YearSection({
         <div className="grid gap-3">
           {hasExpandedEvents(group.events) ? (
             <div className="grid gap-3">
-            {group.metrics.length ? <MetricTimelineRow year={group.year} metrics={group.metrics} /> : null}
-            {group.months.map((month) => (
-              <MonthSection
-                key={month.id}
-                year={group.year}
-                month={month}
-                onOpenEvent={onOpenEvent}
-                onOpenImage={onOpenImage}
-              />
-            ))}
+              <YearIntroCard group={group} />
+              {group.metrics.length ? <MetricTimelineRow year={group.year} metrics={group.metrics} /> : null}
+              {group.months.map((month) => (
+                <MonthSection
+                  key={month.id}
+                  year={group.year}
+                  month={month}
+                  onOpenEvent={onOpenEvent}
+                  onOpenImage={onOpenImage}
+                />
+              ))}
             </div>
           ) : (
             <div className="grid gap-3">
+              <YearIntroCard group={group} />
               {group.metrics.length ? <MetricTimelineRow year={group.year} metrics={group.metrics} /> : null}
               <CompactYearCard events={group.events} onOpenEvent={onOpenEvent} />
             </div>
@@ -545,6 +547,69 @@ function YearSummaryChips({ group }: { group: TimelineYear }) {
         </span>
       ) : null}
     </div>
+  );
+}
+
+function YearIntroCard({ group }: { group: TimelineYear }) {
+  const monthCount = group.months.length;
+  const firstMonth = group.months[0]?.monthLabel ?? null;
+  const lastMonth = group.months.at(-1)?.monthLabel ?? null;
+  const milestoneCount = group.events.filter((event) => event.importance === "milestone").length;
+  const importantCount = group.events.filter((event) => event.importance === "important").length;
+  const mediaCount = group.events.filter((event) => event.image_url || event.video_url || event.audio_url || event.pdf_url).length;
+
+  return (
+    <article className="w-[calc(100vw-6.35rem)] max-w-full rounded-2xl border border-stone-200/90 bg-white/70 px-4 py-4 shadow-[0_14px_36px_-34px_rgba(33,31,28,0.45)] backdrop-blur-sm md:w-full md:px-5">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="rounded-full bg-stone-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-stone-500">
+          {group.year} im Überblick
+        </span>
+        {milestoneCount ? (
+          <span className="rounded-full bg-orange-50 px-2.5 py-1 text-xs font-semibold text-orange-800">
+            {milestoneCount} Meilenstein{milestoneCount === 1 ? "" : "e"}
+          </span>
+        ) : null}
+        {importantCount ? (
+          <span className="rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-800">
+            {importantCount} wichtige Ereignisse
+          </span>
+        ) : null}
+      </div>
+
+      <p className="mt-3 text-sm leading-6 text-stone-600 md:text-[15px] md:leading-7">
+        {group.events.length > 0 ? (
+          <>
+            {group.events.length} {group.events.length === 1 ? "Ereignis" : "Ereignisse"}
+            {monthCount > 0 ? ` in ${monthCount} ${monthCount === 1 ? "Monat" : "Monaten"}` : ""}
+            {firstMonth && lastMonth
+              ? firstMonth === lastMonth
+                ? `, mit Schwerpunkt auf ${firstMonth}.`
+                : `, von ${firstMonth} bis ${lastMonth}.`
+              : "."}
+          </>
+        ) : (
+          <>Für dieses Jahr sind aktuell nur Kennzahlen hinterlegt.</>
+        )}
+      </p>
+
+      <div className="mt-3 flex flex-wrap gap-2">
+        {group.metrics.length ? (
+          <span className="rounded-full border border-stone-200 bg-white px-2.5 py-1 text-xs font-semibold text-stone-600">
+            {group.metrics.length} Kennzahl{group.metrics.length === 1 ? "" : "en"}
+          </span>
+        ) : null}
+        {mediaCount ? (
+          <span className="rounded-full border border-stone-200 bg-white px-2.5 py-1 text-xs font-semibold text-stone-600">
+            {mediaCount} Beiträge mit Medien
+          </span>
+        ) : null}
+        {group.events.length ? (
+          <span className="rounded-full border border-stone-200 bg-white px-2.5 py-1 text-xs font-semibold text-stone-600">
+            {group.events.length === 1 ? "Ein Kapitel" : "Kapitel mit mehreren Stationen"}
+          </span>
+        ) : null}
+      </div>
+    </article>
   );
 }
 

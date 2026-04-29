@@ -163,6 +163,52 @@ export async function upsertTimelineEvent(formData: FormData) {
   return { ok: true, message: "Ereignis gespeichert." };
 }
 
+export async function quickUpdateTimelineEvent(
+  _previousState: { ok: boolean; message: string } | null,
+  formData: FormData,
+) {
+  await requireAdmin();
+
+  const id = String(formData.get("id") ?? "");
+  const event = getTimelineEventById(id);
+  if (!event) {
+    return { ok: false, message: "Ereignis nicht gefunden." };
+  }
+
+  const parsed = z
+    .object({
+      event_date: z.string().min(1, "Bitte ein Datum eintragen."),
+      title: z.string().min(2, "Bitte einen Titel eintragen.").max(160),
+      importance: z.enum(["standard", "important", "milestone"]),
+    })
+    .safeParse({
+      event_date: String(formData.get("event_date") ?? ""),
+      title: String(formData.get("title") ?? ""),
+      importance: String(formData.get("importance") ?? "standard"),
+    });
+
+  if (!parsed.success) {
+    return { ok: false, message: parsed.error.issues.at(0)?.message ?? "Bitte prüfe die Eingaben." };
+  }
+
+  upsertEvent({
+    id: event.id,
+    slug: event.slug,
+    event_date: parsed.data.event_date,
+    title: parsed.data.title,
+    description: event.description,
+    importance: parsed.data.importance,
+    image_url: event.image_url,
+    video_url: event.video_url,
+    audio_url: event.audio_url,
+    pdf_url: event.pdf_url,
+  });
+
+  revalidatePath("/");
+  revalidatePath("/admin");
+  return { ok: true, message: "Schnellbearbeitung gespeichert." };
+}
+
 export async function updateAdminPassword(
   _previousState: { ok: boolean; message: string } | null,
   formData: FormData,
