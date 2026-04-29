@@ -6,7 +6,6 @@ import {
   ChevronRight,
   FileText,
   ImageIcon,
-  LinkIcon,
   Play,
   Search,
   Sparkles,
@@ -300,7 +299,6 @@ export function TimelineClient({
                   <section className="grid gap-3 rounded-2xl border border-stone-200 bg-white p-4 shadow-sm">
                     <p className="text-xs font-semibold uppercase tracking-[0.14em] text-stone-400">Aktionen</p>
                     <div className="flex flex-wrap gap-2">
-                      <CopyEventLinkButton event={selectedEvent} />
                       {selectedEvent.pdf_url ? (
                         <a
                           className="inline-flex h-11 items-center gap-2 rounded-xl border border-stone-300 px-4 text-sm font-semibold text-stone-900 hover:bg-stone-50"
@@ -800,7 +798,6 @@ function EventRow({
             <ChevronRight className="h-4 w-4" />
             Bericht öffnen
           </button>
-          <CopyEventLinkButton event={event} />
           {event.video_url ? (
             <button
               className="inline-flex h-11 items-center gap-2 rounded-xl border border-stone-300 px-4 text-sm font-semibold text-stone-900 hover:bg-stone-50"
@@ -808,15 +805,6 @@ function EventRow({
             >
               <Play className="h-4 w-4 fill-current" />
               Video ansehen
-            </button>
-          ) : null}
-          {event.audio_url ? (
-            <button
-              className="inline-flex h-11 items-center gap-2 rounded-xl border border-stone-300 px-4 text-sm font-semibold text-stone-900 hover:bg-stone-50"
-              onClick={() => onOpenEvent(event)}
-            >
-              <Play className="h-4 w-4 fill-current" />
-              Audio anhören
             </button>
           ) : null}
           {event.pdf_url ? (
@@ -899,27 +887,6 @@ function EventImage({ src, alt, className }: { src: string; alt: string; classNa
       loading="lazy"
       onError={() => setFailed(true)}
     />
-  );
-}
-
-function CopyEventLinkButton({ event }: { event: TimelineEvent }) {
-  const [copied, setCopied] = useState(false);
-
-  async function copyLink() {
-    const url = `${window.location.origin}/ereignis/${encodeURIComponent(event.slug || event.id)}`;
-    await navigator.clipboard.writeText(url);
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 1800);
-  }
-
-  return (
-    <button
-      className="inline-flex h-11 items-center gap-2 rounded-xl border border-stone-300 px-4 text-sm font-semibold text-stone-900 hover:bg-stone-50"
-      onClick={copyLink}
-    >
-      <LinkIcon className="h-4 w-4" />
-      {copied ? "Link kopiert" : "Link kopieren"}
-    </button>
   );
 }
 
