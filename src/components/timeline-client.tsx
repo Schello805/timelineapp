@@ -195,7 +195,7 @@ export function TimelineClient({
             </div>
 
             <div className="grid gap-1.5 rounded-xl border border-stone-200/90 bg-white/90 px-1.5 py-1.5 shadow-sm md:grid-cols-[1fr_auto] md:items-center">
-              <div className="flex gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              <div className="flex gap-2 overflow-x-auto pr-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 {yearNavigation.map((item) => (
                   <button
                     key={item.year}
@@ -219,6 +219,7 @@ export function TimelineClient({
                     </span>
                   </button>
                 ))}
+                <span aria-hidden="true" className="block h-px w-3 shrink-0" />
               </div>
               <div className="flex items-center justify-between gap-2 sm:justify-end">
                 <span className="rounded-full bg-stone-100 px-2.5 py-0.5 text-[11px] font-medium text-stone-500 md:hidden">
