@@ -1,5 +1,6 @@
 import { Pencil } from "lucide-react";
 import { DeleteAnnualMetricForm } from "@/components/delete-annual-metric-form";
+import { DuplicateAnnualMetricForm } from "@/components/duplicate-annual-metric-form";
 import type { AnnualMetric } from "@/lib/types";
 
 export function AnnualMetricList({ metrics }: { metrics: AnnualMetric[] }) {
@@ -44,6 +45,7 @@ export function AnnualMetricList({ metrics }: { metrics: AnnualMetric[] }) {
               >
                 <Pencil className="h-4 w-4" />
               </a>
+              <DuplicateAnnualMetricForm id={metric.id} label={metric.label} year={metric.year} />
               <DeleteAnnualMetricForm id={metric.id} label={metric.label} year={metric.year} />
             </div>
           </div>

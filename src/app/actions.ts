@@ -16,6 +16,7 @@ import {
   deleteAdminUser,
   deleteAnnualMetric,
   deleteEvent,
+  getAnnualMetricById,
   getTimelineEventById,
   upsertAnnualMetric,
   upsertEvent,
@@ -284,6 +285,32 @@ export async function deleteAnnualMetricAction(formData: FormData) {
   deleteAnnualMetric(id);
   revalidatePath("/");
   revalidatePath("/admin");
+}
+
+export async function duplicateAnnualMetricAction(formData: FormData) {
+  await requireAdmin();
+
+  const id = String(formData.get("id") ?? "");
+  const metric = getAnnualMetricById(id);
+  if (!metric) {
+    throw new Error("Kennzahl nicht gefunden.");
+  }
+
+  const newId = upsertAnnualMetric({
+    year: metric.year,
+    label: `${metric.label} Kopie`,
+    value: metric.value,
+    unit: metric.unit,
+    comparison_label: metric.comparison_label,
+    comparison_value: metric.comparison_value,
+    comparison_unit: metric.comparison_unit,
+    description: metric.description,
+    display_order: metric.display_order,
+  });
+
+  revalidatePath("/");
+  revalidatePath("/admin");
+  redirect(`/admin/kennzahlen/${newId}`);
 }
 
 export async function updateTimelineSettings(

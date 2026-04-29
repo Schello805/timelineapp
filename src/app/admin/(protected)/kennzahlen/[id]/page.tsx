@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AnnualMetricForm } from "@/components/annual-metric-form";
+import { DuplicateAnnualMetricForm } from "@/components/duplicate-annual-metric-form";
 import { getAnnualMetricById } from "@/lib/db";
 import { getTimelineEvents } from "@/lib/timeline";
 
@@ -17,9 +18,12 @@ export default async function EditAnnualMetricPage({ params }: { params: Promise
 
   return (
     <section className="mx-auto max-w-2xl">
-      <Link className="text-sm font-semibold text-teal-700 hover:text-teal-900" href="/admin/kennzahlen">
-        Zurück zu den Kennzahlen
-      </Link>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Link className="text-sm font-semibold text-teal-700 hover:text-teal-900" href="/admin/kennzahlen">
+          Zurück zu den Kennzahlen
+        </Link>
+        <DuplicateAnnualMetricForm id={metric.id} label={metric.label} year={metric.year} />
+      </div>
       <h2 className="mb-4 mt-3 text-2xl font-semibold text-stone-950">Jahreskennzahl bearbeiten</h2>
       <AnnualMetricForm metric={metric} yearOptions={yearOptions} />
     </section>
