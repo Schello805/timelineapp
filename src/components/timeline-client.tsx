@@ -386,7 +386,9 @@ function YearSection({
           <p className="relative z-10 inline-block bg-[#f6f3ee] pr-1 text-xl font-semibold leading-none text-stone-950 md:pr-2 md:text-3xl">
             {group.year}
           </p>
-          <YearSummaryChips group={group} />
+          <div className="mt-3 hidden md:block">
+            {group.metrics.length ? <SideMetricSummary metrics={group.metrics} /> : null}
+          </div>
           <div className="absolute right-0.5 top-0 flex h-full justify-center md:right-1">
             <div className="absolute bottom-[-0.75rem] top-2 w-px bg-gradient-to-b from-blue-700 via-teal-600 to-orange-500" />
             <span className="relative mt-1 flex h-6 w-6 items-center justify-center rounded-full bg-stone-950 text-white ring-4 ring-[#f6f3ee] md:h-7 md:w-7">
@@ -398,7 +400,7 @@ function YearSection({
           {hasExpandedEvents(group.events) ? (
             <div className="grid gap-3">
               <YearIntroCard group={group} />
-              {group.metrics.length ? <MetricTimelineRow year={group.year} metrics={group.metrics} /> : null}
+              {group.metrics.length ? <div className="md:hidden"><MetricTimelineRow year={group.year} metrics={group.metrics} /></div> : null}
               {group.months.map((month) => (
                 <MonthSection
                   key={month.id}
@@ -412,7 +414,7 @@ function YearSection({
           ) : (
             <div className="grid gap-3">
               <YearIntroCard group={group} />
-              {group.metrics.length ? <MetricTimelineRow year={group.year} metrics={group.metrics} /> : null}
+              {group.metrics.length ? <div className="md:hidden"><MetricTimelineRow year={group.year} metrics={group.metrics} /></div> : null}
               <CompactYearCard events={group.events} onOpenEvent={onOpenEvent} />
             </div>
           )}
@@ -525,32 +527,8 @@ function MetricTimelineRow({ year, metrics }: { year: string; metrics: AnnualMet
   );
 }
 
-function YearSummaryChips({ group }: { group: TimelineYear }) {
-  const milestoneCount = group.events.filter((event) => event.importance === "milestone").length;
-  const importantCount = group.events.filter((event) => event.importance === "important").length;
-
-  return (
-    <div className="mt-3 hidden flex-wrap justify-end gap-1.5 md:flex">
-      {group.metrics.length ? (
-        <span className="rounded-full bg-white/85 px-2 py-1 text-[11px] font-semibold text-stone-500 ring-1 ring-stone-200">
-          {group.metrics.length} Kennzahl{group.metrics.length === 1 ? "" : "en"}
-        </span>
-      ) : null}
-      {milestoneCount ? (
-        <span className="rounded-full bg-orange-50 px-2 py-1 text-[11px] font-semibold text-orange-800 ring-1 ring-orange-100">
-          {milestoneCount} Meilenstein{milestoneCount === 1 ? "" : "e"}
-        </span>
-      ) : null}
-      {importantCount ? (
-        <span className="rounded-full bg-amber-50 px-2 py-1 text-[11px] font-semibold text-amber-800 ring-1 ring-amber-100">
-          {importantCount} wichtig
-        </span>
-      ) : null}
-    </div>
-  );
-}
-
 function YearIntroCard({ group }: { group: TimelineYear }) {
+  const [open, setOpen] = useState(false);
   const monthCount = group.months.length;
   const firstMonth = group.months[0]?.monthLabel ?? null;
   const lastMonth = group.months.at(-1)?.monthLabel ?? null;
@@ -560,56 +538,89 @@ function YearIntroCard({ group }: { group: TimelineYear }) {
 
   return (
     <article className="w-[calc(100vw-6.35rem)] max-w-full rounded-2xl border border-stone-200/90 bg-white/70 px-4 py-4 shadow-[0_14px_36px_-34px_rgba(33,31,28,0.45)] backdrop-blur-sm md:w-full md:px-5">
-      <div className="flex flex-wrap items-center gap-2">
+      <button
+        type="button"
+        className="flex w-full items-center justify-between gap-3 text-left"
+        onClick={() => setOpen((current) => !current)}
+      >
         <span className="rounded-full bg-stone-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-stone-500">
           {group.year} im Überblick
         </span>
-        {milestoneCount ? (
-          <span className="rounded-full bg-orange-50 px-2.5 py-1 text-xs font-semibold text-orange-800">
-            {milestoneCount} Meilenstein{milestoneCount === 1 ? "" : "e"}
-          </span>
-        ) : null}
-        {importantCount ? (
-          <span className="rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-800">
-            {importantCount} wichtige Ereignisse
-          </span>
-        ) : null}
-      </div>
+        <span className="text-sm font-semibold text-teal-700">{open ? "Weniger" : "Anzeigen"}</span>
+      </button>
 
-      <p className="mt-3 text-sm leading-6 text-stone-600 md:text-[15px] md:leading-7">
-        {group.events.length > 0 ? (
-          <>
-            {group.events.length} {group.events.length === 1 ? "Ereignis" : "Ereignisse"}
-            {monthCount > 0 ? ` in ${monthCount} ${monthCount === 1 ? "Monat" : "Monaten"}` : ""}
-            {firstMonth && lastMonth
-              ? firstMonth === lastMonth
-                ? `, mit Schwerpunkt auf ${firstMonth}.`
-                : `, von ${firstMonth} bis ${lastMonth}.`
-              : "."}
-          </>
-        ) : (
-          <>Für dieses Jahr sind aktuell nur Kennzahlen hinterlegt.</>
-        )}
-      </p>
+      {open ? (
+        <>
+          <p className="mt-3 text-sm leading-6 text-stone-600 md:text-[15px] md:leading-7">
+            {group.events.length > 0 ? (
+              <>
+                {group.events.length} {group.events.length === 1 ? "Ereignis" : "Ereignisse"}
+                {monthCount > 0 ? ` in ${monthCount} ${monthCount === 1 ? "Monat" : "Monaten"}` : ""}
+                {firstMonth && lastMonth
+                  ? firstMonth === lastMonth
+                    ? `, mit Schwerpunkt auf ${firstMonth}.`
+                    : `, von ${firstMonth} bis ${lastMonth}.`
+                  : "."}
+              </>
+            ) : (
+              <>Für dieses Jahr sind aktuell nur Kennzahlen hinterlegt.</>
+            )}
+          </p>
 
-      <div className="mt-3 flex flex-wrap gap-2">
-        {group.metrics.length ? (
-          <span className="rounded-full border border-stone-200 bg-white px-2.5 py-1 text-xs font-semibold text-stone-600">
-            {group.metrics.length} Kennzahl{group.metrics.length === 1 ? "" : "en"}
-          </span>
-        ) : null}
-        {mediaCount ? (
-          <span className="rounded-full border border-stone-200 bg-white px-2.5 py-1 text-xs font-semibold text-stone-600">
-            {mediaCount} Beiträge mit Medien
-          </span>
-        ) : null}
-        {group.events.length ? (
-          <span className="rounded-full border border-stone-200 bg-white px-2.5 py-1 text-xs font-semibold text-stone-600">
-            {group.events.length === 1 ? "Ein Kapitel" : "Kapitel mit mehreren Stationen"}
-          </span>
-        ) : null}
-      </div>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {milestoneCount ? (
+              <span className="rounded-full bg-orange-50 px-2.5 py-1 text-xs font-semibold text-orange-800">
+                {milestoneCount} Meilenstein{milestoneCount === 1 ? "" : "e"}
+              </span>
+            ) : null}
+            {importantCount ? (
+              <span className="rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-800">
+                {importantCount} wichtige Ereignisse
+              </span>
+            ) : null}
+            {group.metrics.length ? (
+              <span className="rounded-full border border-stone-200 bg-white px-2.5 py-1 text-xs font-semibold text-stone-600">
+                {group.metrics.length} Kennzahl{group.metrics.length === 1 ? "" : "en"}
+              </span>
+            ) : null}
+            {mediaCount ? (
+              <span className="rounded-full border border-stone-200 bg-white px-2.5 py-1 text-xs font-semibold text-stone-600">
+                {mediaCount} Beiträge mit Medien
+              </span>
+            ) : null}
+          </div>
+        </>
+      ) : null}
     </article>
+  );
+}
+
+function SideMetricSummary({ metrics }: { metrics: AnnualMetric[] }) {
+  return (
+    <div className="grid gap-2">
+      {metrics.map((metric) => {
+        const hasComparison = metric.comparison_label && metric.comparison_value !== null && metric.value > 0;
+        const ratio = hasComparison ? Math.min((metric.comparison_value! / metric.value) * 100, 999) : null;
+        const valueParts = formatMetricParts(metric.value, metric.unit);
+
+        return (
+          <article key={metric.id} className="rounded-xl border border-dashed border-stone-200 bg-white/65 px-3 py-2.5 text-left shadow-[0_12px_28px_-30px_rgba(33,31,28,0.45)]">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-stone-400">Kennzahl</p>
+            <p className="mt-1 text-sm font-semibold leading-5 text-stone-700">{metric.label}</p>
+            <p className="mt-2 text-base font-semibold leading-none text-stone-900">
+              {valueParts.value}
+              {valueParts.unit ? <span className="ml-1 text-xs font-medium text-stone-500">{valueParts.unit}</span> : null}
+            </p>
+            {hasComparison ? (
+              <p className="mt-1 text-xs leading-5 text-stone-500">
+                {metric.comparison_label}: {formatMetricValue(metric.comparison_value!, metric.comparison_unit)}
+                {ratio !== null ? <span className="ml-1 font-semibold text-teal-700">({new Intl.NumberFormat("de-DE", { maximumFractionDigits: 1 }).format(ratio)} %)</span> : null}
+              </p>
+            ) : null}
+          </article>
+        );
+      })}
+    </div>
   );
 }
 
