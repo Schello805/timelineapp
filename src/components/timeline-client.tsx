@@ -274,6 +274,7 @@ export function TimelineClient({
                   <h2 className="mt-2 text-2xl font-semibold leading-tight text-stone-950 sm:text-4xl">
                     {selectedEvent.title}
                   </h2>
+                  <EventMetaBadges event={selectedEvent} className="mt-3" />
                 </div>
                 <button
                   className="rounded-xl border border-stone-300 px-3 py-2 text-sm font-semibold text-stone-900 hover:bg-stone-50"
@@ -283,25 +284,37 @@ export function TimelineClient({
                 </button>
               </div>
 
-              <div className="mt-5 text-sm leading-7 text-stone-700 sm:text-base">
-                <RichDescription text={selectedEvent.description} />
-              </div>
+              <div className="mt-6 grid gap-6 md:grid-cols-[minmax(0,1.15fr)_minmax(18rem,0.85fr)] md:items-start">
+                <section className="rounded-2xl border border-stone-200 bg-stone-50/80 p-4 md:p-5">
+                  <div className="text-sm leading-7 text-stone-700 sm:text-base">
+                    <RichDescription text={selectedEvent.description} />
+                  </div>
+                </section>
 
-              <EventMediaStack event={selectedEvent} detail onOpenImage={setSelectedImage} />
+                <aside className="grid gap-4">
+                  <section className="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm">
+                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-stone-400">Medien</p>
+                    <EventMediaStack event={selectedEvent} detail onOpenImage={setSelectedImage} />
+                  </section>
 
-              <div className="mt-5 flex flex-wrap gap-2">
-                <CopyEventLinkButton event={selectedEvent} />
-                {selectedEvent.pdf_url ? (
-                  <a
-                    className="inline-flex h-11 items-center gap-2 rounded-xl border border-stone-300 px-4 text-sm font-semibold text-stone-900 hover:bg-stone-50"
-                    href={selectedEvent.pdf_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    <FileText className="h-4 w-4" />
-                    PDF öffnen
-                  </a>
-                ) : null}
+                  <section className="grid gap-3 rounded-2xl border border-stone-200 bg-white p-4 shadow-sm">
+                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-stone-400">Aktionen</p>
+                    <div className="flex flex-wrap gap-2">
+                      <CopyEventLinkButton event={selectedEvent} />
+                      {selectedEvent.pdf_url ? (
+                        <a
+                          className="inline-flex h-11 items-center gap-2 rounded-xl border border-stone-300 px-4 text-sm font-semibold text-stone-900 hover:bg-stone-50"
+                          href={selectedEvent.pdf_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          <FileText className="h-4 w-4" />
+                          PDF öffnen
+                        </a>
+                      ) : null}
+                    </div>
+                  </section>
+                </aside>
               </div>
             </motion.div>
           </motion.div>
@@ -373,6 +386,7 @@ function YearSection({
           <p className="relative z-10 inline-block bg-[#f6f3ee] pr-1 text-xl font-semibold leading-none text-stone-950 md:pr-2 md:text-3xl">
             {group.year}
           </p>
+          <YearSummaryChips group={group} />
           <div className="absolute right-0.5 top-0 flex h-full justify-center md:right-1">
             <div className="absolute bottom-[-0.75rem] top-2 w-px bg-gradient-to-b from-blue-700 via-teal-600 to-orange-500" />
             <span className="relative mt-1 flex h-6 w-6 items-center justify-center rounded-full bg-stone-950 text-white ring-4 ring-[#f6f3ee] md:h-7 md:w-7">
@@ -434,23 +448,14 @@ function CompactYearCard({
               data-event-id={event.id}
               className={
                 weight === "milestone"
-                  ? "grid w-full gap-1 rounded-xl border border-orange-200 bg-[linear-gradient(135deg,#fffdf8_0%,#fff3e2_100%)] px-3 py-3 text-left shadow-sm transition hover:border-orange-400"
-                  : "grid w-full gap-1 rounded-xl border border-stone-200 bg-stone-50 px-3 py-3 text-left transition hover:border-teal-700 hover:bg-white"
+                  ? "grid w-full gap-1 rounded-xl border border-orange-200 border-l-4 border-l-orange-400 bg-[linear-gradient(135deg,#fffdf8_0%,#fff3e2_100%)] px-3 py-3 text-left shadow-sm transition hover:border-orange-400"
+                  : event.importance === "important"
+                    ? "grid w-full gap-1 rounded-xl border border-amber-200 border-l-4 border-l-amber-300 bg-amber-50/40 px-3 py-3 text-left transition hover:border-amber-400 hover:bg-white"
+                    : "grid w-full gap-1 rounded-xl border border-stone-200 bg-stone-50 px-3 py-3 text-left transition hover:border-teal-700 hover:bg-white"
               }
               onClick={() => onOpenEvent(event)}
             >
-              <div className="flex flex-wrap items-center gap-2">
-                {event.importance === "milestone" ? (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-orange-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-orange-800">
-                    <Sparkles className="h-3 w-3" />
-                    Meilenstein
-                  </span>
-                ) : event.importance === "important" ? (
-                  <span className="inline-flex rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-amber-800">
-                    Wichtig
-                  </span>
-                ) : null}
-              </div>
+              <EventMetaBadges event={event} compact />
               <span className="text-sm font-semibold text-teal-700">{formatEventDateNumeric(event.event_date)}</span>
               <span className="text-base font-semibold leading-tight text-stone-950">{event.title}</span>
               <span className="line-clamp-2 text-sm leading-6 text-stone-600">{event.description}</span>
@@ -516,6 +521,75 @@ function MetricTimelineRow({ year, metrics }: { year: string; metrics: AnnualMet
       </div>
     </motion.article>
   );
+}
+
+function YearSummaryChips({ group }: { group: TimelineYear }) {
+  const milestoneCount = group.events.filter((event) => event.importance === "milestone").length;
+  const importantCount = group.events.filter((event) => event.importance === "important").length;
+
+  return (
+    <div className="mt-3 hidden flex-wrap justify-end gap-1.5 md:flex">
+      {group.metrics.length ? (
+        <span className="rounded-full bg-white/85 px-2 py-1 text-[11px] font-semibold text-stone-500 ring-1 ring-stone-200">
+          {group.metrics.length} Kennzahl{group.metrics.length === 1 ? "" : "en"}
+        </span>
+      ) : null}
+      {milestoneCount ? (
+        <span className="rounded-full bg-orange-50 px-2 py-1 text-[11px] font-semibold text-orange-800 ring-1 ring-orange-100">
+          {milestoneCount} Meilenstein{milestoneCount === 1 ? "" : "e"}
+        </span>
+      ) : null}
+      {importantCount ? (
+        <span className="rounded-full bg-amber-50 px-2 py-1 text-[11px] font-semibold text-amber-800 ring-1 ring-amber-100">
+          {importantCount} wichtig
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
+function EventMetaBadges({
+  event,
+  compact = false,
+  className = "",
+}: {
+  event: TimelineEvent;
+  compact?: boolean;
+  className?: string;
+}) {
+  const badges = [];
+
+  if (event.importance === "milestone") {
+    badges.push(
+      <span
+        key="milestone"
+        className="inline-flex items-center gap-1 rounded-full bg-orange-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-orange-800"
+      >
+        <Sparkles className="h-3 w-3" />
+        Meilenstein
+      </span>,
+    );
+  } else if (event.importance === "important") {
+    badges.push(
+      <span
+        key="important"
+        className="inline-flex rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-amber-800"
+      >
+        Wichtig
+      </span>,
+    );
+  }
+
+  if (!compact) {
+    if (event.image_url) badges.push(<span key="image" className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700">Bild</span>);
+    if (event.video_url) badges.push(<span key="video" className="rounded-full bg-orange-50 px-2.5 py-1 text-xs font-semibold text-orange-700">Video</span>);
+    if (event.audio_url) badges.push(<span key="audio" className="rounded-full bg-violet-50 px-2.5 py-1 text-xs font-semibold text-violet-700">Audio</span>);
+    if (event.pdf_url) badges.push(<span key="pdf" className="rounded-full bg-teal-50 px-2.5 py-1 text-xs font-semibold text-teal-700">PDF</span>);
+  }
+
+  if (badges.length === 0) return null;
+
+  return <div className={`flex flex-wrap items-center gap-2 ${className}`.trim()}>{badges}</div>;
 }
 
 function MonthSection({
@@ -592,28 +666,19 @@ function EventRow({
       <div
         className={
           weight === "milestone"
-            ? "w-[calc(100vw-6.35rem)] min-w-0 max-w-full rounded-2xl border border-orange-200/90 bg-[linear-gradient(180deg,#fffdf8_0%,#fff6ea_100%)] p-5 shadow-[0_18px_45px_-34px_rgba(188,122,37,0.45)] md:w-full md:p-6"
+            ? "w-[calc(100vw-6.35rem)] min-w-0 max-w-full rounded-2xl border border-orange-200/90 border-l-4 border-l-orange-400 bg-[linear-gradient(180deg,#fffdf8_0%,#fff6ea_100%)] p-5 shadow-[0_18px_45px_-34px_rgba(188,122,37,0.45)] md:w-full md:p-6"
             : compact
               ? "w-[calc(100vw-6.35rem)] min-w-0 max-w-full rounded-2xl border border-stone-200/90 bg-white/95 p-4 shadow-sm md:w-full md:p-4"
             : weight === "brief"
               ? "w-[calc(100vw-6.35rem)] min-w-0 max-w-full rounded-2xl border border-stone-200/90 bg-white/95 p-4 shadow-sm md:w-full md:p-4.5"
-              : "w-[calc(100vw-6.35rem)] min-w-0 max-w-full rounded-2xl border border-stone-200/90 bg-white/95 p-4 shadow-[0_18px_40px_-32px_rgba(33,31,28,0.42)] md:w-full md:p-5"
+              : event.importance === "important"
+                ? "w-[calc(100vw-6.35rem)] min-w-0 max-w-full rounded-2xl border border-amber-200/80 border-l-4 border-l-amber-300 bg-[linear-gradient(180deg,#fffefb_0%,#fffdfa_100%)] p-4 shadow-[0_18px_40px_-34px_rgba(161,98,7,0.22)] md:w-full md:p-5"
+                : "w-[calc(100vw-6.35rem)] min-w-0 max-w-full rounded-2xl border border-stone-200/90 bg-white/95 p-4 shadow-[0_18px_40px_-32px_rgba(33,31,28,0.42)] md:w-full md:p-5"
         }
       >
         <button className="w-full min-w-0 text-left" onClick={() => onOpenEvent(event)}>
           <span className="text-sm font-semibold text-stone-500">{formatEventDateNumeric(event.event_date)}</span>
-          <div className="flex flex-wrap items-center gap-2">
-            {weight === "milestone" ? (
-              <span className="inline-flex items-center gap-1 rounded-full bg-orange-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-orange-800">
-                <Sparkles className="h-3 w-3" />
-                Meilenstein
-              </span>
-            ) : event.importance === "important" ? (
-              <span className="inline-flex rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-amber-800">
-                Wichtig
-              </span>
-            ) : null}
-          </div>
+          <EventMetaBadges event={event} className="mt-2" compact />
           <h2
             className={
               detail || weight === "milestone"

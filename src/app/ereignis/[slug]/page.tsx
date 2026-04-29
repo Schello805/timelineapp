@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { FileText } from "lucide-react";
+import { FileAudio, FileText, ImageIcon, Play, Sparkles } from "lucide-react";
 import { AudioPlayer } from "@/components/audio-player";
 import { VideoFrame } from "@/components/video-frame";
 import { getTimelineEventBySlug } from "@/lib/db";
@@ -63,57 +63,101 @@ export default async function EventPage({ params }: Props) {
       <article className="mt-5 rounded-lg border border-stone-200 bg-white p-5 shadow-sm sm:p-7">
         <p className="text-sm font-semibold text-teal-700">{formatEventDate(event.event_date)}</p>
         <h1 className="mt-2 text-3xl font-semibold leading-tight text-stone-950 sm:text-5xl">{event.title}</h1>
-        <div className="mt-5 whitespace-pre-wrap leading-7 text-stone-700">
-          {splitTextWithLinks(event.description).map((part, index) =>
-            part.type === "link" ? (
-              <a
-                key={`${part.value}-${index}`}
-                className="font-medium text-teal-700 underline decoration-teal-300 underline-offset-2 hover:text-teal-900"
-                href={part.value}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                {part.value}
-              </a>
-            ) : (
-              <span key={`${part.value}-${index}`}>{part.value}</span>
-            ),
-          )}
+        <div className="mt-4 flex flex-wrap gap-2">
+          <EventMetaBadges event={event} />
         </div>
 
-        {event.image_url ? (
-          <div className="mt-6 flex min-h-[220px] items-center justify-center overflow-hidden rounded-lg bg-stone-100 p-2 md:min-h-[280px] md:max-h-[500px]">
-            {/* Event images may come from arbitrary external URLs. */}
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={event.image_url} alt={event.title} className="max-h-[320px] w-full object-contain md:max-h-[500px]" />
-          </div>
-        ) : null}
+        <div className="mt-6 grid gap-6 md:grid-cols-[minmax(0,1.1fr)_minmax(18rem,0.9fr)] md:items-start">
+          <section className="rounded-2xl border border-stone-200 bg-stone-50/80 p-4 md:p-5">
+            <div className="whitespace-pre-wrap leading-7 text-stone-700">
+              {splitTextWithLinks(event.description).map((part, index) =>
+                part.type === "link" ? (
+                  <a
+                    key={`${part.value}-${index}`}
+                    className="font-medium text-teal-700 underline decoration-teal-300 underline-offset-2 hover:text-teal-900"
+                    href={part.value}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {part.value}
+                  </a>
+                ) : (
+                  <span key={`${part.value}-${index}`}>{part.value}</span>
+                ),
+              )}
+            </div>
+          </section>
 
-        {event.video_url ? (
-          <div className="mt-6 aspect-video overflow-hidden rounded-lg bg-black">
-            <VideoFrame url={event.video_url} title={event.title} />
-          </div>
-        ) : null}
+          <aside className="grid gap-4">
+            {(event.image_url || event.video_url || event.audio_url) ? (
+              <section className="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm">
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-stone-400">Medien</p>
 
-        {event.audio_url ? (
-          <div className="mt-6">
-            <AudioPlayer url={event.audio_url} title={event.title} />
-          </div>
-        ) : null}
+                {event.image_url ? (
+                  <div className="mt-3 flex min-h-[220px] items-center justify-center overflow-hidden rounded-xl bg-stone-100 p-2 md:max-h-[500px]">
+                    {/* Event images may come from arbitrary external URLs. */}
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={event.image_url}
+                      alt={event.title}
+                      className="max-h-[320px] w-full object-contain md:max-h-[500px]"
+                    />
+                  </div>
+                ) : null}
 
-        {event.pdf_url ? (
-          <a
-            className="mt-6 inline-flex h-11 items-center gap-2 rounded-md border border-stone-300 px-4 text-sm font-semibold text-stone-900 hover:bg-stone-50"
-            href={event.pdf_url}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <FileText className="h-4 w-4" />
-            PDF öffnen
-          </a>
-        ) : null}
+                {event.video_url ? (
+                  <div className="mt-3 aspect-video overflow-hidden rounded-xl bg-black">
+                    <VideoFrame url={event.video_url} title={event.title} />
+                  </div>
+                ) : null}
+
+                {event.audio_url ? (
+                  <div className="mt-3">
+                    <AudioPlayer url={event.audio_url} title={event.title} />
+                  </div>
+                ) : null}
+              </section>
+            ) : null}
+
+            {event.pdf_url ? (
+              <section className="grid gap-3 rounded-2xl border border-stone-200 bg-white p-4 shadow-sm">
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-stone-400">Dokument</p>
+                <a
+                  className="inline-flex h-11 items-center gap-2 rounded-md border border-stone-300 px-4 text-sm font-semibold text-stone-900 hover:bg-stone-50"
+                  href={event.pdf_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <FileText className="h-4 w-4" />
+                  PDF öffnen
+                </a>
+              </section>
+            ) : null}
+          </aside>
+        </div>
       </article>
     </main>
+  );
+}
+
+function EventMetaBadges({ event }: { event: NonNullable<ReturnType<typeof getTimelineEventBySlug>> }) {
+  return (
+    <>
+      {event.importance === "milestone" ? (
+        <span className="inline-flex items-center gap-1 rounded-full bg-orange-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-orange-800">
+          <Sparkles className="h-3 w-3" />
+          Meilenstein
+        </span>
+      ) : event.importance === "important" ? (
+        <span className="inline-flex rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-amber-800">
+          Wichtig
+        </span>
+      ) : null}
+      {event.image_url ? <span className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700"><ImageIcon className="mr-1 inline h-3.5 w-3.5" />Bild</span> : null}
+      {event.video_url ? <span className="rounded-full bg-orange-50 px-2.5 py-1 text-xs font-semibold text-orange-700"><Play className="mr-1 inline h-3.5 w-3.5 fill-current" />Video</span> : null}
+      {event.audio_url ? <span className="rounded-full bg-violet-50 px-2.5 py-1 text-xs font-semibold text-violet-700"><FileAudio className="mr-1 inline h-3.5 w-3.5" />Audio</span> : null}
+      {event.pdf_url ? <span className="rounded-full bg-teal-50 px-2.5 py-1 text-xs font-semibold text-teal-700"><FileText className="mr-1 inline h-3.5 w-3.5" />PDF</span> : null}
+    </>
   );
 }
 

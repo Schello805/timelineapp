@@ -1,8 +1,16 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { useActionState, useState } from "react";
-import { FileAudio, FileImage, FileText, LoaderCircle, UploadCloud, Video } from "lucide-react";
+import {
+  FileText,
+  LoaderCircle,
+  Trash2,
+  UploadCloud,
+} from "lucide-react";
 import { upsertTimelineEvent } from "@/app/actions";
+import { AudioPlayer } from "@/components/audio-player";
+import { VideoFrame } from "@/components/video-frame";
 import type { TimelineEvent } from "@/lib/types";
 
 type State = { ok: boolean; message: string } | null;
@@ -18,26 +26,137 @@ type UploadedMediaPaths = {
   audio: string;
   pdf: string;
 };
+type MediaType = keyof UploadedMediaPaths;
 
 export function EventForm({ event }: { event?: TimelineEvent }) {
   const [state, formAction, pending] = useActionState<State, FormData>(
     async (_previousState, formData) => upsertTimelineEvent(formData),
     null,
   );
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imageUrl, setImageUrl] = useState(event?.image_url ?? "");
+  const [videoUrl, setVideoUrl] = useState(event?.video_url ?? "");
+  const [audioUrl, setAudioUrl] = useState(event?.audio_url ?? "");
+  const [pdfUrl, setPdfUrl] = useState(event?.pdf_url ?? "");
   const [uploadedPaths, setUploadedPaths] = useState<UploadedMediaPaths>({
     image: "",
     video: "",
     audio: "",
     pdf: "",
   });
+  const [isDragActive, setIsDragActive] = useState(false);
   const [mediaUpload, setMediaUpload] = useState<UploadProgressState>({
     progress: 0,
     pending: false,
     message: "",
     error: "",
   });
-  const previewSrc = imagePreview ?? uploadedPaths.image ?? event?.image_url ?? null;
+
+  const previewMedia = {
+    image: uploadedPaths.image || imageUrl,
+    video: uploadedPaths.video || videoUrl,
+    audio: uploadedPaths.audio || audioUrl,
+    pdf: uploadedPaths.pdf || pdfUrl,
+  };
+
+  function updateMediaUrl(type: MediaType, value: string) {
+    setUploadedPaths((current) => {
+      if (!current[type] || current[type] === value) {
+        return current;
+      }
+
+      return {
+        ...current,
+        [type]: "",
+      };
+    });
+
+    if (type === "image") setImageUrl(value);
+    if (type === "video") setVideoUrl(value);
+    if (type === "audio") setAudioUrl(value);
+    if (type === "pdf") setPdfUrl(value);
+  }
+
+  function clearMedia(type: MediaType) {
+    setUploadedPaths((current) => ({ ...current, [type]: "" }));
+    updateMediaUrl(type, "");
+  }
+
+  function uploadMediaFile(file: File) {
+    const request = new XMLHttpRequest();
+    request.open("POST", "/api/uploads/media");
+    request.setRequestHeader("x-file-name", encodeURIComponent(file.name));
+    if (file.type) {
+      request.setRequestHeader("Content-Type", file.type);
+    }
+
+    setMediaUpload({
+      progress: 0,
+      pending: true,
+      message: "",
+      error: "",
+    });
+
+    request.upload.onprogress = (progressEvent) => {
+      if (!progressEvent.lengthComputable) return;
+      setMediaUpload((current) => ({
+        ...current,
+        progress: Math.round((progressEvent.loaded / progressEvent.total) * 100),
+      }));
+    };
+
+    request.onerror = () => {
+      setMediaUpload({
+        progress: 0,
+        pending: false,
+        message: "",
+        error: "Der Upload ist fehlgeschlagen. Bitte Verbindung und Dateigröße prüfen.",
+      });
+    };
+
+    request.onload = () => {
+      try {
+        const response = JSON.parse(request.responseText) as {
+          ok?: boolean;
+          mediaType?: MediaType;
+          path?: string;
+        };
+
+        if (request.status >= 200 && request.status < 300 && response.ok && response.path && response.mediaType) {
+          setUploadedPaths((current) => ({
+            ...current,
+            [response.mediaType!]: response.path!,
+          }));
+          updateMediaUrl(response.mediaType, response.path);
+
+          const mediaTypeLabel =
+            response.mediaType === "image"
+              ? "Bild"
+              : response.mediaType === "video"
+                ? "Video"
+                : response.mediaType === "audio"
+                  ? "Audio"
+                  : "PDF";
+
+          setMediaUpload({
+            progress: 100,
+            pending: false,
+            message: `${mediaTypeLabel} vollständig hochgeladen und automatisch zugeordnet.`,
+            error: "",
+          });
+          return;
+        }
+      } catch {}
+
+      setMediaUpload({
+        progress: 0,
+        pending: false,
+        message: "",
+        error: "Die Datei konnte nicht verarbeitet werden.",
+      });
+    };
+
+    request.send(file);
+  }
 
   return (
     <form action={formAction} className="grid gap-5 rounded-lg border border-stone-200 bg-white p-5 shadow-sm">
@@ -121,112 +240,71 @@ export function EventForm({ event }: { event?: TimelineEvent }) {
           Meilensteine werden in der Timeline stärker hervorgehoben und wirken als echte Jahresanker.
         </p>
         <p className="text-sm leading-6 text-stone-500">
-          `Standard` bleibt kompakt, `Wichtig` erhält die erweiterte Monatsansicht und `Meilenstein` die volle Detaildarstellung.
+          `Standard` bleibt kompakt, `Wichtig` erhält mehr Raum und `Meilenstein` die volle Detaildarstellung.
         </p>
       </div>
 
-      <div className="grid gap-3 rounded-lg border border-stone-200 bg-stone-50 p-4">
+      <div className="grid gap-4 rounded-xl border border-stone-200 bg-stone-50 p-4">
         <div>
-          <h3 className="text-sm font-semibold text-stone-900">Medien-Datei hochladen</h3>
+          <h3 className="text-sm font-semibold text-stone-900">Medien verwalten</h3>
           <p className="mt-1 text-sm leading-6 text-stone-600">
-            Ein einziges Uploadfeld für Bild, Video, Audio oder PDF. Das System erkennt den Dateityp automatisch und ordnet ihn passend zu.
+            Bild, Video, Audio oder PDF einfach ziehen oder auswählen. Der Dateityp wird automatisch erkannt und passend zugeordnet.
           </p>
         </div>
-        <label className="inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-md border border-stone-300 bg-white px-4 text-sm font-semibold text-stone-800 hover:bg-stone-50">
-          {mediaUpload.pending ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <UploadCloud className="h-4 w-4" />}
-          {mediaUpload.pending ? "Datei wird hochgeladen..." : "Datei auswählen"}
+
+        <label
+          className={
+            isDragActive
+              ? "grid cursor-pointer gap-3 rounded-2xl border-2 border-dashed border-teal-700 bg-teal-50/60 p-5 text-center"
+              : "grid cursor-pointer gap-3 rounded-2xl border-2 border-dashed border-stone-300 bg-white p-5 text-center hover:border-teal-700 hover:bg-stone-50"
+          }
+          onDragOver={(event) => {
+            event.preventDefault();
+            setIsDragActive(true);
+          }}
+          onDragLeave={(event) => {
+            event.preventDefault();
+            setIsDragActive(false);
+          }}
+          onDrop={(event) => {
+            event.preventDefault();
+            setIsDragActive(false);
+            const file = event.dataTransfer.files?.[0];
+            if (file) {
+              uploadMediaFile(file);
+            }
+          }}
+        >
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-stone-100 text-stone-700">
+            {mediaUpload.pending ? <LoaderCircle className="h-5 w-5 animate-spin" /> : <UploadCloud className="h-5 w-5" />}
+          </div>
+          <div className="grid gap-1">
+            <span className="text-sm font-semibold text-stone-900">
+              {mediaUpload.pending ? "Datei wird hochgeladen..." : "Datei hier ablegen oder auswählen"}
+            </span>
+            <span className="text-sm leading-6 text-stone-500">
+              Unterstützt: Bilder, MP4/Video, MP3/Audio und PDF
+            </span>
+          </div>
+          <span className="mx-auto inline-flex h-10 items-center rounded-lg border border-stone-300 bg-white px-4 text-sm font-semibold text-stone-800">
+            Datei auswählen
+          </span>
           <input
             type="file"
             accept="image/*,video/*,audio/*,application/pdf"
             className="sr-only"
             onChange={(event) => {
               const file = event.currentTarget.files?.[0];
-              if (!file) return;
-
-              const request = new XMLHttpRequest();
-              request.open("POST", "/api/uploads/media");
-              request.setRequestHeader("x-file-name", encodeURIComponent(file.name));
-              if (file.type) {
-                request.setRequestHeader("Content-Type", file.type);
+              if (file) {
+                uploadMediaFile(file);
               }
-
-              setMediaUpload({
-                progress: 0,
-                pending: true,
-                message: "",
-                error: "",
-              });
-
-              request.upload.onprogress = (progressEvent) => {
-                if (!progressEvent.lengthComputable) return;
-                setMediaUpload((current) => ({
-                  ...current,
-                  progress: Math.round((progressEvent.loaded / progressEvent.total) * 100),
-                }));
-              };
-
-              request.onerror = () => {
-                setMediaUpload({
-                  progress: 0,
-                  pending: false,
-                  message: "",
-                  error: "Der Upload ist fehlgeschlagen. Bitte Verbindung und Dateigröße prüfen.",
-                });
-              };
-
-              request.onload = () => {
-                try {
-                  const response = JSON.parse(request.responseText) as {
-                    ok?: boolean;
-                    mediaType?: "image" | "video" | "audio" | "pdf";
-                    path?: string;
-                    message?: string;
-                  };
-
-                  if (request.status >= 200 && request.status < 300 && response.ok && response.path && response.mediaType) {
-                    const mediaType = response.mediaType;
-                    setUploadedPaths((current) => ({
-                      ...current,
-                      [mediaType]: response.path,
-                    }));
-
-                    if (mediaType === "image") {
-                      setImagePreview(response.path);
-                    }
-
-                    const mediaTypeLabel =
-                      mediaType === "image"
-                        ? "Bild"
-                        : mediaType === "video"
-                          ? "Video"
-                          : mediaType === "audio"
-                            ? "Audio"
-                            : "PDF";
-
-                    setMediaUpload({
-                      progress: 100,
-                      pending: false,
-                      message: `${mediaTypeLabel} vollständig hochgeladen und automatisch zugeordnet.`,
-                      error: "",
-                    });
-                    return;
-                  }
-                } catch {}
-
-                setMediaUpload({
-                  progress: 0,
-                  pending: false,
-                  message: "",
-                  error: "Die Datei konnte nicht verarbeitet werden.",
-                });
-              };
-
-              request.send(file);
+              event.currentTarget.value = "";
             }}
           />
         </label>
+
         {mediaUpload.pending ? (
-          <div className="grid gap-2 rounded-md border border-stone-200 bg-white p-3">
+          <div className="grid gap-2 rounded-lg border border-stone-200 bg-white p-3">
             <div className="h-2 overflow-hidden rounded-full bg-stone-200">
               <div
                 className="h-full rounded-full bg-teal-700 transition-[width] duration-150"
@@ -238,99 +316,56 @@ export function EventForm({ event }: { event?: TimelineEvent }) {
         ) : null}
         {mediaUpload.message ? <p className="text-sm leading-6 text-teal-700">{mediaUpload.message}</p> : null}
         {mediaUpload.error ? <p className="text-sm leading-6 text-red-700">{mediaUpload.error}</p> : null}
-        <div className="flex flex-wrap gap-2 text-xs font-semibold">
-          {(uploadedPaths.image || event?.image_url) && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-3 py-1 text-blue-700">
-              <FileImage className="h-3.5 w-3.5" />
-              Bild zugeordnet
-            </span>
-          )}
-          {(uploadedPaths.video || event?.video_url) && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-orange-50 px-3 py-1 text-orange-700">
-              <Video className="h-3.5 w-3.5" />
-              Video zugeordnet
-            </span>
-          )}
-          {(uploadedPaths.audio || event?.audio_url) && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-violet-50 px-3 py-1 text-violet-700">
-              <FileAudio className="h-3.5 w-3.5" />
-              Audio zugeordnet
-            </span>
-          )}
-          {(uploadedPaths.pdf || event?.pdf_url) && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-teal-50 px-3 py-1 text-teal-700">
-              <FileText className="h-3.5 w-3.5" />
-              PDF zugeordnet
-            </span>
-          )}
-        </div>
+
+        <MediaPreviewShelf
+          title={event?.title ?? "Neues Ereignis"}
+          media={previewMedia}
+          onClear={clearMedia}
+        />
       </div>
 
-      <UrlUploadField
-        name="image_url"
-        label="Bild"
-        defaultValue={event?.image_url ?? ""}
-      />
-
-      {previewSrc ? (
-        <div className="flex min-h-[220px] items-center justify-center overflow-hidden rounded-lg border border-stone-200 bg-stone-100 p-2">
-          {/* Admin previews may use arbitrary external URLs or local upload paths. */}
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={previewSrc} alt="Bildvorschau" className="max-h-[320px] w-full object-contain" />
+      <div className="grid gap-4 rounded-xl border border-stone-200 bg-white p-4">
+        <div>
+          <h3 className="text-sm font-semibold text-stone-900">Direkte Medien-Links</h3>
+          <p className="mt-1 text-sm leading-6 text-stone-600">
+            Alternativ kannst du auch externe URLs oder lokale Pfade eintragen. Die Vorschau aktualisiert sich direkt.
+          </p>
         </div>
-      ) : null}
 
-      <div className="grid gap-2">
-        <label className="text-sm font-semibold text-stone-800" htmlFor="video_url">
-          Video-Link
-        </label>
-        <input
-          id="video_url"
+        <MediaUrlField
+          name="image_url"
+          label="Bild"
+          value={imageUrl}
+          onChange={setImageUrl}
+          hint="Bilder wirken am besten mit klarer Hauptszene und genug Luft rund ums Motiv."
+        />
+
+        <MediaUrlField
           name="video_url"
-          type="text"
+          label="Video"
+          value={videoUrl}
+          onChange={setVideoUrl}
           placeholder="YouTube, Vimeo, MP4-URL oder lokaler Upload-Pfad"
-          defaultValue={event?.video_url ?? ""}
-          className="h-11 rounded-md border border-stone-300 px-3 outline-none focus:border-teal-700"
+          hint="Empfohlen für lokale Uploads: MP4 mit H.264/AAC. Große Dateien sind möglich, laden aber je nach Verbindung und Proxy langsamer."
         />
-        <p className="text-sm leading-6 text-stone-600">
-          Empfohlen für lokale Uploads: MP4 mit H.264/AAC. Große Dateien sind möglich, laden aber je nach Verbindung und Proxy langsamer.
-        </p>
-        {(uploadedPaths.video || event?.video_url) ? (
-          <div className="inline-flex items-center gap-2 text-sm text-stone-600">
-            <Video className="h-4 w-4 text-teal-700" />
-            Aktuelles Video: {uploadedPaths.video || event?.video_url}
-          </div>
-        ) : null}
-      </div>
 
-      <div className="grid gap-2">
-        <label className="text-sm font-semibold text-stone-800" htmlFor="audio_url">
-          Audio-Link
-        </label>
-        <input
-          id="audio_url"
+        <MediaUrlField
           name="audio_url"
-          type="text"
+          label="Audio"
+          value={audioUrl}
+          onChange={setAudioUrl}
           placeholder="MP3-, WAV-, OGG-URL oder lokaler Upload-Pfad"
-          defaultValue={event?.audio_url ?? ""}
-          className="h-11 rounded-md border border-stone-300 px-3 outline-none focus:border-teal-700"
+          hint="Empfohlen für breite Kompatibilität: MP3. Alternativ funktionieren meist auch WAV, OGG oder M4A."
         />
-        <p className="text-sm leading-6 text-stone-600">
-          Empfohlen für breite Kompatibilität: MP3. Alternativ funktionieren meist auch WAV, OGG oder M4A.
-        </p>
-        {(uploadedPaths.audio || event?.audio_url) ? (
-          <div className="inline-flex items-center gap-2 text-sm text-stone-600">
-            <FileAudio className="h-4 w-4 text-violet-700" />
-            Aktuelles Audio: {uploadedPaths.audio || event?.audio_url}
-          </div>
-        ) : null}
-      </div>
 
-      <UrlUploadField
-        name="pdf_url"
-        label="PDF"
-        defaultValue={event?.pdf_url ?? ""}
-      />
+        <MediaUrlField
+          name="pdf_url"
+          label="PDF"
+          value={pdfUrl}
+          onChange={setPdfUrl}
+          hint="PDFs werden in der öffentlichen Timeline als direkter Dokument-Link geöffnet."
+        />
+      </div>
 
       {state?.message ? (
         <p className={state.ok ? "text-sm font-medium text-teal-700" : "text-sm font-medium text-red-700"}>
@@ -348,38 +383,140 @@ export function EventForm({ event }: { event?: TimelineEvent }) {
   );
 }
 
-function UrlUploadField({
+function MediaUrlField({
   name,
   label,
-  defaultValue,
+  value,
+  onChange,
+  hint,
+  placeholder = "Optional: URL oder lokaler Upload-Pfad",
 }: {
   name: string;
   label: string;
-  defaultValue: string;
+  value: string;
+  onChange: (value: string) => void;
+  hint?: string;
+  placeholder?: string;
 }) {
   return (
     <div className="grid gap-2">
-        <label className="text-sm font-semibold text-stone-800" htmlFor={name}>
-          {label}
-        </label>
+      <label className="text-sm font-semibold text-stone-800" htmlFor={name}>
+        {label}
+      </label>
       <input
         id={name}
         name={name}
         type="text"
-        placeholder="Optional: URL oder lokaler Upload-Pfad"
-        defaultValue={defaultValue}
+        placeholder={placeholder}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
         className="h-11 rounded-md border border-stone-300 px-3 outline-none focus:border-teal-700"
       />
-      {name === "image_url" ? (
-        <p className="text-sm leading-6 text-stone-600">
-          Bilder wirken am besten im Querformat und mit klarer Hauptszene.
-        </p>
+      {hint ? <p className="text-sm leading-6 text-stone-600">{hint}</p> : null}
+    </div>
+  );
+}
+
+function MediaPreviewShelf({
+  title,
+  media,
+  onClear,
+}: {
+  title: string;
+  media: UploadedMediaPaths;
+  onClear: (type: MediaType) => void;
+}) {
+  const hasAnyMedia = Boolean(media.image || media.video || media.audio || media.pdf);
+
+  if (!hasAnyMedia) {
+    return (
+      <div className="rounded-xl border border-dashed border-stone-300 bg-white/90 p-4 text-sm leading-6 text-stone-500">
+        Noch keine Medien zugeordnet. Sobald du etwas hochlädst oder einen Link einträgst, erscheint hier direkt die Vorschau.
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid gap-3 md:grid-cols-2">
+      {media.image ? (
+        <MediaPreviewCard title="Bild" tone="blue" onClear={() => onClear("image")}>
+          <div className="flex min-h-[220px] items-center justify-center overflow-hidden rounded-xl bg-stone-100 p-2">
+            {/* Admin previews may use arbitrary external URLs or local upload paths. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={media.image} alt="Bildvorschau" className="max-h-[280px] w-full object-contain" />
+          </div>
+        </MediaPreviewCard>
       ) : null}
-      {name === "pdf_url" ? (
-        <p className="text-sm leading-6 text-stone-600">
-          PDFs werden in der öffentlichen Timeline als direkter Dokument-Link geöffnet.
-        </p>
+
+      {media.video ? (
+        <MediaPreviewCard title="Video" tone="orange" onClear={() => onClear("video")}>
+          <div className="aspect-video overflow-hidden rounded-xl bg-black">
+            <VideoFrame url={media.video} title={title} />
+          </div>
+        </MediaPreviewCard>
+      ) : null}
+
+      {media.audio ? (
+        <MediaPreviewCard title="Audio" tone="violet" onClear={() => onClear("audio")}>
+          <AudioPlayer url={media.audio} title={title} />
+        </MediaPreviewCard>
+      ) : null}
+
+      {media.pdf ? (
+        <MediaPreviewCard title="PDF" tone="teal" onClear={() => onClear("pdf")}>
+          <a
+            href={media.pdf}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex min-h-[148px] flex-col items-center justify-center gap-3 rounded-xl border border-stone-200 bg-white text-center text-stone-700 hover:bg-stone-50"
+          >
+            <FileText className="h-10 w-10 text-teal-700" />
+            <div className="grid gap-1">
+              <span className="text-sm font-semibold text-stone-900">PDF-Vorschau öffnen</span>
+              <span className="text-sm text-stone-500">Das Dokument wird in einem neuen Tab gezeigt.</span>
+            </div>
+          </a>
+        </MediaPreviewCard>
       ) : null}
     </div>
+  );
+}
+
+function MediaPreviewCard({
+  title,
+  tone,
+  onClear,
+  children,
+}: {
+  title: string;
+  tone: "blue" | "orange" | "violet" | "teal";
+  onClear: () => void;
+  children: ReactNode;
+}) {
+  const toneClassName =
+    tone === "blue"
+      ? "bg-blue-50 text-blue-700"
+      : tone === "orange"
+        ? "bg-orange-50 text-orange-700"
+        : tone === "violet"
+          ? "bg-violet-50 text-violet-700"
+          : "bg-teal-50 text-teal-700";
+
+  return (
+    <section className="grid gap-3 rounded-xl border border-stone-200 bg-white p-3 shadow-sm">
+      <div className="flex items-center justify-between gap-3">
+        <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${toneClassName}`}>{title}</span>
+        <button
+          type="button"
+          className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-stone-300 text-stone-700 hover:bg-stone-50"
+          onClick={onClear}
+          aria-label={`${title} entfernen`}
+          title={`${title} entfernen`}
+        >
+          <Trash2 className="h-4 w-4" />
+        </button>
+      </div>
+      {children}
+    </section>
   );
 }
