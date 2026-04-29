@@ -174,7 +174,7 @@ export function TimelineClient({
                   onChange={(event) => setQuery(event.target.value)}
                 />
               </label>
-              <div className="flex gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              <div className="flex gap-2 overflow-x-auto pr-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 {[
                   ["asc", "Älteste zuerst"],
                   ["desc", "Neueste zuerst"],
@@ -531,7 +531,7 @@ function MonthSection({
   return (
     <motion.div
       layout
-      className="grid grid-cols-[4.35rem_minmax(0,1fr)] gap-2 md:grid-cols-[8rem_minmax(0,1fr)] md:gap-4"
+      className="grid grid-cols-[4.6rem_minmax(0,1fr)] gap-2 md:grid-cols-[8rem_minmax(0,1fr)] md:gap-4"
       transition={{ layout: { type: "spring", stiffness: 180, damping: 22 } }}
     >
       <div className="relative pr-3 pt-1 text-right md:pr-4">
@@ -541,7 +541,7 @@ function MonthSection({
         <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-teal-700 md:mt-2 md:text-sm md:tracking-[0.16em]">
           {month.monthLabel}
         </p>
-        <div className="absolute right-1 top-0 flex h-full justify-center">
+        <div className="absolute right-0.5 top-0 z-20 flex h-full justify-center">
           <div className="absolute bottom-[-1rem] top-2 w-px bg-stone-300" />
           <span className="relative mt-1 h-3 w-3 rounded-full bg-teal-700 ring-4 ring-[#f6f3ee] md:h-3.5 md:w-3.5" />
         </div>
