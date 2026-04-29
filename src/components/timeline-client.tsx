@@ -380,17 +380,17 @@ function YearSection({
               : "relative pt-2 pr-4 text-right md:pr-10"
           }
         >
-          <p className="relative z-10 inline-block bg-[#f6f3ee] pr-1 text-xl font-semibold leading-none text-stone-950 md:pr-2 md:text-3xl">
-            {group.year}
-          </p>
+          <div className="relative z-10 flex items-center justify-end gap-2 bg-[#f6f3ee] pr-1 md:pr-2">
+            <p className="text-xl font-semibold leading-none text-stone-950 md:text-3xl">{group.year}</p>
+            <span className="relative flex h-6 w-6 items-center justify-center rounded-full bg-stone-950 text-white ring-4 ring-[#f6f3ee] md:h-7 md:w-7">
+              <CalendarDays className="h-3.5 w-3.5 md:h-4 md:w-4" />
+            </span>
+          </div>
           <div className="mt-3 hidden md:block">
             {group.metrics.length ? <SideMetricSummary metrics={group.metrics} /> : null}
           </div>
           <div className="absolute right-0.5 top-0 flex h-full justify-center md:right-1">
             <div className="absolute bottom-[-0.75rem] top-2 w-px bg-gradient-to-b from-blue-700 via-teal-600 to-orange-500" />
-            <span className="relative mt-1 flex h-6 w-6 items-center justify-center rounded-full bg-stone-950 text-white ring-4 ring-[#f6f3ee] md:h-7 md:w-7">
-              <CalendarDays className="h-3.5 w-3.5 md:h-4 md:w-4" />
-            </span>
           </div>
         </div>
         <div className="grid gap-3">
