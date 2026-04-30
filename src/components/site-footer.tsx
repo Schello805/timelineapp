@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { AppLogo } from "@/components/app-logo";
+import { RevisionStatus } from "@/components/revision-status";
 import { getAppRevision } from "@/lib/revision";
 
 export function SiteFooter() {
@@ -23,7 +24,7 @@ export function SiteFooter() {
               <GitHubIcon />
               GitHub
             </a>
-            <span>Rev. {revision}</span>
+            <RevisionStatus revision={revision} />
           </div>
         </div>
         <nav className="flex flex-wrap gap-x-5 gap-y-2" aria-label="Rechtsdokumente">
