@@ -147,7 +147,7 @@ export async function upsertTimelineEvent(formData: FormData) {
     };
   }
 
-  upsertEvent({
+  const newId = upsertEvent({
     id: parsed.data.id,
     slug: parsed.data.slug || null,
     event_date: parsed.data.event_date,
@@ -163,6 +163,11 @@ export async function upsertTimelineEvent(formData: FormData) {
 
   revalidatePath("/");
   revalidatePath("/admin");
+  
+  if (!parsed.data.id) {
+    redirect("/admin");
+  }
+
   return { ok: true, message: "Ereignis gespeichert." };
 }
 
