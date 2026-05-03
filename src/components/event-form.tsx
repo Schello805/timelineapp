@@ -51,6 +51,7 @@ export function EventForm({ event }: { event?: TimelineEvent }) {
     }
   });
   const [isDragActive, setIsDragActive] = useState(false);
+  const [isGalleryDragActive, setIsGalleryDragActive] = useState(false);
   const [mediaUpload, setMediaUpload] = useState<UploadProgressState>({
     progress: 0,
     pending: false,
@@ -386,10 +387,22 @@ export function EventForm({ event }: { event?: TimelineEvent }) {
         </div>
 
         <label
-          className="grid cursor-pointer gap-3 rounded-2xl border-2 border-dashed border-stone-300 bg-white p-5 text-center hover:border-teal-700 hover:bg-stone-50"
-          onDragOver={(e) => e.preventDefault()}
+          className={
+            isGalleryDragActive
+              ? "grid cursor-pointer gap-3 rounded-2xl border-2 border-dashed border-teal-700 bg-teal-50/60 p-5 text-center"
+              : "grid cursor-pointer gap-3 rounded-2xl border-2 border-dashed border-stone-300 bg-white p-5 text-center hover:border-teal-700 hover:bg-stone-50"
+          }
+          onDragOver={(e) => {
+            e.preventDefault();
+            setIsGalleryDragActive(true);
+          }}
+          onDragLeave={(e) => {
+            e.preventDefault();
+            setIsGalleryDragActive(false);
+          }}
           onDrop={(e) => {
             e.preventDefault();
+            setIsGalleryDragActive(false);
             const files = Array.from(e.dataTransfer.files || []);
             files.forEach((file) => {
               if (file.type.startsWith("image/")) uploadGalleryFile(file);
