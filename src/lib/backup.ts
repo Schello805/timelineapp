@@ -20,6 +20,7 @@ const eventSchema = z.object({
   video_url: z.string().nullable().optional(),
   audio_url: z.string().nullable().optional(),
   pdf_url: z.string().nullable().optional(),
+  gallery_urls: z.string().nullable().optional(),
   created_at: z.string().optional(),
   updated_at: z.string().optional(),
 });
@@ -117,6 +118,7 @@ function normalizeEvent(event: z.infer<typeof eventSchema>): TimelineEvent {
     video_url: event.video_url ?? null,
     audio_url: event.audio_url ?? null,
     pdf_url: event.pdf_url ?? null,
+    gallery_urls: event.gallery_urls ?? null,
     created_at: event.created_at,
     updated_at: event.updated_at,
   };
@@ -145,6 +147,14 @@ async function collectLocalFiles(events: TimelineEvent[]) {
   for (const event of events) {
     for (const url of [event.image_url, event.video_url, event.audio_url, event.pdf_url]) {
       if (url?.startsWith("/uploads/")) paths.add(url);
+    }
+    if (event.gallery_urls) {
+      try {
+        const urls = JSON.parse(event.gallery_urls) as string[];
+        for (const url of urls) {
+          if (url?.startsWith("/uploads/")) paths.add(url);
+        }
+      } catch {}
     }
   }
 

@@ -85,6 +85,7 @@ export function EventList({ events }: { events: TimelineEvent[] }) {
                       {getImportanceLabel(event.importance)}
                     </span>
                     {event.image_url ? <span className="rounded bg-blue-50 px-2 py-1 text-blue-700">Bild</span> : null}
+                    {event.gallery_urls && event.gallery_urls !== "[]" && !event.image_url ? <span className="rounded bg-blue-50 px-2 py-1 text-blue-700">Galerie</span> : null}
                     {event.video_url ? <span className="rounded bg-orange-50 px-2 py-1 text-orange-700">Video</span> : null}
                     {event.audio_url ? <span className="rounded bg-violet-50 px-2 py-1 text-violet-700">Audio</span> : null}
                     {event.pdf_url ? <span className="rounded bg-teal-50 px-2 py-1 text-teal-700">PDF</span> : null}

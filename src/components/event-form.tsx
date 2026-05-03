@@ -43,8 +43,21 @@ export function EventForm({ event }: { event?: TimelineEvent }) {
     audio: "",
     pdf: "",
   });
+  const [galleryUrls, setGalleryUrls] = useState<string[]>(() => {
+    try {
+      return JSON.parse(event?.gallery_urls || "[]");
+    } catch {
+      return [];
+    }
+  });
   const [isDragActive, setIsDragActive] = useState(false);
   const [mediaUpload, setMediaUpload] = useState<UploadProgressState>({
+    progress: 0,
+    pending: false,
+    message: "",
+    error: "",
+  });
+  const [galleryUpload, setGalleryUpload] = useState<UploadProgressState>({
     progress: 0,
     pending: false,
     message: "",
@@ -158,6 +171,45 @@ export function EventForm({ event }: { event?: TimelineEvent }) {
     request.send(file);
   }
 
+  function uploadGalleryFile(file: File) {
+    const request = new XMLHttpRequest();
+    request.open("POST", "/api/uploads/media");
+    request.setRequestHeader("x-file-name", encodeURIComponent(file.name));
+    if (file.type) request.setRequestHeader("Content-Type", file.type);
+
+    setGalleryUpload({ progress: 0, pending: true, message: "", error: "" });
+
+    request.upload.onprogress = (progressEvent) => {
+      if (!progressEvent.lengthComputable) return;
+      setGalleryUpload((current) => ({
+        ...current,
+        progress: Math.round((progressEvent.loaded / progressEvent.total) * 100),
+      }));
+    };
+
+    request.onerror = () => {
+      setGalleryUpload({ progress: 0, pending: false, message: "", error: "Fehler beim Upload der Galerie." });
+    };
+
+    request.onload = () => {
+      try {
+        const response = JSON.parse(request.responseText) as { ok?: boolean; mediaType?: string; path?: string };
+        if (request.status >= 200 && request.status < 300 && response.ok && response.path) {
+          if (response.mediaType === "image") {
+            setGalleryUrls((current) => [...current, response.path!]);
+            setGalleryUpload({ progress: 100, pending: false, message: "Galerie-Bild hochgeladen.", error: "" });
+            return;
+          } else {
+            setGalleryUpload({ progress: 0, pending: false, message: "", error: "In die Galerie können nur Bilder hochgeladen werden." });
+            return;
+          }
+        }
+      } catch {}
+      setGalleryUpload({ progress: 0, pending: false, message: "", error: "Fehler bei der Dateiverarbeitung." });
+    };
+    request.send(file);
+  }
+
   return (
     <form action={formAction} className="grid gap-5 rounded-lg border border-stone-200 bg-white p-5 shadow-sm">
       {event?.id ? <input type="hidden" name="id" defaultValue={event.id} /> : null}
@@ -165,6 +217,7 @@ export function EventForm({ event }: { event?: TimelineEvent }) {
       <input type="hidden" name="video_uploaded_path" value={uploadedPaths.video} readOnly />
       <input type="hidden" name="audio_uploaded_path" value={uploadedPaths.audio} readOnly />
       <input type="hidden" name="pdf_uploaded_path" value={uploadedPaths.pdf} readOnly />
+      <input type="hidden" name="gallery_urls" value={JSON.stringify(galleryUrls)} readOnly />
 
       <div className="grid gap-2">
         <label className="text-sm font-semibold text-stone-800" htmlFor="event_date">
@@ -322,6 +375,87 @@ export function EventForm({ event }: { event?: TimelineEvent }) {
           media={previewMedia}
           onClear={clearMedia}
         />
+      </div>
+
+      <div className="grid gap-4 rounded-xl border border-stone-200 bg-stone-50 p-4">
+        <div>
+          <h3 className="text-sm font-semibold text-stone-900">Bildergalerie (Zusätzliche Bilder)</h3>
+          <p className="mt-1 text-sm leading-6 text-stone-600">
+            Füge mehrere Bilder hinzu, die beim Ereignis als Galerie angezeigt werden.
+          </p>
+        </div>
+
+        <label
+          className="grid cursor-pointer gap-3 rounded-2xl border-2 border-dashed border-stone-300 bg-white p-5 text-center hover:border-teal-700 hover:bg-stone-50"
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={(e) => {
+            e.preventDefault();
+            const files = Array.from(e.dataTransfer.files || []);
+            files.forEach((file) => {
+              if (file.type.startsWith("image/")) uploadGalleryFile(file);
+            });
+          }}
+        >
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-stone-100 text-stone-700">
+            {galleryUpload.pending ? <LoaderCircle className="h-5 w-5 animate-spin" /> : <UploadCloud className="h-5 w-5" />}
+          </div>
+          <div className="grid gap-1">
+            <span className="text-sm font-semibold text-stone-900">
+              {galleryUpload.pending ? "Bild wird hochgeladen..." : "Galerie-Bilder hier ablegen oder auswählen"}
+            </span>
+            <span className="text-sm leading-6 text-stone-500">Es können auch mehrere Bilder markiert werden.</span>
+          </div>
+          <span className="mx-auto inline-flex h-10 items-center rounded-lg border border-stone-300 bg-white px-4 text-sm font-semibold text-stone-800">
+            Bilder auswählen
+          </span>
+          <input
+            type="file"
+            accept="image/*"
+            multiple
+            className="sr-only"
+            onChange={(e) => {
+              const files = Array.from(e.currentTarget.files || []);
+              files.forEach((file) => {
+                if (file.type.startsWith("image/")) uploadGalleryFile(file);
+              });
+              e.currentTarget.value = "";
+            }}
+          />
+        </label>
+
+        {galleryUpload.pending ? (
+          <div className="grid gap-2 rounded-lg border border-stone-200 bg-white p-3">
+            <div className="h-2 overflow-hidden rounded-full bg-stone-200">
+              <div
+                className="h-full rounded-full bg-teal-700 transition-[width] duration-150"
+                style={{ width: `${galleryUpload.progress}%` }}
+              />
+            </div>
+            <p className="text-sm font-medium text-stone-700">{galleryUpload.progress}% hochgeladen</p>
+          </div>
+        ) : null}
+        {galleryUpload.message ? <p className="text-sm leading-6 text-teal-700">{galleryUpload.message}</p> : null}
+        {galleryUpload.error ? <p className="text-sm leading-6 text-red-700">{galleryUpload.error}</p> : null}
+
+        {galleryUrls.length > 0 && (
+          <div className="mt-2 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+            {galleryUrls.map((url, i) => (
+              <div key={i} className="group relative aspect-square overflow-hidden rounded-lg border border-stone-200 bg-stone-100 shadow-sm">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={url} alt={`Galerie ${i + 1}`} className="h-full w-full object-cover" />
+                <button
+                  type="button"
+                  onClick={() => setGalleryUrls((current) => current.filter((_, index) => index !== i))}
+                  className="absolute right-1 top-1 inline-flex h-7 w-7 items-center justify-center rounded-full bg-white/90 text-stone-700 opacity-0 shadow-sm transition-opacity hover:bg-white hover:text-red-600 group-hover:opacity-100"
+                  aria-label="Bild entfernen"
+                  title="Bild entfernen"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="grid gap-4 rounded-xl border border-stone-200 bg-white p-4">

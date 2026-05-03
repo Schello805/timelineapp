@@ -531,7 +531,7 @@ function YearIntroCard({ group }: { group: TimelineYear }) {
   const lastMonth = group.months.at(-1)?.monthLabel ?? null;
   const milestoneCount = group.events.filter((event) => event.importance === "milestone").length;
   const importantCount = group.events.filter((event) => event.importance === "important").length;
-  const mediaCount = group.events.filter((event) => event.image_url || event.video_url || event.audio_url || event.pdf_url).length;
+  const mediaCount = group.events.filter((event) => event.image_url || event.video_url || event.audio_url || event.pdf_url || (event.gallery_urls && event.gallery_urls !== "[]")).length;
 
   return (
     <article className="w-[calc(100vw-6.35rem)] max-w-full rounded-2xl border border-stone-200/90 bg-white/70 px-4 py-4 shadow-[0_14px_36px_-34px_rgba(33,31,28,0.45)] backdrop-blur-sm md:w-full md:px-5">
@@ -655,6 +655,7 @@ function EventMetaBadges({
 
   if (!compact) {
     if (event.image_url) badges.push(<span key="image" className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700">Bild</span>);
+    if (event.gallery_urls && event.gallery_urls !== "[]" && !event.image_url) badges.push(<span key="gallery" className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700">Galerie</span>);
     if (event.video_url) badges.push(<span key="video" className="rounded-full bg-orange-50 px-2.5 py-1 text-xs font-semibold text-orange-700">Video</span>);
     if (event.audio_url) badges.push(<span key="audio" className="rounded-full bg-violet-50 px-2.5 py-1 text-xs font-semibold text-violet-700">Audio</span>);
     if (event.pdf_url) badges.push(<span key="pdf" className="rounded-full bg-teal-50 px-2.5 py-1 text-xs font-semibold text-teal-700">PDF</span>);
@@ -783,6 +784,7 @@ function EventRow({
         ) : (
           <div className="mt-4 flex flex-wrap gap-2 text-xs font-semibold">
             {event.image_url ? <span className="rounded-full bg-blue-50 px-3 py-1 text-blue-700">Bild</span> : null}
+            {event.gallery_urls && event.gallery_urls !== "[]" && !event.image_url ? <span className="rounded-full bg-blue-50 px-3 py-1 text-blue-700">Galerie</span> : null}
             {event.video_url ? <span className="rounded-full bg-orange-50 px-3 py-1 text-orange-700">Video</span> : null}
             {event.audio_url ? <span className="rounded-full bg-violet-50 px-3 py-1 text-violet-700">Audio</span> : null}
             {event.pdf_url ? <span className="rounded-full bg-teal-50 px-3 py-1 text-teal-700">PDF</span> : null}
@@ -823,7 +825,9 @@ function EventMediaStack({
   detail?: boolean;
   onOpenImage: (event: TimelineEvent) => void;
 }) {
-  if (!event.image_url && !event.video_url && !event.audio_url) return null;
+  const galleryUrls: string[] = event.gallery_urls ? (() => { try { return JSON.parse(event.gallery_urls) } catch { return [] } })() : [];
+
+  if (!event.image_url && !event.video_url && !event.audio_url && galleryUrls.length === 0) return null;
 
   return (
     <div className={detail ? "mt-5 grid gap-4" : "mt-4 grid gap-3"}>
@@ -842,6 +846,21 @@ function EventMediaStack({
             <ImageIcon className="h-5 w-5" />
           </span>
         </button>
+      ) : null}
+
+      {galleryUrls.length > 0 ? (
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+          {galleryUrls.map((url, i) => (
+            <button
+              key={i}
+              className="group relative flex aspect-square w-full items-center justify-center overflow-hidden rounded-xl bg-stone-100"
+              onClick={() => onOpenImage({ ...event, image_url: url, title: `Galerie ${i + 1} - ${event.title}` })}
+              aria-label={`${event.title} Galerie Bild ${i + 1} vergrößern`}
+            >
+              <EventImage src={url} alt={`Galerie ${i + 1}`} className="h-full w-full object-cover transition duration-300 group-hover:scale-105" />
+            </button>
+          ))}
+        </div>
       ) : null}
 
       {event.video_url ? (
@@ -1013,15 +1032,17 @@ function getEventWeight(event: TimelineEvent): EventWeight {
   if (event.importance === "milestone") return "milestone";
   if (event.importance === "important") return "standard";
   if (event.importance === "standard") {
-    const mediaCount = [event.image_url, event.video_url, event.audio_url, event.pdf_url].filter(Boolean).length;
-    if (event.video_url || event.audio_url || mediaCount >= 2 || event.description.length > 520) return "milestone";
-    if (event.description.length < 120 && !event.image_url && !event.video_url && !event.audio_url) return "brief";
+    const hasGallery = event.gallery_urls && event.gallery_urls !== "[]";
+    const mediaCount = [event.image_url, event.video_url, event.audio_url, event.pdf_url].filter(Boolean).length + (hasGallery ? 1 : 0);
+    if (event.video_url || event.audio_url || mediaCount >= 2 || event.description.length > 520 || hasGallery) return "milestone";
+    if (event.description.length < 120 && !event.image_url && !event.video_url && !event.audio_url && !hasGallery) return "brief";
     return "standard";
   }
 
-  const mediaCount = [event.image_url, event.video_url, event.audio_url, event.pdf_url].filter(Boolean).length;
-  if (event.video_url || event.audio_url || mediaCount >= 2 || event.description.length > 520) return "milestone";
-  if (event.description.length < 120 && !event.image_url && !event.video_url && !event.audio_url) return "brief";
+  const hasGallery = event.gallery_urls && event.gallery_urls !== "[]";
+  const mediaCount = [event.image_url, event.video_url, event.audio_url, event.pdf_url].filter(Boolean).length + (hasGallery ? 1 : 0);
+  if (event.video_url || event.audio_url || mediaCount >= 2 || event.description.length > 520 || hasGallery) return "milestone";
+  if (event.description.length < 120 && !event.image_url && !event.video_url && !event.audio_url && !hasGallery) return "brief";
   return "standard";
 }
 

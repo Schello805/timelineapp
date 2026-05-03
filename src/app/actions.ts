@@ -45,6 +45,7 @@ const eventSchema = z.object({
   video_url: mediaUrlSchema,
   audio_url: mediaUrlSchema,
   pdf_url: mediaUrlSchema,
+  gallery_urls: z.string().optional().or(z.literal("")),
 });
 
 const settingsSchema = z.object({
@@ -136,6 +137,7 @@ export async function upsertTimelineEvent(formData: FormData) {
       uploadedPdf ??
       cleanOptionalText(formData.get("pdf_url")) ??
       "",
+    gallery_urls: String(formData.get("gallery_urls") ?? ""),
   });
 
   if (!parsed.success) {
@@ -156,6 +158,7 @@ export async function upsertTimelineEvent(formData: FormData) {
     video_url: parsed.data.video_url || null,
     audio_url: parsed.data.audio_url || null,
     pdf_url: parsed.data.pdf_url || null,
+    gallery_urls: parsed.data.gallery_urls || null,
   });
 
   revalidatePath("/");
@@ -202,6 +205,7 @@ export async function quickUpdateTimelineEvent(
     video_url: event.video_url,
     audio_url: event.audio_url,
     pdf_url: event.pdf_url,
+    gallery_urls: event.gallery_urls,
   });
 
   revalidatePath("/");
@@ -265,6 +269,7 @@ export async function duplicateTimelineEvent(formData: FormData) {
     video_url: event.video_url,
     audio_url: event.audio_url,
     pdf_url: event.pdf_url,
+    gallery_urls: event.gallery_urls,
   });
 
   revalidatePath("/");

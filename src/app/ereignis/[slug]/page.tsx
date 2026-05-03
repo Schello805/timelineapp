@@ -54,6 +54,13 @@ export default async function EventPage({ params }: Props) {
     notFound();
   }
 
+  let galleryUrls: string[] = [];
+  if (event.gallery_urls) {
+    try {
+      galleryUrls = JSON.parse(event.gallery_urls);
+    } catch {}
+  }
+
   return (
     <main className="mx-auto w-full max-w-4xl px-5 py-8">
       <Link className="text-sm font-semibold text-teal-700 hover:text-teal-900" href={`/#event-${event.slug}`}>
@@ -64,7 +71,7 @@ export default async function EventPage({ params }: Props) {
         <p className="text-sm font-semibold text-teal-700">{formatEventDate(event.event_date)}</p>
         <h1 className="mt-2 text-3xl font-semibold leading-tight text-stone-950 sm:text-5xl">{event.title}</h1>
         <div className="mt-4 flex flex-wrap gap-2">
-          <EventMetaBadges event={event} />
+          <EventMetaBadges event={event} galleryUrls={galleryUrls} />
         </div>
 
         <div className="mt-6 grid gap-6 md:grid-cols-[minmax(0,1.1fr)_minmax(18rem,0.9fr)] md:items-start">
@@ -89,7 +96,7 @@ export default async function EventPage({ params }: Props) {
           </section>
 
           <aside className="grid gap-4">
-            {(event.image_url || event.video_url || event.audio_url) ? (
+            {(event.image_url || event.video_url || event.audio_url || galleryUrls.length > 0) ? (
               <section className="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm">
                 <p className="text-xs font-semibold uppercase tracking-[0.14em] text-stone-400">Medien</p>
 
@@ -102,6 +109,21 @@ export default async function EventPage({ params }: Props) {
                       alt={event.title}
                       className="max-h-[320px] w-full object-contain md:max-h-[500px]"
                     />
+                  </div>
+                ) : null}
+
+                {galleryUrls.length > 0 ? (
+                  <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                    {galleryUrls.map((url, index) => (
+                      <div key={index} className="aspect-square overflow-hidden rounded-lg bg-stone-100">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={url}
+                          alt={`Galerie ${index + 1}`}
+                          className="h-full w-full object-cover"
+                        />
+                      </div>
+                    ))}
                   </div>
                 ) : null}
 
@@ -140,7 +162,7 @@ export default async function EventPage({ params }: Props) {
   );
 }
 
-function EventMetaBadges({ event }: { event: NonNullable<ReturnType<typeof getTimelineEventBySlug>> }) {
+function EventMetaBadges({ event, galleryUrls = [] }: { event: NonNullable<ReturnType<typeof getTimelineEventBySlug>>, galleryUrls?: string[] }) {
   return (
     <>
       {event.importance === "milestone" ? (
@@ -154,6 +176,7 @@ function EventMetaBadges({ event }: { event: NonNullable<ReturnType<typeof getTi
         </span>
       ) : null}
       {event.image_url ? <span className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700"><ImageIcon className="mr-1 inline h-3.5 w-3.5" />Bild</span> : null}
+      {galleryUrls.length > 0 && !event.image_url ? <span className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700"><ImageIcon className="mr-1 inline h-3.5 w-3.5" />Galerie</span> : null}
       {event.video_url ? <span className="rounded-full bg-orange-50 px-2.5 py-1 text-xs font-semibold text-orange-700"><Play className="mr-1 inline h-3.5 w-3.5 fill-current" />Video</span> : null}
       {event.audio_url ? <span className="rounded-full bg-violet-50 px-2.5 py-1 text-xs font-semibold text-violet-700"><FileAudio className="mr-1 inline h-3.5 w-3.5" />Audio</span> : null}
       {event.pdf_url ? <span className="rounded-full bg-teal-50 px-2.5 py-1 text-xs font-semibold text-teal-700"><FileText className="mr-1 inline h-3.5 w-3.5" />PDF</span> : null}
