@@ -4,7 +4,7 @@ import { siteConfig } from "@/lib/env";
 
 export function AppLogo({ compact = false, label }: { compact?: boolean; label?: string }) {
   return (
-    <Link className="inline-flex items-center gap-3" href="/" aria-label={`${label ?? siteConfig.name} Startseite`}>
+    <Link className="inline-flex min-w-0 items-center gap-3" href="/" aria-label={`${label ?? siteConfig.name} Startseite`}>
       <Image
         src="/logo-timeline.png"
         alt=""
@@ -13,7 +13,13 @@ export function AppLogo({ compact = false, label }: { compact?: boolean; label?:
         className="rounded-lg shadow-sm"
         priority={!compact}
       />
-      <span className={compact ? "text-sm font-semibold text-stone-900" : "text-xl font-semibold text-stone-950"}>
+      <span
+        className={
+          compact
+            ? "min-w-0 truncate text-sm font-semibold text-stone-900"
+            : "min-w-0 text-xl font-semibold text-stone-950"
+        }
+      >
         {label ?? siteConfig.name}
       </span>
     </Link>

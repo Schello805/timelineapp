@@ -164,7 +164,7 @@ export function TimelineClient({
       <section className="min-h-[calc(100svh-4rem)] bg-[radial-gradient(circle_at_top,#fbfaf6_0%,#f6f3ee_45%,#efe7dc_100%)]">
         <div className="border-b border-stone-200/90 bg-[#f6f3ee]/92 backdrop-blur md:sticky md:top-0 md:z-30">
           <div className="mx-auto flex w-full max-w-7xl flex-col gap-1.5 px-3 py-1.5 sm:px-5 sm:py-2">
-            <header className="flex items-center justify-between gap-3">
+            <header className="flex min-w-0 items-center justify-between gap-3">
               <AppLogo compact label={`Timeline für ${ownerName}`} />
               <div className="hidden items-center md:flex">
                 <span className="rounded-full bg-stone-950 px-2.5 py-0.5 text-xs font-semibold text-white">{visibleYear}</span>
@@ -387,20 +387,20 @@ function YearSection({
       className="grid gap-3"
       transition={{ layout: { type: "spring", stiffness: 180, damping: 22 } }}
     >
-      <div className="grid grid-cols-[5.6rem_minmax(0,1fr)] gap-2 md:grid-cols-[11.5rem_minmax(0,1fr)] md:gap-5">
-        <div className="relative pt-2 pr-4 text-right md:pr-10">
+      <div className="grid grid-cols-[6.2rem_minmax(0,1fr)] gap-2 md:grid-cols-[12.5rem_minmax(0,1fr)] md:gap-5">
+        <div className="relative pt-2 pr-3 text-right md:pr-10">
           <button
             type="button"
-            className="relative z-10 flex w-full items-center justify-end gap-2 pr-1 text-right md:pr-2"
+            className="relative z-10 flex w-full items-center justify-end gap-1.5 pr-0.5 text-right md:gap-2 md:pr-2"
             onClick={onToggle}
             aria-expanded={!collapsed}
             aria-label={`${group.year} ${collapsed ? "aufklappen" : "einklappen"}`}
           >
-            <p className="text-xl font-semibold leading-none text-stone-950 md:text-3xl">{group.year}</p>
-            <span className="relative flex h-6 w-6 items-center justify-center rounded-full bg-stone-950 text-white ring-4 ring-[#f6f3ee] md:h-7 md:w-7">
+            <p className="shrink-0 text-xl font-semibold leading-none text-stone-950 md:text-3xl">{group.year}</p>
+            <span className="relative flex h-5.5 w-5.5 shrink-0 items-center justify-center rounded-full bg-stone-950 text-white ring-4 ring-[#f6f3ee] md:h-7 md:w-7">
               <CalendarDays className="h-3.5 w-3.5 md:h-4 md:w-4" />
             </span>
-            <span className="inline-flex h-5 w-5 items-center justify-center text-stone-500 md:h-6 md:w-6">
+            <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center text-stone-500 md:h-6 md:w-6">
               <ChevronDown className={`h-4 w-4 transition-transform ${collapsed ? "-rotate-90" : "rotate-0"}`} />
             </span>
           </button>
@@ -411,9 +411,9 @@ function YearSection({
             <div className="absolute bottom-[-0.75rem] top-2 w-px bg-gradient-to-b from-blue-700 via-teal-600 to-orange-500" />
           </div>
         </div>
-        <div className="grid gap-3">
+        <div className="grid min-w-0 gap-3">
           {!collapsed ? (
-            <div className="grid gap-3">
+            <div className="grid min-w-0 gap-3">
               <YearIntroCard group={group} />
               {group.metrics.length ? <div className="md:hidden"><MetricTimelineRow year={group.year} metrics={group.metrics} /></div> : null}
               {group.months.map((month) => (
@@ -656,17 +656,17 @@ function MonthSection({
   return (
     <motion.div
       layout
-      className="grid grid-cols-[5.2rem_minmax(0,1fr)] gap-2 md:grid-cols-[8rem_minmax(0,1fr)] md:gap-4"
+      className="grid grid-cols-[6rem_minmax(0,1fr)] gap-2 md:grid-cols-[8rem_minmax(0,1fr)] md:gap-4"
       transition={{ layout: { type: "spring", stiffness: 180, damping: 22 } }}
     >
-      <div className="relative pr-3 pt-1 text-right md:pr-4">
+      <div className="relative pr-2.5 pt-1 text-right md:pr-4">
         <p className="relative z-10 inline-block bg-[#f6f3ee] pr-1 text-xl font-semibold leading-none text-stone-950 md:hidden">
           {year}
         </p>
         <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-teal-700 md:mt-2 md:text-sm md:tracking-[0.16em]">
           {month.monthLabel}
         </p>
-        <div className="absolute right-0.5 top-0 z-20 flex h-full justify-center">
+        <div className="absolute right-0 top-0 z-20 flex h-full justify-center">
           <div className="absolute bottom-[-1rem] top-2 w-px bg-stone-300" />
           <span className="relative mt-1 h-3 w-3 rounded-full bg-teal-700 ring-4 ring-[#f6f3ee] md:h-3.5 md:w-3.5" />
         </div>
