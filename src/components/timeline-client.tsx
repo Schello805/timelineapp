@@ -3,6 +3,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import {
   CalendarDays,
+  ChevronDown,
   ChevronRight,
   FileText,
   ImageIcon,
@@ -48,6 +49,7 @@ export function TimelineClient({
   const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
   const [activeYear, setActiveYear] = useState<string>("");
   const [showYearJump, setShowYearJump] = useState(false);
+  const [collapsedYears, setCollapsedYears] = useState<Record<string, boolean>>({});
 
   const allEvents = useMemo(
     () => [...events].sort((a, b) => getTime(a.event_date) - getTime(b.event_date)),
@@ -148,6 +150,13 @@ export function TimelineClient({
     target?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
+  function toggleYear(year: string) {
+    setCollapsedYears((current) => ({
+      ...current,
+      [year]: !current[year],
+    }));
+  }
+
   const visibleYear = activeYear || yearNavigation[0]?.year || "";
 
   return (
@@ -239,6 +248,8 @@ export function TimelineClient({
                 <YearSection
                   key={yearGroup.id}
                   group={yearGroup}
+                  collapsed={Boolean(collapsedYears[yearGroup.year])}
+                  onToggle={() => toggleYear(yearGroup.year)}
                   onOpenEvent={setSelectedEvent}
                   onOpenImage={setSelectedImage}
                 />
@@ -358,10 +369,14 @@ export function TimelineClient({
 
 function YearSection({
   group,
+  collapsed,
+  onToggle,
   onOpenEvent,
   onOpenImage,
 }: {
   group: TimelineYear;
+  collapsed: boolean;
+  onToggle: () => void;
   onOpenEvent: (event: TimelineEvent) => void;
   onOpenImage: (event: TimelineEvent) => void;
 }) {
@@ -374,12 +389,21 @@ function YearSection({
     >
       <div className="grid grid-cols-[5rem_minmax(0,1fr)] gap-2 md:grid-cols-[11.5rem_minmax(0,1fr)] md:gap-5">
         <div className="relative pt-2 pr-4 text-right md:pr-10">
-          <div className="relative z-10 flex items-center justify-end gap-2 pr-1 md:pr-2">
+          <button
+            type="button"
+            className="relative z-10 flex w-full items-center justify-end gap-2 pr-1 text-right md:pr-2"
+            onClick={onToggle}
+            aria-expanded={!collapsed}
+            aria-label={`${group.year} ${collapsed ? "aufklappen" : "einklappen"}`}
+          >
             <p className="text-xl font-semibold leading-none text-stone-950 md:text-3xl">{group.year}</p>
             <span className="relative flex h-6 w-6 items-center justify-center rounded-full bg-stone-950 text-white ring-4 ring-[#f6f3ee] md:h-7 md:w-7">
               <CalendarDays className="h-3.5 w-3.5 md:h-4 md:w-4" />
             </span>
-          </div>
+            <span className="inline-flex h-5 w-5 items-center justify-center text-stone-500 md:h-6 md:w-6">
+              <ChevronDown className={`h-4 w-4 transition-transform ${collapsed ? "-rotate-90" : "rotate-0"}`} />
+            </span>
+          </button>
           <div className="mt-3 hidden md:block">
             {group.metrics.length ? <SideMetricSummary metrics={group.metrics} /> : null}
           </div>
@@ -388,24 +412,32 @@ function YearSection({
           </div>
         </div>
         <div className="grid gap-3">
-          <div className="grid gap-3">
-            <YearIntroCard group={group} />
-            {group.metrics.length ? <div className="md:hidden"><MetricTimelineRow year={group.year} metrics={group.metrics} /></div> : null}
-            {group.months.map((month) => (
-              <MonthSection
-                key={month.id}
-                year={group.year}
-                month={month}
-                onOpenEvent={onOpenEvent}
-                onOpenImage={onOpenImage}
-              />
-            ))}
-            {group.months.length === 0 ? (
-              <div className="w-[calc(100vw-6.35rem)] max-w-full rounded-2xl border border-stone-200/90 bg-white/95 p-4 text-sm leading-6 text-stone-500 shadow-sm md:w-full">
-                Für dieses Jahr sind aktuell nur Kennzahlen hinterlegt.
-              </div>
-            ) : null}
-          </div>
+          {!collapsed ? (
+            <div className="grid gap-3">
+              <YearIntroCard group={group} />
+              {group.metrics.length ? <div className="md:hidden"><MetricTimelineRow year={group.year} metrics={group.metrics} /></div> : null}
+              {group.months.map((month) => (
+                <MonthSection
+                  key={month.id}
+                  year={group.year}
+                  month={month}
+                  onOpenEvent={onOpenEvent}
+                  onOpenImage={onOpenImage}
+                />
+              ))}
+              {group.months.length === 0 ? (
+                <div className="w-[calc(100vw-6.35rem)] max-w-full rounded-2xl border border-stone-200/90 bg-white/95 p-4 text-sm leading-6 text-stone-500 shadow-sm md:w-full">
+                  Für dieses Jahr sind aktuell nur Kennzahlen hinterlegt.
+                </div>
+              ) : null}
+            </div>
+          ) : (
+            <div className="w-[calc(100vw-6.35rem)] max-w-full rounded-2xl border border-stone-200/90 bg-white/80 px-4 py-3 text-sm text-stone-600 shadow-sm md:w-full">
+              {group.events.length > 0
+                ? `${group.events.length} ${group.events.length === 1 ? "Ereignis" : "Ereignisse"} eingeklappt`
+                : "Dieses Jahr enthält aktuell nur Kennzahlen."}
+            </div>
+          )}
         </div>
       </div>
     </motion.section>
