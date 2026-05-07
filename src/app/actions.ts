@@ -147,7 +147,7 @@ export async function upsertTimelineEvent(formData: FormData) {
     };
   }
 
-  const newId = upsertEvent({
+  upsertEvent({
     id: parsed.data.id,
     slug: parsed.data.slug || null,
     event_date: parsed.data.event_date,

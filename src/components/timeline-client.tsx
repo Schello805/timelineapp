@@ -373,13 +373,7 @@ function YearSection({
       transition={{ layout: { type: "spring", stiffness: 180, damping: 22 } }}
     >
       <div className="grid grid-cols-[5rem_minmax(0,1fr)] gap-2 md:grid-cols-[11.5rem_minmax(0,1fr)] md:gap-5">
-        <div
-          className={
-            hasExpandedEvents(group.events)
-              ? "relative hidden pt-2 pr-4 text-right md:block md:pr-10"
-              : "relative pt-2 pr-4 text-right md:pr-10"
-          }
-        >
+        <div className="relative pt-2 pr-4 text-right md:pr-10">
           <div className="relative z-10 flex items-center justify-end gap-2 bg-[#f6f3ee] pr-1 md:pr-2">
             <p className="text-xl font-semibold leading-none text-stone-950 md:text-3xl">{group.year}</p>
             <span className="relative flex h-6 w-6 items-center justify-center rounded-full bg-stone-950 text-white ring-4 ring-[#f6f3ee] md:h-7 md:w-7">
@@ -394,77 +388,27 @@ function YearSection({
           </div>
         </div>
         <div className="grid gap-3">
-          {hasExpandedEvents(group.events) ? (
-            <div className="grid gap-3">
-              <YearIntroCard group={group} />
-              {group.metrics.length ? <div className="md:hidden"><MetricTimelineRow year={group.year} metrics={group.metrics} /></div> : null}
-              {group.months.map((month) => (
-                <MonthSection
-                  key={month.id}
-                  year={group.year}
-                  month={month}
-                  onOpenEvent={onOpenEvent}
-                  onOpenImage={onOpenImage}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="grid gap-3">
-              <YearIntroCard group={group} />
-              {group.metrics.length ? <div className="md:hidden"><MetricTimelineRow year={group.year} metrics={group.metrics} /></div> : null}
-              <CompactYearCard events={group.events} onOpenEvent={onOpenEvent} />
-            </div>
-          )}
+          <div className="grid gap-3">
+            <YearIntroCard group={group} />
+            {group.metrics.length ? <div className="md:hidden"><MetricTimelineRow year={group.year} metrics={group.metrics} /></div> : null}
+            {group.months.map((month) => (
+              <MonthSection
+                key={month.id}
+                year={group.year}
+                month={month}
+                onOpenEvent={onOpenEvent}
+                onOpenImage={onOpenImage}
+              />
+            ))}
+            {group.months.length === 0 ? (
+              <div className="w-[calc(100vw-6.35rem)] max-w-full rounded-2xl border border-stone-200/90 bg-white/95 p-4 text-sm leading-6 text-stone-500 shadow-sm md:w-full">
+                Für dieses Jahr sind aktuell nur Kennzahlen hinterlegt.
+              </div>
+            ) : null}
+          </div>
         </div>
       </div>
     </motion.section>
-  );
-}
-
-function CompactYearCard({
-  events,
-  onOpenEvent,
-}: {
-  events: TimelineEvent[];
-  onOpenEvent: (event: TimelineEvent) => void;
-}) {
-  return (
-    <motion.article
-      layout
-      className="w-[calc(100vw-6.35rem)] max-w-full rounded-2xl border border-stone-200/90 bg-white/95 p-4 shadow-[0_18px_40px_-32px_rgba(33,31,28,0.45)] md:w-full"
-    >
-      <p className="text-sm font-semibold text-stone-950">
-        {events.length} {events.length === 1 ? "Ereignis" : "Ereignisse"}
-      </p>
-      {events.length === 0 ? (
-        <p className="mt-3 text-sm leading-6 text-stone-500">Für dieses Jahr sind aktuell nur Kennzahlen hinterlegt.</p>
-      ) : null}
-      <div className="mt-3 grid gap-2">
-        {events.map((event) => {
-          const weight = getEventWeight(event);
-
-          return (
-            <button
-              key={event.id}
-              data-event-id={event.id}
-              className={
-                weight === "milestone"
-                  ? "grid w-full gap-1 rounded-xl border border-orange-200 border-l-4 border-l-orange-400 bg-[linear-gradient(135deg,#fffdf8_0%,#fff3e2_100%)] px-3 py-3 text-left shadow-sm transition hover:border-orange-400"
-                  : event.importance === "important"
-                    ? "grid w-full gap-1 rounded-xl border border-amber-200 border-l-4 border-l-amber-300 bg-amber-50/40 px-3 py-3 text-left transition hover:border-amber-400 hover:bg-white"
-                    : "grid w-full gap-1 rounded-xl border border-stone-200 bg-stone-50 px-3 py-3 text-left transition hover:border-teal-700 hover:bg-white"
-              }
-              onClick={() => onOpenEvent(event)}
-            >
-              <EventMetaBadges event={event} compact />
-              <span className="text-sm font-semibold text-teal-700">{formatEventDateNumeric(event.event_date)}</span>
-              <span className="text-base font-semibold leading-tight text-stone-950">{event.title}</span>
-              <span className="line-clamp-2 text-sm leading-6 text-stone-600">{event.description}</span>
-            </button>
-          );
-        })}
-      </div>
-    </motion.article>
   );
 }
 
@@ -1044,10 +988,6 @@ function getEventWeight(event: TimelineEvent): EventWeight {
   if (event.video_url || event.audio_url || mediaCount >= 2 || event.description.length > 520 || hasGallery) return "milestone";
   if (event.description.length < 120 && !event.image_url && !event.video_url && !event.audio_url && !hasGallery) return "brief";
   return "standard";
-}
-
-function hasExpandedEvents(events: TimelineEvent[]) {
-  return events.some((event) => getEventViewMode(event) !== "compact");
 }
 
 function parseEventDate(date: string) {
