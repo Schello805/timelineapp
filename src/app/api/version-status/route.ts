@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getAppRevision } from "@/lib/revision";
 
 const GITHUB_PACKAGE_URL = "https://raw.githubusercontent.com/Schello805/timelineapp/main/package.json";
+export const dynamic = "force-dynamic";
 
 export async function GET() {
   const currentVersion = getAppRevision();
@@ -11,7 +12,8 @@ export async function GET() {
       headers: {
         Accept: "application/json",
       },
-      next: { revalidate: 1800 },
+      cache: "no-store",
+      signal: AbortSignal.timeout(2500),
     });
 
     if (!response.ok) {
