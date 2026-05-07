@@ -9,6 +9,7 @@ HEALTH_RETRIES="${HEALTH_RETRIES:-12}"
 HEALTH_RETRY_DELAY="${HEALTH_RETRY_DELAY:-2}"
 APP_USER="${APP_USER:-www-data}"
 APP_GROUP="${APP_GROUP:-www-data}"
+SKIP_INSTALL="${SKIP_INSTALL:-0}"
 
 log() {
   printf '\n\033[1;34m==>\033[0m %s\n' "$1"
@@ -44,6 +45,8 @@ command -v systemctl >/dev/null || fail "systemctl ist nicht verfügbar."
 log "Wechsle in ${APP_DIR}"
 cd "$APP_DIR" || fail "App-Verzeichnis ${APP_DIR} wurde nicht gefunden."
 
+PREVIOUS_COMMIT="$(git rev-parse HEAD 2>/dev/null || true)"
+
 log "Git-Verzeichnis als sicher markieren"
 git config --global --add safe.directory "$APP_DIR" || true
 
@@ -51,11 +54,27 @@ log "Aktuellen Stand von GitHub holen"
 git fetch origin main
 git pull --ff-only origin main
 
+CURRENT_COMMIT="$(git rev-parse HEAD 2>/dev/null || true)"
+
 log "Lokale Laufzeitordner anlegen"
 mkdir -p data public/uploads
 
-log "Abhängigkeiten installieren"
-npm ci
+INSTALL_NEEDED=1
+
+if [ "$SKIP_INSTALL" = "1" ]; then
+  INSTALL_NEEDED=0
+elif [ -n "$PREVIOUS_COMMIT" ] && [ -n "$CURRENT_COMMIT" ] && [ -d node_modules ]; then
+  if git diff --quiet "$PREVIOUS_COMMIT" "$CURRENT_COMMIT" -- package.json package-lock.json; then
+    INSTALL_NEEDED=0
+  fi
+fi
+
+if [ "$INSTALL_NEEDED" = "1" ]; then
+  log "Abhängigkeiten installieren"
+  npm ci --no-audit --no-fund
+else
+  log "Abhängigkeiten unverändert, npm ci wird übersprungen"
+fi
 
 log "Alten Next.js Build entfernen"
 rm -rf .next
