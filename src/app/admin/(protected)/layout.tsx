@@ -1,11 +1,15 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { signOut } from "@/app/actions";
+import { AdminDeployGuard } from "@/components/admin-deploy-guard";
 import { AdminMenu } from "@/components/admin-menu";
 import { AppLogo } from "@/components/app-logo";
 import { isAdminAuthenticated, isAdminConfigured } from "@/lib/auth";
+import { getAppRevision } from "@/lib/revision";
 
 export default async function ProtectedAdminLayout({ children }: { children: React.ReactNode }) {
+  const revision = getAppRevision();
+
   if (!isAdminConfigured()) {
     return (
       <main className="mx-auto w-full max-w-3xl px-5 py-12">
@@ -33,6 +37,7 @@ export default async function ProtectedAdminLayout({ children }: { children: Rea
 
   return (
     <main className="mx-auto w-full max-w-6xl px-5 py-8">
+      <AdminDeployGuard revision={revision} />
       <header className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="grid gap-2">
           <AppLogo compact />
