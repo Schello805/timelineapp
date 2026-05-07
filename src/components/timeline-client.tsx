@@ -387,7 +387,7 @@ function YearSection({
       className="grid gap-3"
       transition={{ layout: { type: "spring", stiffness: 180, damping: 22 } }}
     >
-      <div className="grid grid-cols-[5rem_minmax(0,1fr)] gap-2 md:grid-cols-[11.5rem_minmax(0,1fr)] md:gap-5">
+      <div className="grid grid-cols-[5.6rem_minmax(0,1fr)] gap-2 md:grid-cols-[11.5rem_minmax(0,1fr)] md:gap-5">
         <div className="relative pt-2 pr-4 text-right md:pr-10">
           <button
             type="button"
@@ -426,13 +426,13 @@ function YearSection({
                 />
               ))}
               {group.months.length === 0 ? (
-                <div className="w-[calc(100vw-6.35rem)] max-w-full rounded-2xl border border-stone-200/90 bg-white/95 p-4 text-sm leading-6 text-stone-500 shadow-sm md:w-full">
+                <div className="w-full max-w-full rounded-2xl border border-stone-200/90 bg-white/95 p-4 text-sm leading-6 text-stone-500 shadow-sm">
                   Für dieses Jahr sind aktuell nur Kennzahlen hinterlegt.
                 </div>
               ) : null}
             </div>
           ) : (
-            <div className="w-[calc(100vw-6.35rem)] max-w-full rounded-2xl border border-stone-200/90 bg-white/80 px-4 py-3 text-sm text-stone-600 shadow-sm md:w-full">
+            <div className="w-full max-w-full rounded-2xl border border-stone-200/90 bg-white/80 px-4 py-3 text-sm text-stone-600 shadow-sm">
               {group.events.length > 0
                 ? `${group.events.length} ${group.events.length === 1 ? "Ereignis" : "Ereignisse"} eingeklappt`
                 : "Dieses Jahr enthält aktuell nur Kennzahlen."}
@@ -451,7 +451,7 @@ function MetricTimelineRow({ year, metrics }: { year: string; metrics: AnnualMet
       className="grid w-full min-w-0 gap-2"
       transition={{ layout: { type: "spring", stiffness: 180, damping: 22 } }}
     >
-      <div className="w-[calc(100vw-6.35rem)] min-w-0 max-w-full rounded-2xl border border-dashed border-stone-200/90 bg-[#f8f5ef]/85 px-4 py-3 md:w-full md:px-5 md:py-3.5">
+      <div className="w-full min-w-0 max-w-full rounded-2xl border border-dashed border-stone-200/90 bg-[#f8f5ef]/85 px-4 py-3 md:px-5 md:py-3.5">
         <div className="flex flex-wrap items-center gap-2 text-left">
           <span className="text-sm font-semibold text-stone-500">{year}</span>
           <span className="rounded-full border border-stone-200 bg-white/75 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-stone-400">
@@ -510,7 +510,7 @@ function YearIntroCard({ group }: { group: TimelineYear }) {
   const mediaCount = group.events.filter((event) => event.image_url || event.video_url || event.audio_url || event.pdf_url || (event.gallery_urls && event.gallery_urls !== "[]")).length;
 
   return (
-    <article className="w-[calc(100vw-6.35rem)] max-w-full rounded-2xl border border-stone-200/90 bg-white/70 px-4 py-4 shadow-[0_14px_36px_-34px_rgba(33,31,28,0.45)] backdrop-blur-sm md:w-full md:px-5">
+    <article className="w-full max-w-full rounded-2xl border border-stone-200/90 bg-white/70 px-4 py-4 shadow-[0_14px_36px_-34px_rgba(33,31,28,0.45)] backdrop-blur-sm md:px-5">
       <button
         type="button"
         className="flex w-full items-center justify-between gap-3 text-left"
@@ -656,7 +656,7 @@ function MonthSection({
   return (
     <motion.div
       layout
-      className="grid grid-cols-[4.6rem_minmax(0,1fr)] gap-2 md:grid-cols-[8rem_minmax(0,1fr)] md:gap-4"
+      className="grid grid-cols-[5.2rem_minmax(0,1fr)] gap-2 md:grid-cols-[8rem_minmax(0,1fr)] md:gap-4"
       transition={{ layout: { type: "spring", stiffness: 180, damping: 22 } }}
     >
       <div className="relative pr-3 pt-1 text-right md:pr-4">
@@ -716,14 +716,14 @@ function EventRow({
       <div
         className={
           weight === "milestone"
-            ? "w-[calc(100vw-6.35rem)] min-w-0 max-w-full rounded-2xl border border-orange-200/90 border-l-4 border-l-orange-400 bg-[linear-gradient(180deg,#fffdf8_0%,#fff6ea_100%)] p-5 shadow-[0_18px_45px_-34px_rgba(188,122,37,0.45)] md:w-full md:p-6"
+            ? "w-full min-w-0 max-w-full rounded-2xl border border-orange-200/90 border-l-4 border-l-orange-400 bg-[linear-gradient(180deg,#fffdf8_0%,#fff6ea_100%)] p-5 shadow-[0_18px_45px_-34px_rgba(188,122,37,0.45)] md:p-6"
             : compact
-              ? "w-[calc(100vw-6.35rem)] min-w-0 max-w-full rounded-2xl border border-stone-200/90 bg-white/95 p-4 shadow-sm md:w-full md:p-4"
+              ? "w-full min-w-0 max-w-full rounded-2xl border border-stone-200/90 bg-white/95 p-4 shadow-sm md:p-4"
             : weight === "brief"
-              ? "w-[calc(100vw-6.35rem)] min-w-0 max-w-full rounded-2xl border border-stone-200/90 bg-white/95 p-4 shadow-sm md:w-full md:p-4.5"
+              ? "w-full min-w-0 max-w-full rounded-2xl border border-stone-200/90 bg-white/95 p-4 shadow-sm md:p-4.5"
               : event.importance === "important"
-                ? "w-[calc(100vw-6.35rem)] min-w-0 max-w-full rounded-2xl border border-amber-200/80 border-l-4 border-l-amber-300 bg-[linear-gradient(180deg,#fffefb_0%,#fffdfa_100%)] p-4 shadow-[0_18px_40px_-34px_rgba(161,98,7,0.22)] md:w-full md:p-5"
-                : "w-[calc(100vw-6.35rem)] min-w-0 max-w-full rounded-2xl border border-stone-200/90 bg-white/95 p-4 shadow-[0_18px_40px_-32px_rgba(33,31,28,0.42)] md:w-full md:p-5"
+                ? "w-full min-w-0 max-w-full rounded-2xl border border-amber-200/80 border-l-4 border-l-amber-300 bg-[linear-gradient(180deg,#fffefb_0%,#fffdfa_100%)] p-4 shadow-[0_18px_40px_-34px_rgba(161,98,7,0.22)] md:p-5"
+                : "w-full min-w-0 max-w-full rounded-2xl border border-stone-200/90 bg-white/95 p-4 shadow-[0_18px_40px_-32px_rgba(33,31,28,0.42)] md:p-5"
         }
       >
         <button className="w-full min-w-0 text-left" onClick={() => onOpenEvent(event)}>
