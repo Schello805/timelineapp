@@ -374,7 +374,7 @@ function YearSection({
     >
       <div className="grid grid-cols-[5rem_minmax(0,1fr)] gap-2 md:grid-cols-[11.5rem_minmax(0,1fr)] md:gap-5">
         <div className="relative pt-2 pr-4 text-right md:pr-10">
-          <div className="relative z-10 flex items-center justify-end gap-2 bg-[#f6f3ee] pr-1 md:pr-2">
+          <div className="relative z-10 flex items-center justify-end gap-2 pr-1 md:pr-2">
             <p className="text-xl font-semibold leading-none text-stone-950 md:text-3xl">{group.year}</p>
             <span className="relative flex h-6 w-6 items-center justify-center rounded-full bg-stone-950 text-white ring-4 ring-[#f6f3ee] md:h-7 md:w-7">
               <CalendarDays className="h-3.5 w-3.5 md:h-4 md:w-4" />
