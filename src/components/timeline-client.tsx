@@ -391,7 +391,7 @@ function YearSection({
         <div className="grid grid-cols-[4.2rem_0.9rem_minmax(0,1fr)] items-start gap-2">
           <button
             type="button"
-            className="col-span-2 flex items-center justify-end gap-1.5 pr-0.5 text-right"
+            className="col-span-2 flex items-center justify-end gap-1.5 pl-1 pr-0.5 text-right"
             onClick={onToggle}
             aria-expanded={!collapsed}
             aria-label={`${group.year} ${collapsed ? "aufklappen" : "einklappen"}`}
