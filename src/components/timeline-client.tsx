@@ -387,7 +387,58 @@ function YearSection({
       className="grid gap-3"
       transition={{ layout: { type: "spring", stiffness: 180, damping: 22 } }}
     >
-      <div className="grid grid-cols-[6.2rem_minmax(0,1fr)] gap-2 md:grid-cols-[12.5rem_minmax(0,1fr)] md:gap-5">
+      <div className="grid gap-3 md:hidden">
+        <div className="grid grid-cols-[4.2rem_0.9rem_minmax(0,1fr)] items-start gap-2">
+          <button
+            type="button"
+            className="col-span-2 flex items-center justify-end gap-1.5 pr-0.5 text-right"
+            onClick={onToggle}
+            aria-expanded={!collapsed}
+            aria-label={`${group.year} ${collapsed ? "aufklappen" : "einklappen"}`}
+          >
+            <p className="shrink-0 text-xl font-semibold leading-none text-stone-950">{group.year}</p>
+            <span className="relative flex h-5.5 w-5.5 shrink-0 items-center justify-center rounded-full bg-stone-950 text-white ring-4 ring-[#f6f3ee]">
+              <CalendarDays className="h-3.5 w-3.5" />
+            </span>
+            <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center text-stone-500">
+              <ChevronDown className={`h-4 w-4 transition-transform ${collapsed ? "-rotate-90" : "rotate-0"}`} />
+            </span>
+          </button>
+
+          {!collapsed ? (
+            <div className="col-start-3 grid min-w-0 gap-3">
+              <YearIntroCard group={group} />
+              {group.metrics.length ? <MetricTimelineRow year={group.year} metrics={group.metrics} /> : null}
+            </div>
+          ) : (
+            <div className="col-start-3 w-full min-w-0 rounded-2xl border border-stone-200/90 bg-white/80 px-4 py-3 text-sm text-stone-600 shadow-sm">
+              {group.events.length > 0
+                ? `${group.events.length} ${group.events.length === 1 ? "Ereignis" : "Ereignisse"} eingeklappt`
+                : "Dieses Jahr enthält aktuell nur Kennzahlen."}
+            </div>
+          )}
+        </div>
+
+        {!collapsed ? (
+          <div className="grid gap-3">
+            {group.months.map((month) => (
+              <MonthSectionMobile
+                key={month.id}
+                month={month}
+                onOpenEvent={onOpenEvent}
+                onOpenImage={onOpenImage}
+              />
+            ))}
+            {group.months.length === 0 ? (
+              <div className="ml-[5.1rem] w-[calc(100%-5.1rem)] min-w-0 rounded-2xl border border-stone-200/90 bg-white/95 p-4 text-sm leading-6 text-stone-500 shadow-sm">
+                Für dieses Jahr sind aktuell nur Kennzahlen hinterlegt.
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+      </div>
+
+      <div className="hidden md:grid md:grid-cols-[12.5rem_minmax(0,1fr)] md:gap-5">
         <div className="relative pt-2 pr-3 text-right md:pr-10">
           <button
             type="button"
@@ -419,7 +470,6 @@ function YearSection({
               {group.months.map((month) => (
                 <MonthSection
                   key={month.id}
-                  year={group.year}
                   month={month}
                   onOpenEvent={onOpenEvent}
                   onOpenImage={onOpenImage}
@@ -643,12 +693,10 @@ function EventMetaBadges({
 }
 
 function MonthSection({
-  year,
   month,
   onOpenEvent,
   onOpenImage,
 }: {
-  year: string;
   month: TimelineMonth;
   onOpenEvent: (event: TimelineEvent) => void;
   onOpenImage: (event: TimelineEvent) => void;
@@ -656,20 +704,55 @@ function MonthSection({
   return (
     <motion.div
       layout
-      className="grid grid-cols-[6rem_minmax(0,1fr)] gap-2 md:grid-cols-[8rem_minmax(0,1fr)] md:gap-4"
+      className="grid grid-cols-[8rem_minmax(0,1fr)] gap-4"
       transition={{ layout: { type: "spring", stiffness: 180, damping: 22 } }}
     >
-      <div className="relative pr-2.5 pt-1 text-right md:pr-4">
-        <p className="relative z-10 inline-block bg-[#f6f3ee] pr-1 text-xl font-semibold leading-none text-stone-950 md:hidden">
-          {year}
-        </p>
-        <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-teal-700 md:mt-2 md:text-sm md:tracking-[0.16em]">
+      <div className="relative pr-4 pt-1 text-right">
+        <p className="mt-2 text-sm font-semibold uppercase tracking-[0.16em] text-teal-700">
           {month.monthLabel}
         </p>
         <div className="absolute right-0 top-0 z-20 flex h-full justify-center">
           <div className="absolute bottom-[-1rem] top-2 w-px bg-stone-300" />
-          <span className="relative mt-1 h-3 w-3 rounded-full bg-teal-700 ring-4 ring-[#f6f3ee] md:h-3.5 md:w-3.5" />
+          <span className="relative mt-1 h-3.5 w-3.5 rounded-full bg-teal-700 ring-4 ring-[#f6f3ee]" />
         </div>
+      </div>
+      <div className="grid min-w-0 gap-2.5">
+        {month.events.map((event) => (
+          <EventRow
+            key={event.id}
+            event={event}
+            onOpenEvent={onOpenEvent}
+            onOpenImage={onOpenImage}
+          />
+        ))}
+      </div>
+    </motion.div>
+  );
+}
+
+function MonthSectionMobile({
+  month,
+  onOpenEvent,
+  onOpenImage,
+}: {
+  month: TimelineMonth;
+  onOpenEvent: (event: TimelineEvent) => void;
+  onOpenImage: (event: TimelineEvent) => void;
+}) {
+  return (
+    <motion.div
+      layout
+      className="grid grid-cols-[4.2rem_0.9rem_minmax(0,1fr)] gap-2"
+      transition={{ layout: { type: "spring", stiffness: 180, damping: 22 } }}
+    >
+      <div className="pr-1 pt-1 text-right">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-teal-700">
+          {month.monthLabel}
+        </p>
+      </div>
+      <div className="relative flex h-full justify-center">
+        <div className="absolute bottom-[-1rem] top-0 w-px bg-stone-300" />
+        <span className="relative mt-1 h-3 w-3 rounded-full bg-teal-700 ring-4 ring-[#f6f3ee]" />
       </div>
       <div className="grid min-w-0 gap-2.5">
         {month.events.map((event) => (
