@@ -387,7 +387,7 @@ function YearSection({
       className="grid gap-3"
       transition={{ layout: { type: "spring", stiffness: 180, damping: 22 } }}
     >
-      <div className="grid gap-3 md:hidden">
+      <div className="grid gap-3 pl-1.5 md:hidden">
         <div className="grid grid-cols-[4.2rem_0.9rem_minmax(0,1fr)] items-start gap-2">
           <button
             type="button"
