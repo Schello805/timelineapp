@@ -35,8 +35,8 @@ type TimelineYear = {
 
 const layoutTransition = {
   layout: {
-    duration: 0.2,
-    ease: [0.22, 1, 0.36, 1] as const,
+    duration: 0.14,
+    ease: "linear" as const,
   },
 };
 
@@ -514,11 +514,7 @@ function YearSection({
 
 function MetricTimelineRow({ year, metrics }: { year: string; metrics: AnnualMetric[] }) {
   return (
-    <motion.article
-      layout
-      className="grid w-full min-w-0 gap-2"
-      transition={layoutTransition}
-    >
+    <motion.article className="grid w-full min-w-0 gap-2">
       <div className="w-full min-w-0 max-w-full rounded-2xl border border-dashed border-stone-200/90 bg-[#f8f5ef]/85 px-4 py-3 md:px-5 md:py-3.5">
         <div className="flex flex-wrap items-center gap-2 text-left">
           <span className="text-sm font-semibold text-stone-500">{year}</span>
@@ -720,11 +716,7 @@ function MonthSection({
   onOpenImage: (event: TimelineEvent) => void;
 }) {
   return (
-    <motion.div
-      layout
-      className="grid grid-cols-[8rem_minmax(0,1fr)] gap-4"
-      transition={layoutTransition}
-    >
+    <motion.div className="grid grid-cols-[8rem_minmax(0,1fr)] gap-4">
       <div className="relative pr-4 pt-1 text-right">
         <p className="mt-2 text-sm font-semibold uppercase tracking-[0.16em] text-teal-700">
           {month.monthLabel}
@@ -758,11 +750,7 @@ function MonthSectionMobile({
   onOpenImage: (event: TimelineEvent) => void;
 }) {
   return (
-    <motion.div
-      layout
-      className="grid grid-cols-[4.2rem_0.9rem_minmax(0,1fr)] gap-2"
-      transition={layoutTransition}
-    >
+    <motion.div className="grid grid-cols-[4.2rem_0.9rem_minmax(0,1fr)] gap-2">
       <div className="pr-1 pt-1 text-right">
         <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-teal-700">
           {month.monthLabel}
@@ -808,12 +796,7 @@ function EventRow({
   const weight = getEventWeight(event);
 
   return (
-    <motion.article
-      layout
-      data-event-id={event.id}
-      className="grid w-full min-w-0 gap-2"
-      transition={layoutTransition}
-    >
+    <motion.article data-event-id={event.id} className="grid w-full min-w-0 gap-2">
       <div
         className={
           weight === "milestone"
