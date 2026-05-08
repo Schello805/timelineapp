@@ -33,13 +33,6 @@ type TimelineYear = {
   metrics: AnnualMetric[];
 };
 
-const layoutTransition = {
-  layout: {
-    duration: 0.14,
-    ease: "linear" as const,
-  },
-};
-
 export function TimelineClient({
   events,
   annualMetrics,
@@ -397,12 +390,7 @@ function YearSection({
   onOpenImage: (event: TimelineEvent) => void;
 }) {
   return (
-    <motion.section
-      layout
-      data-year-anchor={group.year}
-      className="grid gap-3"
-      transition={layoutTransition}
-    >
+    <section data-year-anchor={group.year} className="grid gap-3">
       <div className="grid gap-3 pl-1.5 md:hidden">
         <div className="grid grid-cols-[4.2rem_0.9rem_minmax(0,1fr)] items-start gap-2">
           <button
@@ -508,13 +496,13 @@ function YearSection({
           )}
         </div>
       </div>
-    </motion.section>
+    </section>
   );
 }
 
 function MetricTimelineRow({ year, metrics }: { year: string; metrics: AnnualMetric[] }) {
   return (
-    <motion.article className="grid w-full min-w-0 gap-2">
+    <article className="grid w-full min-w-0 gap-2">
       <div className="w-full min-w-0 max-w-full rounded-2xl border border-dashed border-stone-200/90 bg-[#f8f5ef]/85 px-4 py-3 md:px-5 md:py-3.5">
         <div className="flex flex-wrap items-center gap-2 text-left">
           <span className="text-sm font-semibold text-stone-500">{year}</span>
@@ -560,7 +548,7 @@ function MetricTimelineRow({ year, metrics }: { year: string; metrics: AnnualMet
           })}
         </div>
       </div>
-    </motion.article>
+    </article>
   );
 }
 
@@ -716,7 +704,7 @@ function MonthSection({
   onOpenImage: (event: TimelineEvent) => void;
 }) {
   return (
-    <motion.div className="grid grid-cols-[8rem_minmax(0,1fr)] gap-4">
+    <div className="grid grid-cols-[8rem_minmax(0,1fr)] gap-4">
       <div className="relative pr-4 pt-1 text-right">
         <p className="mt-2 text-sm font-semibold uppercase tracking-[0.16em] text-teal-700">
           {month.monthLabel}
@@ -736,7 +724,7 @@ function MonthSection({
           />
         ))}
       </div>
-    </motion.div>
+    </div>
   );
 }
 
@@ -750,7 +738,7 @@ function MonthSectionMobile({
   onOpenImage: (event: TimelineEvent) => void;
 }) {
   return (
-    <motion.div className="grid grid-cols-[4.2rem_0.9rem_minmax(0,1fr)] gap-2">
+    <div className="grid grid-cols-[4.2rem_0.9rem_minmax(0,1fr)] gap-2">
       <div className="pr-1 pt-1 text-right">
         <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-teal-700">
           {month.monthLabel}
@@ -770,7 +758,7 @@ function MonthSectionMobile({
           />
         ))}
       </div>
-    </motion.div>
+    </div>
   );
 }
 
@@ -796,7 +784,7 @@ function EventRow({
   const weight = getEventWeight(event);
 
   return (
-    <motion.article data-event-id={event.id} className="grid w-full min-w-0 gap-2">
+    <article data-event-id={event.id} className="grid w-full min-w-0 gap-2">
       <div
         className={
           weight === "milestone"
@@ -872,7 +860,7 @@ function EventRow({
           ) : null}
         </div>
       </div>
-    </motion.article>
+    </article>
   );
 }
 
