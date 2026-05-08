@@ -33,6 +33,13 @@ type TimelineYear = {
   metrics: AnnualMetric[];
 };
 
+const layoutTransition = {
+  layout: {
+    duration: 0.2,
+    ease: [0.22, 1, 0.36, 1] as const,
+  },
+};
+
 export function TimelineClient({
   events,
   annualMetrics,
@@ -97,36 +104,43 @@ export function TimelineClient({
   }, [allEvents]);
 
   useEffect(() => {
-    const sections = [...document.querySelectorAll<HTMLElement>("[data-year-anchor]")];
-    if (sections.length === 0) return;
+    let frame = 0;
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visible = entries
-          .filter((entry) => entry.isIntersecting)
-          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)
-          .at(0);
-        const year = visible?.target.getAttribute("data-year-anchor");
-        if (year) {
-          setActiveYear(year);
-        }
-      },
-      {
-        rootMargin: "-18% 0px -62% 0px",
-        threshold: [0.15, 0.4, 0.7],
-      },
-    );
+    const updateTimelineViewportState = () => {
+      setShowYearJump(window.scrollY > 420);
 
-    sections.forEach((section) => observer.observe(section));
-    return () => observer.disconnect();
-  }, [timelineYears]);
+      const headers = [...document.querySelectorAll<HTMLElement>("[data-year-header]")]
+        .filter((element) => element.offsetParent !== null)
+        .map((element) => ({
+          year: element.getAttribute("data-year-header") ?? "",
+          top: element.getBoundingClientRect().top,
+        }))
+        .filter((item) => item.year);
 
-  useEffect(() => {
-    const onScroll = () => setShowYearJump(window.scrollY > 420);
-    onScroll();
+      if (headers.length === 0) return;
+
+      const threshold = 160;
+      const visible = headers.filter((item) => item.top <= threshold).at(-1) ?? headers[0];
+      if (visible?.year) {
+        setActiveYear(visible.year);
+      }
+    };
+
+    const onScroll = () => {
+      if (frame) cancelAnimationFrame(frame);
+      frame = window.requestAnimationFrame(updateTimelineViewportState);
+    };
+
+    updateTimelineViewportState();
     window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
+    window.addEventListener("resize", onScroll);
+
+    return () => {
+      if (frame) cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+    };
+  }, [timelineYears]);
 
   if (allEvents.length === 0) {
     return (
@@ -353,10 +367,12 @@ export function TimelineClient({
         {showYearJump && visibleYear ? (
           <motion.button
             className="fixed bottom-5 right-4 z-40 inline-flex items-center gap-2 rounded-full bg-stone-950 px-4 py-3 text-sm font-semibold text-white shadow-[0_18px_35px_-18px_rgba(0,0,0,0.55)] md:hidden"
-            initial={{ opacity: 0, y: 16 }}
+            initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 16 }}
+            exit={{ opacity: 0, y: 8 }}
+            transition={{ duration: 0.16, ease: "easeOut" }}
             onClick={() => selectYear(visibleYear)}
+            aria-label={`Zum Anfang von ${visibleYear} springen`}
           >
             <CalendarDays className="h-4 w-4" />
             {visibleYear}
@@ -385,7 +401,7 @@ function YearSection({
       layout
       data-year-anchor={group.year}
       className="grid gap-3"
-      transition={{ layout: { type: "spring", stiffness: 180, damping: 22 } }}
+      transition={layoutTransition}
     >
       <div className="grid gap-3 pl-1.5 md:hidden">
         <div className="grid grid-cols-[4.2rem_0.9rem_minmax(0,1fr)] items-start gap-2">
@@ -395,6 +411,7 @@ function YearSection({
             onClick={onToggle}
             aria-expanded={!collapsed}
             aria-label={`${group.year} ${collapsed ? "aufklappen" : "einklappen"}`}
+            data-year-header={group.year}
           >
             <p className="shrink-0 text-xl font-semibold leading-none text-stone-950">{group.year}</p>
             <span className="relative flex h-5.5 w-5.5 shrink-0 items-center justify-center rounded-full bg-stone-950 text-white ring-4 ring-[#f6f3ee]">
@@ -446,6 +463,7 @@ function YearSection({
             onClick={onToggle}
             aria-expanded={!collapsed}
             aria-label={`${group.year} ${collapsed ? "aufklappen" : "einklappen"}`}
+            data-year-header={group.year}
           >
             <p className="shrink-0 text-xl font-semibold leading-none text-stone-950 md:text-3xl">{group.year}</p>
             <span className="relative flex h-5.5 w-5.5 shrink-0 items-center justify-center rounded-full bg-stone-950 text-white ring-4 ring-[#f6f3ee] md:h-7 md:w-7">
@@ -499,7 +517,7 @@ function MetricTimelineRow({ year, metrics }: { year: string; metrics: AnnualMet
     <motion.article
       layout
       className="grid w-full min-w-0 gap-2"
-      transition={{ layout: { type: "spring", stiffness: 180, damping: 22 } }}
+      transition={layoutTransition}
     >
       <div className="w-full min-w-0 max-w-full rounded-2xl border border-dashed border-stone-200/90 bg-[#f8f5ef]/85 px-4 py-3 md:px-5 md:py-3.5">
         <div className="flex flex-wrap items-center gap-2 text-left">
@@ -705,7 +723,7 @@ function MonthSection({
     <motion.div
       layout
       className="grid grid-cols-[8rem_minmax(0,1fr)] gap-4"
-      transition={{ layout: { type: "spring", stiffness: 180, damping: 22 } }}
+      transition={layoutTransition}
     >
       <div className="relative pr-4 pt-1 text-right">
         <p className="mt-2 text-sm font-semibold uppercase tracking-[0.16em] text-teal-700">
@@ -743,7 +761,7 @@ function MonthSectionMobile({
     <motion.div
       layout
       className="grid grid-cols-[4.2rem_0.9rem_minmax(0,1fr)] gap-2"
-      transition={{ layout: { type: "spring", stiffness: 180, damping: 22 } }}
+      transition={layoutTransition}
     >
       <div className="pr-1 pt-1 text-right">
         <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-teal-700">
@@ -794,7 +812,7 @@ function EventRow({
       layout
       data-event-id={event.id}
       className="grid w-full min-w-0 gap-2"
-      transition={{ layout: { type: "spring", stiffness: 180, damping: 22 } }}
+      transition={layoutTransition}
     >
       <div
         className={
